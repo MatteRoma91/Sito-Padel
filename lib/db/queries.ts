@@ -1,0 +1,654 @@
+import { getDb } from './db';
+import { initSchema } from './schema';
+import { seed } from './seed';
+import { randomUUID } from 'crypto';
+import bcrypt from 'bcrypt';
+import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel } from '../types';
+
+let initialized = false;
+
+function ensureDb() {
+  if (!initialized) {
+    initSchema();
+    seed();
+    initialized = true;
+  }
+}
+
+// ============ USERS ============
+
+export function getUsers(): User[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM users ORDER BY full_name').all() as User[];
+}
+
+export function getUserById(id: string): User | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM users WHERE id = ?').get(id) as User | undefined;
+}
+
+export function getUserByUsername(username: string): User | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM users WHERE username = ?').get(username) as User | undefined;
+}
+
+export function getUsersByIds(ids: string[]): User[] {
+  ensureDb();
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => '?').join(',');
+  return getDb().prepare(`SELECT * FROM users WHERE id IN (${placeholders})`).all(...ids) as User[];
+}
+
+const DEFAULT_PASSWORD = 'Padel123';
+
+export function createUser(data: { username: string; password?: string; full_name?: string; nickname?: string; role?: string; mustChangePassword?: boolean }): string {
+  ensureDb();
+  const id = randomUUID();
+  const password = data.password || DEFAULT_PASSWORD;
+  const passwordHash = bcrypt.hashSync(password, 10);
+  // New users must change password unless explicitly set to false (e.g., admin creating themselves)
+  const mustChange = data.mustChangePassword !== undefined ? (data.mustChangePassword ? 1 : 0) : 1;
+  getDb().prepare(
+    `INSERT INTO users (id, username, password_hash, full_name, nickname, role, must_change_password)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, data.username, passwordHash, data.full_name || null, data.nickname || null, data.role || 'player', mustChange);
+  return id;
+}
+
+export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'nickname' | 'role' | 'skill_level' | 'bio' | 'preferred_side' | 'preferred_hand' | 'birth_date'>>): void {
+  ensureDb();
+  const fields: string[] = [];
+  const values: (string | null)[] = [];
+  if (data.full_name !== undefined) { fields.push('full_name = ?'); values.push(data.full_name); }
+  if (data.nickname !== undefined) { fields.push('nickname = ?'); values.push(data.nickname); }
+  if (data.role !== undefined) { fields.push('role = ?'); values.push(data.role); }
+  if (data.skill_level !== undefined) { fields.push('skill_level = ?'); values.push(data.skill_level); }
+  if (data.bio !== undefined) { fields.push('bio = ?'); values.push(data.bio); }
+  if (data.preferred_side !== undefined) { fields.push('preferred_side = ?'); values.push(data.preferred_side); }
+  if (data.preferred_hand !== undefined) { fields.push('preferred_hand = ?'); values.push(data.preferred_hand); }
+  if (data.birth_date !== undefined) { fields.push('birth_date = ?'); values.push(data.birth_date); }
+  if (fields.length === 0) return;
+  values.push(id);
+  getDb().prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function updateUserPassword(id: string, newPassword: string, clearMustChange: boolean = false): void {
+  ensureDb();
+  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  if (clearMustChange) {
+    getDb().prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(passwordHash, id);
+  } else {
+    getDb().prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+  }
+}
+
+export function setMustChangePassword(id: string, mustChange: boolean): void {
+  ensureDb();
+  getDb().prepare('UPDATE users SET must_change_password = ? WHERE id = ?').run(mustChange ? 1 : 0, id);
+}
+
+const RESET_PASSWORD = 'abc123';
+
+export function resetUserPassword(userId: string): void {
+  ensureDb();
+  const passwordHash = bcrypt.hashSync(RESET_PASSWORD, 10);
+  getDb().prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(passwordHash, userId);
+}
+
+export function updateUserAvatar(id: string, avatarPath: string | null): void {
+  ensureDb();
+  getDb().prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatarPath, id);
+}
+
+export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null): void {
+  ensureDb();
+  getDb().prepare('UPDATE users SET skill_level = ? WHERE id = ?').run(skillLevel, id);
+}
+
+export function deleteUser(id: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
+export function incrementLoginCount(userId: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE users SET login_count = login_count + 1 WHERE id = ?').run(userId);
+}
+
+export interface UserWithLoginCount {
+  id: string;
+  username: string;
+  full_name: string | null;
+  nickname: string | null;
+  login_count: number;
+}
+
+export function getUsersWithLoginCounts(): UserWithLoginCount[] {
+  ensureDb();
+  return getDb().prepare(
+    'SELECT id, username, full_name, nickname, COALESCE(login_count, 0) AS login_count FROM users ORDER BY login_count DESC, full_name'
+  ).all() as UserWithLoginCount[];
+}
+
+// ============ TOURNAMENTS ============
+
+export function getTournaments(): Tournament[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM tournaments ORDER BY date DESC').all() as Tournament[];
+}
+
+export function getTournamentById(id: string): Tournament | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM tournaments WHERE id = ?').get(id) as Tournament | undefined;
+}
+
+export function getTournamentsFuture(): Tournament[] {
+  ensureDb();
+  return getDb().prepare("SELECT * FROM tournaments WHERE date >= date('now') ORDER BY date ASC").all() as Tournament[];
+}
+
+export function getTournamentsPast(): Tournament[] {
+  ensureDb();
+  return getDb().prepare("SELECT * FROM tournaments WHERE date < date('now') ORDER BY date DESC").all() as Tournament[];
+}
+
+export function getTournamentsPastFiltered(filters: { year?: string; month?: string; name?: string }): Tournament[] {
+  ensureDb();
+  let sql = "SELECT * FROM tournaments WHERE date < date('now')";
+  const params: string[] = [];
+  if (filters.year) {
+    sql += " AND strftime('%Y', date) = ?";
+    params.push(filters.year);
+  }
+  if (filters.month) {
+    sql += " AND strftime('%m', date) = ?";
+    params.push(filters.month.padStart(2, '0'));
+  }
+  if (filters.name) {
+    sql += " AND name LIKE ?";
+    params.push(`%${filters.name}%`);
+  }
+  sql += " ORDER BY date DESC";
+  return getDb().prepare(sql).all(...params) as Tournament[];
+}
+
+export function getAllPastTournamentDates(): { date: string }[] {
+  ensureDb();
+  return getDb().prepare("SELECT DISTINCT date FROM tournaments WHERE date < date('now') ORDER BY date DESC").all() as { date: string }[];
+}
+
+export function createTournament(data: { name: string; date: string; time?: string; venue?: string; created_by: string }): string {
+  ensureDb();
+  const id = randomUUID();
+  getDb().prepare(
+    `INSERT INTO tournaments (id, name, date, time, venue, created_by)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(id, data.name, data.date, data.time || null, data.venue || null, data.created_by);
+  return id;
+}
+
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status'>>): void {
+  ensureDb();
+  const fields: string[] = [];
+  const values: (string | null)[] = [];
+  if (data.name !== undefined) { fields.push('name = ?'); values.push(data.name); }
+  if (data.date !== undefined) { fields.push('date = ?'); values.push(data.date); }
+  if (data.time !== undefined) { fields.push('time = ?'); values.push(data.time); }
+  if (data.venue !== undefined) { fields.push('venue = ?'); values.push(data.venue); }
+  if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
+  if (fields.length === 0) return;
+  values.push(id);
+  getDb().prepare(`UPDATE tournaments SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function deleteTournament(id: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM tournaments WHERE id = ?').run(id);
+}
+
+// ============ PARTICIPANTS ============
+
+export function getTournamentParticipants(tournamentId: string): TournamentParticipant[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM tournament_participants WHERE tournament_id = ?').all(tournamentId) as TournamentParticipant[];
+}
+
+export function getTournamentParticipantsByTournament(tournamentIds: string[]): TournamentParticipant[] {
+  ensureDb();
+  if (tournamentIds.length === 0) return [];
+  const placeholders = tournamentIds.map(() => '?').join(',');
+  return getDb().prepare(`SELECT * FROM tournament_participants WHERE tournament_id IN (${placeholders})`).all(...tournamentIds) as TournamentParticipant[];
+}
+
+export function getParticipantsForExtraction(tournamentId: string, useConfirmed: boolean): { user_id: string }[] {
+  ensureDb();
+  const col = useConfirmed ? 'confirmed' : 'participating';
+  return getDb().prepare(`SELECT user_id FROM tournament_participants WHERE tournament_id = ? AND ${col} = 1`).all(tournamentId) as { user_id: string }[];
+}
+
+export function upsertParticipant(tournamentId: string, userId: string, confirmed: boolean, participating: boolean): void {
+  ensureDb();
+  getDb().prepare(
+    `INSERT INTO tournament_participants (tournament_id, user_id, confirmed, participating)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(tournament_id, user_id) DO UPDATE SET confirmed = ?, participating = ?`
+  ).run(tournamentId, userId, confirmed ? 1 : 0, participating ? 1 : 0, confirmed ? 1 : 0, participating ? 1 : 0);
+}
+
+export function upsertParticipantConfirmed(tournamentId: string, userId: string, confirmed: boolean): void {
+  ensureDb();
+  getDb().prepare(
+    `INSERT INTO tournament_participants (tournament_id, user_id, confirmed, participating)
+     VALUES (?, ?, ?, 0)
+     ON CONFLICT(tournament_id, user_id) DO UPDATE SET confirmed = ?`
+  ).run(tournamentId, userId, confirmed ? 1 : 0, confirmed ? 1 : 0);
+}
+
+export function setParticipating(tournamentId: string, userId: string, participating: boolean): void {
+  ensureDb();
+  getDb().prepare(
+    `INSERT INTO tournament_participants (tournament_id, user_id, confirmed, participating)
+     VALUES (?, ?, 0, ?)
+     ON CONFLICT(tournament_id, user_id) DO UPDATE SET participating = ?`
+  ).run(tournamentId, userId, participating ? 1 : 0, participating ? 1 : 0);
+}
+
+export function removeParticipant(tournamentId: string, userId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM tournament_participants WHERE tournament_id = ? AND user_id = ?').run(tournamentId, userId);
+}
+
+// ============ PAIRS ============
+
+export function getPairs(tournamentId: string): Pair[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM pairs WHERE tournament_id = ? ORDER BY seed').all(tournamentId) as Pair[];
+}
+
+export function getPairById(id: string): Pair | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM pairs WHERE id = ?').get(id) as Pair | undefined;
+}
+
+export function deletePairs(tournamentId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM pairs WHERE tournament_id = ?').run(tournamentId);
+}
+
+export function insertPairs(tournamentId: string, pairs: { player1_id: string; player2_id: string; seed: number }[]): void {
+  ensureDb();
+  const db = getDb();
+  const stmt = db.prepare(
+    `INSERT INTO pairs (id, tournament_id, player1_id, player2_id, seed) VALUES (?, ?, ?, ?, ?)`
+  );
+  for (const p of pairs) {
+    stmt.run(randomUUID(), tournamentId, p.player1_id, p.player2_id, p.seed);
+  }
+}
+
+export function updatePairPlayers(pairId: string, player1Id: string, player2Id: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE pairs SET player1_id = ?, player2_id = ? WHERE id = ?').run(player1Id, player2Id, pairId);
+}
+
+export function getNextPairSeed(tournamentId: string): number {
+  ensureDb();
+  const result = getDb().prepare('SELECT MAX(seed) as maxSeed FROM pairs WHERE tournament_id = ?').get(tournamentId) as { maxSeed: number | null };
+  return (result.maxSeed || 0) + 1;
+}
+
+export function insertSinglePair(tournamentId: string, player1Id: string, player2Id: string): string {
+  ensureDb();
+  const id = randomUUID();
+  const seed = getNextPairSeed(tournamentId);
+  getDb().prepare(
+    `INSERT INTO pairs (id, tournament_id, player1_id, player2_id, seed) VALUES (?, ?, ?, ?, ?)`
+  ).run(id, tournamentId, player1Id, player2Id, seed);
+  return id;
+}
+
+export function deletePair(pairId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM pairs WHERE id = ?').run(pairId);
+}
+
+// ============ MATCHES ============
+
+export function getMatches(tournamentId: string): Match[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY bracket_type, round, order_in_round').all(tournamentId) as Match[];
+}
+
+export function getMatchById(id: string): Match | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM matches WHERE id = ?').get(id) as Match | undefined;
+}
+
+export function deleteMatches(tournamentId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM matches WHERE tournament_id = ?').run(tournamentId);
+}
+
+export function insertMatches(tournamentId: string, matches: Omit<Match, 'id' | 'tournament_id'>[]): void {
+  ensureDb();
+  const db = getDb();
+  const stmt = db.prepare(
+    `INSERT INTO matches (id, tournament_id, round, bracket_type, pair1_id, pair2_id, score_pair1, score_pair2, winner_pair_id, order_in_round)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  for (const m of matches) {
+    stmt.run(randomUUID(), tournamentId, m.round, m.bracket_type, m.pair1_id, m.pair2_id, m.score_pair1, m.score_pair2, m.winner_pair_id, m.order_in_round);
+  }
+}
+
+export function updateMatchResult(matchId: string, scorePair1: number, scorePair2: number, winnerId: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE matches SET score_pair1 = ?, score_pair2 = ?, winner_pair_id = ? WHERE id = ?').run(scorePair1, scorePair2, winnerId, matchId);
+}
+
+export function updateMatchPairs(matchId: string, pair1Id: string | null, pair2Id: string | null): void {
+  ensureDb();
+  getDb().prepare('UPDATE matches SET pair1_id = ?, pair2_id = ? WHERE id = ?').run(pair1Id, pair2Id, matchId);
+}
+
+export interface MatchHistoryEntry {
+  matchId: string;
+  tournamentId: string;
+  tournamentName: string;
+  date: string;
+  round: string;
+  bracketType: string;
+  opponentPairNames: string;
+  scoreUs: number;
+  scoreThem: number;
+  isWin: boolean;
+}
+
+export function getMatchHistoryForUser(userId: string): MatchHistoryEntry[] {
+  ensureDb();
+  const db = getDb();
+  const userPairs = db.prepare('SELECT id FROM pairs WHERE player1_id = ? OR player2_id = ?').all(userId, userId) as { id: string }[];
+  if (userPairs.length === 0) return [];
+
+  const pairIds = userPairs.map((p) => p.id);
+  const placeholders = pairIds.map(() => '?').join(',');
+
+  const rows = db.prepare(`
+    SELECT m.id as match_id, m.tournament_id, m.round, m.bracket_type, m.pair1_id, m.pair2_id,
+           m.score_pair1, m.score_pair2, m.winner_pair_id, t.name as tournament_name, t.date, m.order_in_round
+    FROM matches m
+    JOIN tournaments t ON t.id = m.tournament_id
+    WHERE (m.pair1_id IN (${placeholders}) OR m.pair2_id IN (${placeholders}))
+      AND m.score_pair1 IS NOT NULL AND m.score_pair2 IS NOT NULL
+    ORDER BY t.date DESC, m.bracket_type, m.round, m.order_in_round
+  `).all(...pairIds, ...pairIds) as Array<{
+    match_id: string;
+    tournament_id: string;
+    round: string;
+    bracket_type: string;
+    pair1_id: string | null;
+    pair2_id: string | null;
+    score_pair1: number;
+    score_pair2: number;
+    winner_pair_id: string | null;
+    tournament_name: string;
+    date: string;
+    order_in_round: number;
+  }>;
+
+  const pairIdsInMatches = new Set<string>();
+  for (const r of rows) {
+    if (r.pair1_id) pairIdsInMatches.add(r.pair1_id);
+    if (r.pair2_id) pairIdsInMatches.add(r.pair2_id);
+  }
+  const pairMap = new Map<string, Pair>();
+  for (const pid of Array.from(pairIdsInMatches)) {
+    const p = getPairById(pid);
+    if (p) pairMap.set(pid, p);
+  }
+  const users = getUsers();
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  function getPairNames(pairId: string | null): string {
+    if (!pairId) return 'TBD';
+    const pair = pairMap.get(pairId);
+    if (!pair) return 'TBD';
+    const p1 = userMap.get(pair.player1_id);
+    const p2 = userMap.get(pair.player2_id);
+    const n1 = p1?.nickname || p1?.full_name || p1?.username || '?';
+    const n2 = p2?.nickname || p2?.full_name || p2?.username || '?';
+    return `${n1} / ${n2}`;
+  }
+
+  const result: MatchHistoryEntry[] = [];
+  for (const r of rows) {
+    const ourPairId = pairIds.includes(r.pair1_id || '') ? r.pair1_id! : r.pair2_id!;
+    const opponentPairId = r.pair1_id === ourPairId ? r.pair2_id : r.pair1_id;
+    const scoreUs = r.pair1_id === ourPairId ? r.score_pair1 : r.score_pair2;
+    const scoreThem = r.pair1_id === ourPairId ? r.score_pair2 : r.score_pair1;
+    const isWin = r.winner_pair_id === ourPairId;
+
+    result.push({
+      matchId: r.match_id,
+      tournamentId: r.tournament_id,
+      tournamentName: r.tournament_name,
+      date: r.date,
+      round: r.round,
+      bracketType: r.bracket_type,
+      opponentPairNames: getPairNames(opponentPairId),
+      scoreUs,
+      scoreThem,
+      isWin,
+    });
+  }
+  return result;
+}
+
+export interface PlayerStats {
+  matchesWon: number;
+  matchesLost: number;
+  matchesTotal: number;
+  winRate: number;
+  gamesWon: number;
+  gamesLost: number;
+  gamesTotal: number;
+  gamesWinRate: number;
+  currentWinStreak: number;
+  bestWinStreak: number;
+  favoritePartner: { id: string; name: string; matchesTogether: number } | null;
+}
+
+export function getPlayerStats(userId: string): PlayerStats {
+  ensureDb();
+  const matchHistory = getMatchHistoryForUser(userId);
+
+  const matchesWon = matchHistory.filter((m) => m.isWin).length;
+  const matchesLost = matchHistory.filter((m) => !m.isWin).length;
+  const matchesTotal = matchHistory.length;
+  const winRate = matchesTotal > 0 ? Math.round((matchesWon / matchesTotal) * 100) : 0;
+
+  const gamesWon = matchHistory.reduce((sum, m) => sum + m.scoreUs, 0);
+  const gamesLost = matchHistory.reduce((sum, m) => sum + m.scoreThem, 0);
+  const gamesTotal = gamesWon + gamesLost;
+  const gamesWinRate = gamesTotal > 0 ? Math.round((gamesWon / gamesTotal) * 100) : 0;
+
+  let currentWinStreak = 0;
+  for (let i = 0; i < matchHistory.length && matchHistory[i].isWin; i++) currentWinStreak++;
+
+  let bestWinStreak = 0;
+  let run = 0;
+  for (const m of matchHistory) {
+    if (m.isWin) {
+      run++;
+      bestWinStreak = Math.max(bestWinStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+
+  let favoritePartner: PlayerStats['favoritePartner'] = null;
+  const userPairs = getDb().prepare('SELECT id, player1_id, player2_id FROM pairs WHERE player1_id = ? OR player2_id = ?').all(userId, userId) as Array<{ id: string; player1_id: string; player2_id: string }>;
+  const partnerCounts = new Map<string, number>();
+  for (const p of userPairs) {
+    const partnerId = p.player1_id === userId ? p.player2_id : p.player1_id;
+    const count = getDb().prepare('SELECT COUNT(*) as c FROM matches WHERE (pair1_id = ? OR pair2_id = ?) AND score_pair1 IS NOT NULL AND score_pair2 IS NOT NULL').get(p.id, p.id) as { c: number };
+    partnerCounts.set(partnerId, (partnerCounts.get(partnerId) ?? 0) + count.c);
+  }
+  if (partnerCounts.size > 0) {
+    let maxPartnerId: string | null = null;
+    let maxCount = 0;
+    for (const [pid, c] of Array.from(partnerCounts.entries())) {
+      if (c > maxCount) {
+        maxCount = c;
+        maxPartnerId = pid;
+      }
+    }
+    if (maxPartnerId) {
+      const partnerUser = getUserById(maxPartnerId);
+      if (partnerUser) {
+        favoritePartner = {
+          id: maxPartnerId,
+          name: partnerUser.nickname || partnerUser.full_name || partnerUser.username || '?',
+          matchesTogether: maxCount,
+        };
+      }
+    }
+  }
+
+  return {
+    matchesWon,
+    matchesLost,
+    matchesTotal,
+    winRate,
+    gamesWon,
+    gamesLost,
+    gamesTotal,
+    gamesWinRate,
+    currentWinStreak,
+    bestWinStreak,
+    favoritePartner,
+  };
+}
+
+// ============ RANKINGS ============
+
+export function getTournamentRankings(tournamentId: string): TournamentRanking[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM tournament_rankings WHERE tournament_id = ? ORDER BY position').all(tournamentId) as TournamentRanking[];
+}
+
+export function deleteTournamentRankings(tournamentId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM tournament_rankings WHERE tournament_id = ?').run(tournamentId);
+}
+
+export function insertTournamentRanking(data: TournamentRanking): void {
+  ensureDb();
+  getDb().prepare(
+    `INSERT INTO tournament_rankings (tournament_id, pair_id, position, points, is_override)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(tournament_id, pair_id) DO UPDATE SET position = ?, points = ?, is_override = ?`
+  ).run(data.tournament_id, data.pair_id, data.position, data.points, data.is_override, data.position, data.points, data.is_override);
+}
+
+export function getCumulativeRankings(): CumulativeRanking[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM cumulative_rankings ORDER BY total_points DESC').all() as CumulativeRanking[];
+}
+
+export function getCumulativeByUserIds(userIds: string[]): CumulativeRanking[] {
+  ensureDb();
+  if (userIds.length === 0) return [];
+  const placeholders = userIds.map(() => '?').join(',');
+  return getDb().prepare(`SELECT * FROM cumulative_rankings WHERE user_id IN (${placeholders})`).all(...userIds) as CumulativeRanking[];
+}
+
+export function upsertCumulativeRanking(userId: string, totalPoints: number, isOverride: boolean): void {
+  ensureDb();
+  getDb().prepare(
+    `INSERT INTO cumulative_rankings (user_id, total_points, is_override, gold_medals, silver_medals, bronze_medals, wooden_spoons)
+     VALUES (?, ?, ?, 0, 0, 0, 0)
+     ON CONFLICT(user_id) DO UPDATE SET total_points = ?, is_override = ?`
+  ).run(userId, totalPoints, isOverride ? 1 : 0, totalPoints, isOverride ? 1 : 0);
+}
+
+export function recalculateCumulativeRankings(): void {
+  ensureDb();
+  const db = getDb();
+  
+  // Prende tutti i punti dei giocatori dai ranking dei tornei
+  const points = db.prepare(`
+    SELECT u.id as user_id, COALESCE(SUM(tr.points), 0) as total
+    FROM users u
+    LEFT JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
+    LEFT JOIN tournament_rankings tr ON tr.pair_id = p.id
+    GROUP BY u.id
+  `).all() as { user_id: string; total: number }[];
+
+  // Calcola medaglie per ogni giocatore
+  // Gold: posizione 1
+  const goldMedals = db.prepare(`
+    SELECT u.id as user_id, COUNT(*) as count
+    FROM users u
+    JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
+    JOIN tournament_rankings tr ON tr.pair_id = p.id
+    WHERE tr.position = 1
+    GROUP BY u.id
+  `).all() as { user_id: string; count: number }[];
+
+  // Silver: posizione 2
+  const silverMedals = db.prepare(`
+    SELECT u.id as user_id, COUNT(*) as count
+    FROM users u
+    JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
+    JOIN tournament_rankings tr ON tr.pair_id = p.id
+    WHERE tr.position = 2
+    GROUP BY u.id
+  `).all() as { user_id: string; count: number }[];
+
+  // Bronze: posizione 3
+  const bronzeMedals = db.prepare(`
+    SELECT u.id as user_id, COUNT(*) as count
+    FROM users u
+    JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
+    JOIN tournament_rankings tr ON tr.pair_id = p.id
+    WHERE tr.position = 3
+    GROUP BY u.id
+  `).all() as { user_id: string; count: number }[];
+
+  // Wooden spoon: posizione 8
+  const woodenSpoons = db.prepare(`
+    SELECT u.id as user_id, COUNT(*) as count
+    FROM users u
+    JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
+    JOIN tournament_rankings tr ON tr.pair_id = p.id
+    WHERE tr.position = 8
+    GROUP BY u.id
+  `).all() as { user_id: string; count: number }[];
+
+  // Crea mappe per accesso rapido
+  const goldMap = new Map(goldMedals.map(m => [m.user_id, m.count]));
+  const silverMap = new Map(silverMedals.map(m => [m.user_id, m.count]));
+  const bronzeMap = new Map(bronzeMedals.map(m => [m.user_id, m.count]));
+  const spoonMap = new Map(woodenSpoons.map(m => [m.user_id, m.count]));
+
+  // Aggiorna tutti i record (solo quelli non in override per i punti)
+  const stmt = db.prepare(
+    `INSERT INTO cumulative_rankings (user_id, total_points, is_override, gold_medals, silver_medals, bronze_medals, wooden_spoons)
+     VALUES (?, ?, 0, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET 
+       total_points = CASE WHEN is_override = 0 THEN ? ELSE total_points END,
+       gold_medals = ?,
+       silver_medals = ?,
+       bronze_medals = ?,
+       wooden_spoons = ?`
+  );
+  
+  for (const p of points) {
+    const gold = goldMap.get(p.user_id) || 0;
+    const silver = silverMap.get(p.user_id) || 0;
+    const bronze = bronzeMap.get(p.user_id) || 0;
+    const spoon = spoonMap.get(p.user_id) || 0;
+    stmt.run(p.user_id, p.total, gold, silver, bronze, spoon, p.total, gold, silver, bronze, spoon);
+  }
+}
