@@ -10,29 +10,14 @@ export function StrumentiTab() {
 
   async function handleFullBackup() {
     setDownloadingFull(true);
-    // #region agent log
-    fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:handleFullBackup',message:'entry',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     try {
       const res = await fetch('/api/settings/backup/full');
-      // #region agent log
-      fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:afterFetch',message:'response',data:{ok:res.ok,status:res.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        // #region agent log
-        fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:!res.ok',message:'error response',data:{status:res.status,error:data?.error},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
         alert(data.error || 'Errore durante il download del backup completo');
         return;
       }
-      // #region agent log
-      fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:beforeBlob',message:'calling res.blob()',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       const blob = await res.blob();
-      // #region agent log
-      fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:afterBlob',message:'blob received',data:{size:blob.size,type:blob.type},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       const disposition = res.headers.get('Content-Disposition');
       const match = disposition?.match(/filename="(.+)"/);
       const filename = match?.[1] || `padel-full-backup-${new Date().toISOString().slice(0, 10)}.zip`;
@@ -40,15 +25,9 @@ export function StrumentiTab() {
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
-      // #region agent log
-      fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:beforeClick',message:'triggering download',data:{filename},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
       a.click();
       URL.revokeObjectURL(url);
-    } catch (e) {
-      // #region agent log
-      fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StrumentiTab.tsx:catch',message:'exception',data:{err:String(e)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
+    } catch {
       alert('Errore di connessione');
     } finally {
       setDownloadingFull(false);

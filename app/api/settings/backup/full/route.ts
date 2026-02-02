@@ -8,20 +8,12 @@ import { PassThrough } from 'stream';
 import { Readable } from 'stream';
 import archiver from 'archiver';
 
-const LOG_ENDPOINT = 'http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205';
-function log(location: string, message: string, data: Record<string, unknown>, hypothesisId: string) {
-  fetch(LOG_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location, message, data, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId }) }).catch(() => {});
-}
-
 function canManageSettings(_username: string, role: string): boolean {
   return role === 'admin';
 }
 
 export async function GET() {
   const user = await getCurrentUser();
-  // #region agent log
-  log('backup/full/route.ts:afterAuth', 'auth', { hasUser: !!user, role: user?.role }, 'H1');
-  // #endregion
   if (!user) {
     return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
   }
@@ -39,13 +31,7 @@ export async function GET() {
   try {
     const db = getDb();
     await (db as unknown as { backup: (p: string) => Promise<void> }).backup(tempDbPath);
-    // #region agent log
-    log('backup/full/route.ts:afterBackup', 'db backup ok', { tempDbPath }, 'H2');
-    // #endregion
   } catch (error) {
-    // #region agent log
-    log('backup/full/route.ts:backupError', 'db backup failed', { err: String(error) }, 'H2');
-    // #endregion
     console.error('Backup DB error:', error);
     return NextResponse.json({ error: 'Errore durante il backup del database' }, { status: 500 });
   }
@@ -75,15 +61,10 @@ export async function GET() {
   if (fs.existsSync(avatarsDir)) {
     archive.directory(avatarsDir, 'avatars');
   }
-  await archive.finalize();
-  // #region agent log
-  log('backup/full/route.ts:afterFinalize', 'archive finalized', {}, 'H3');
-  // #endregion
-
+  // Do NOT await finalize(): the client must read the response body for the stream to flow.
+  // Awaiting here would deadlock (archiver blocks until someone reads from pass).
+  archive.finalize();
   const webStream = Readable.toWeb(pass) as ReadableStream;
-  // #region agent log
-  log('backup/full/route.ts:return', 'sending stream response', {}, 'H3');
-  // #endregion
   return new NextResponse(webStream, {
     headers: {
       'Content-Type': 'application/zip',
