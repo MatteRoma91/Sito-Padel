@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory } from '../types';
 import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA } from '../types';
+import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
 let initialized = false;
 
@@ -56,7 +57,7 @@ export function createUser(data: { username: string; password?: string; full_nam
   return id;
 }
 
-export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'nickname' | 'role' | 'skill_level' | 'overall_score' | 'bio' | 'preferred_side' | 'preferred_hand' | 'birth_date'>>): void {
+export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'nickname' | 'role' | 'skill_level' | 'overall_score' | 'bio' | 'preferred_side' | 'preferred_hand' | 'birth_date' | 'is_hidden'>>): void {
   ensureDb();
   const fields: string[] = [];
   const values: (string | number | null)[] = [];
@@ -77,6 +78,7 @@ export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'n
   if (data.preferred_side !== undefined) { fields.push('preferred_side = ?'); values.push(data.preferred_side); }
   if (data.preferred_hand !== undefined) { fields.push('preferred_hand = ?'); values.push(data.preferred_hand); }
   if (data.birth_date !== undefined) { fields.push('birth_date = ?'); values.push(data.birth_date); }
+  if (data.is_hidden !== undefined) { fields.push('is_hidden = ?'); values.push(data.is_hidden ? 1 : 0); }
   if (fields.length === 0) return;
   values.push(id);
   getDb().prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
@@ -239,6 +241,32 @@ export function getUsersWithLoginCounts(): UserWithLoginCount[] {
   return getDb().prepare(
     'SELECT id, username, full_name, nickname, COALESCE(login_count, 0) AS login_count FROM users ORDER BY login_count DESC, full_name'
   ).all() as UserWithLoginCount[];
+}
+
+// ============ SITE CONFIG ============
+
+export function getSiteConfig(): Record<string, string> {
+  ensureDb();
+  const rows = getDb().prepare('SELECT key, value FROM site_config').all() as { key: string; value: string }[];
+  const result: Record<string, string> = {};
+  for (const r of rows) result[r.key] = r.value;
+  for (const [k, v] of Object.entries(DEFAULT_SITE_CONFIG)) {
+    if (!(k in result)) result[k] = v;
+  }
+  return result;
+}
+
+export function setSiteConfig(key: string, value: string): void {
+  ensureDb();
+  getDb().prepare('INSERT OR REPLACE INTO site_config (key, value) VALUES (?, ?)').run(key, value);
+}
+
+export function seedSiteConfig(): void {
+  ensureDb();
+  const stmt = getDb().prepare('INSERT OR REPLACE INTO site_config (key, value) VALUES (?, ?)');
+  for (const [key, value] of Object.entries(DEFAULT_SITE_CONFIG)) {
+    stmt.run(key, value);
+  }
 }
 
 // ============ TOURNAMENTS ============

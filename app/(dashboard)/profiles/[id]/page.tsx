@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats, getOverallScoreHistory, getPointsHistory } from '@/lib/db/queries';
+import { isUserVisible } from '@/lib/visibility';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
 import { ArrowLeft, Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
@@ -19,14 +20,20 @@ export default async function ProfileDetailPage({
 }) {
   const { id } = await params;
   const user = getUserById(id);
+  const currentUser = await getCurrentUser();
   
   if (!user) {
     notFound();
   }
 
-  const currentUser = await getCurrentUser();
-  const isAdmin = currentUser?.role === 'admin';
+  // If user is hidden and viewer doesn't have permission to see hidden users, return 404
+  // (but always allow viewing own profile)
   const isOwnProfile = currentUser?.id === user.id;
+  if (!isOwnProfile && !isUserVisible(user, currentUser)) {
+    notFound();
+  }
+
+  const isAdmin = currentUser?.role === 'admin';
 
   // Get user stats
   const rankings = getCumulativeRankings();
@@ -48,7 +55,7 @@ export default async function ProfileDetailPage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Link href="/profiles" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-[#B2FF00] dark:hover:text-[#c4ff33] transition">
+      <Link href="/profiles" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai giocatori
       </Link>
@@ -78,7 +85,7 @@ export default async function ProfileDetailPage({
               );
             })()}
             {user.role === 'admin' && (
-              <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-[#6270F3]">
+              <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300">
                 Admin
               </span>
             )}
@@ -93,23 +100,23 @@ export default async function ProfileDetailPage({
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-6 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50">
           <div className="text-center">
-            <p className="text-2xl font-bold text-[#B2FF00]">{userRanking?.total_points || 0}</p>
+            <p className="text-2xl font-bold text-accent-500">{userRanking?.total_points || 0}</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Punti Totali</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-[#B2FF00]">
+            <p className="text-2xl font-bold text-accent-500">
               {userPosition > 0 ? `#${userPosition}` : '-'}
             </p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Classifica</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-[#B2FF00]">{participatedTournaments.length}</p>
+            <p className="text-2xl font-bold text-accent-500">{participatedTournaments.length}</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Tornei</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-[#B2FF00]">{user.overall_score ?? '-'}</p>
+            <p className="text-2xl font-bold text-accent-500">{user.overall_score ?? '-'}</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Punteggio overall</p>
           </div>
           <div className="text-center">
@@ -124,14 +131,14 @@ export default async function ProfileDetailPage({
 
         {/* Statistiche di gioco - solo se ha partite */}
         {matchHistory.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
+          <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-[#B2FF00]" />
+              <BarChart3 className="w-5 h-5 text-accent-500" />
               Statistiche di gioco
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
-                <p className="text-xl font-bold text-[#B2FF00]">{playerStats.gamesWon}</p>
+                <p className="text-xl font-bold text-accent-500">{playerStats.gamesWon}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
@@ -139,11 +146,11 @@ export default async function ProfileDetailPage({
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
-                <p className="text-xl font-bold text-[#B2FF00]">{playerStats.winRate}%</p>
+                <p className="text-xl font-bold text-accent-500">{playerStats.winRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
-                <p className="text-xl font-bold text-[#B2FF00]">{playerStats.gamesWinRate}%</p>
+                <p className="text-xl font-bold text-accent-500">{playerStats.gamesWinRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
               </div>
             </div>
@@ -162,7 +169,7 @@ export default async function ProfileDetailPage({
                 <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                   <Users className="w-4 h-4" />
                   <span className="font-medium text-slate-800 dark:text-slate-200">Coppia preferita:</span>
-                  <Link href={`/profiles/${playerStats.favoritePartner.id}`} className="text-[#B2FF00] hover:underline">
+                  <Link href={`/profiles/${playerStats.favoritePartner.id}`} className="text-accent-500 hover:underline">
                     {playerStats.favoritePartner.name}
                   </Link>
                   <span>({playerStats.favoritePartner.matchesTogether} partite)</span>
@@ -174,7 +181,7 @@ export default async function ProfileDetailPage({
 
         {/* Medals section */}
         {userRanking && (userRanking.gold_medals > 0 || userRanking.silver_medals > 0 || userRanking.bronze_medals > 0 || userRanking.wooden_spoons > 0) && (
-          <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
+          <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-primary-100 dark:border-primary-300/50">
             {userRanking.gold_medals > 0 && (
               <div className="flex items-center gap-1" title="Medaglie d'Oro">
                 <span className="text-2xl">🥇</span>
@@ -204,7 +211,7 @@ export default async function ProfileDetailPage({
 
         {/* Player preferences */}
         {(user.preferred_side || user.preferred_hand) && (
-          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-primary-100 dark:border-primary-300/50">
             {user.preferred_side && (
               <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <LayoutGrid className="w-4 h-4" />
@@ -240,13 +247,13 @@ export default async function ProfileDetailPage({
 
       {/* Tournaments */}
       <div className="card">
-        <div className="p-4 border-b border-[#9AB0F8] dark:border-[#6270F3]/50">
+        <div className="p-4 border-b border-primary-100 dark:border-primary-300/50">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#B2FF00]" />
+            <Calendar className="w-5 h-5 text-accent-500" />
             Tornei Partecipati
           </h2>
         </div>
-        <div className="divide-y divide-[#e5ff99] dark:divide-[#6270F3]/50">
+        <div className="divide-y divide-accent-100 dark:divide-primary-300/50">
           {participatedTournaments.length === 0 ? (
             <p className="p-4 text-slate-700 dark:text-slate-300 text-sm">
               Nessun torneo partecipato
@@ -273,9 +280,9 @@ export default async function ProfileDetailPage({
 
       {/* Match history */}
       <div className="card">
-        <div className="p-4 border-b border-[#9AB0F8] dark:border-[#6270F3]/50">
+        <div className="p-4 border-b border-primary-100 dark:border-primary-300/50">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <Swords className="w-5 h-5 text-[#B2FF00]" />
+            <Swords className="w-5 h-5 text-accent-500" />
             Storico Partite
           </h2>
         </div>

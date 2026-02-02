@@ -10,7 +10,6 @@ Sito privato per la gestione di tornei di padel.
 - **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
 - **Tabellone**: Quarti, semifinali, finale + tabellone consolazione
 - **Classifiche**: Classifica torneo e classifica cumulativa
-- **Archivio**: Storico tornei con filtri
 - **Calendario**: Vista calendario tornei
 - **Export PDF**: Esportazione tabellone e classifica
 
@@ -83,8 +82,7 @@ Al primo avvio viene creato l'utente admin:
 │   │   ├── profiles/       # Profili giocatori
 │   │   ├── pairs/          # Estrazione coppie
 │   │   ├── calendar/       # Calendario
-│   │   ├── rankings/       # Classifiche
-│   │   └── archive/        # Archivio
+│   │   └── rankings/       # Classifiche
 │   └── api/                # API routes
 ├── components/             # Componenti React
 ├── lib/
@@ -96,6 +94,19 @@ Al primo avvio viene creato l'utente admin:
 ├── data/                   # Database SQLite (generato)
 └── scripts/                # Script deploy
 ```
+
+## Backup e ripristino
+
+- **Backup completo** (database + avatar): da Impostazioni → Strumenti, usa **Scarica backup completo**. Si scarica un file ZIP (`padel-full-backup-YYYY-MM-DD.zip`) da conservare fuori dal server (PC, cloud).
+- **Backup solo database**: stesso menu, **Scarica backup** per un singolo file `.db` (utile per backup rapidi).
+
+**Ripristino su un nuovo server** (dopo crash o migrazione):
+
+1. Clona il repo e installa: `npm install`, configura `.env` (e `DATABASE_PATH` se diverso da `data/padel.db`).
+2. Copia il file `padel-full-backup-*.zip` sul server.
+3. Ferma l’app: `pm2 stop padel-tour` (se usi PM2).
+4. Esegui: `node scripts/restore-backup.mjs /path/to/padel-full-backup-*.zip`.
+5. Riavvia l’app: `pm2 start padel-tour`.
 
 ## Comandi Utili
 

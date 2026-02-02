@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
 export function initSchema() {
   const db = getDb();
@@ -160,5 +161,24 @@ export function initSchema() {
     db.exec(`ALTER TABLE users ADD COLUMN overall_score INTEGER`);
   } catch {
     // Column already exists
+  }
+
+  // is_hidden flag per nascondere giocatori dalla vista
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // Column already exists
+  }
+
+  // Tabella site_config per pannello impostazioni
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+  const insertStmt = db.prepare('INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)');
+  for (const [key, value] of Object.entries(DEFAULT_SITE_CONFIG)) {
+    insertStmt.run(key, value);
   }
 }

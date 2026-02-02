@@ -42,7 +42,7 @@ export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: C
     return (
       <div className="card p-6">
         <div className="flex items-center gap-3 text-slate-600">
-          <Clock className="w-6 h-6 text-[#B2FF00]" />
+          <Clock className="w-6 h-6 text-accent-500" />
           <p className="font-medium">Il Broccoburgher è arrivato! Buon divertimento!</p>
         </div>
       </div>
@@ -51,9 +51,9 @@ export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: C
 
   return (
     <Link href={`/tournaments/${tournamentId}`} className="block">
-      <div className="card p-6 hover:border-[#B2FF00] hover:shadow-lg transition-all">
+      <div className="card p-6 hover:border-accent-500 hover:shadow-lg transition-all">
         <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-6 h-6 text-[#B2FF00]" />
+          <Clock className="w-6 h-6 text-accent-500" />
           <h2 className="font-bold text-slate-800 text-lg">Countdown al prossimo Broccoburgher</h2>
         </div>
         <p className="font-semibold text-slate-800 mb-1">{tournamentName}</p>
@@ -63,19 +63,19 @@ export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: C
         </p>
         <div className="flex gap-4">
           <div className="flex flex-col items-center min-w-[4rem]">
-            <span className="text-2xl font-bold text-[#B2FF00]">{timeLeft.days}</span>
+            <span className="text-2xl font-bold text-accent-500">{timeLeft.days}</span>
             <span className="text-xs text-slate-600">giorni</span>
           </div>
           <div className="flex flex-col items-center min-w-[4rem]">
-            <span className="text-2xl font-bold text-[#B2FF00]">{String(timeLeft.hours).padStart(2, '0')}</span>
+            <span className="text-2xl font-bold text-accent-500">{String(timeLeft.hours).padStart(2, '0')}</span>
             <span className="text-xs text-slate-600">ore</span>
           </div>
           <div className="flex flex-col items-center min-w-[4rem]">
-            <span className="text-2xl font-bold text-[#B2FF00]">{String(timeLeft.minutes).padStart(2, '0')}</span>
+            <span className="text-2xl font-bold text-accent-500">{String(timeLeft.minutes).padStart(2, '0')}</span>
             <span className="text-xs text-slate-600">min</span>
           </div>
           <div className="flex flex-col items-center min-w-[4rem]">
-            <span className="text-2xl font-bold text-[#B2FF00]">{String(timeLeft.seconds).padStart(2, '0')}</span>
+            <span className="text-2xl font-bold text-accent-500">{String(timeLeft.seconds).padStart(2, '0')}</span>
             <span className="text-xs text-slate-600">sec</span>
           </div>
         </div>

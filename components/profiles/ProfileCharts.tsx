@@ -46,7 +46,7 @@ export function ProfileCharts({ overallHistory, pointsHistory }: ProfileChartsPr
   }));
 
   return (
-    <div className="mt-6 pt-6 border-t border-[#9AB0F8] dark:border-[#6270F3]/50 space-y-6">
+    <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 space-y-6">
       <h3 className="font-semibold text-slate-800 dark:text-slate-100">
         Andamento nel tempo
       </h3>
@@ -87,9 +87,9 @@ export function ProfileCharts({ overallHistory, pointsHistory }: ProfileChartsPr
                   type="monotone"
                   dataKey="overall_score"
                   name="Overall"
-                  stroke="#B2FF00"
+                  stroke="var(--accent-500, #B2FF00)"
                   strokeWidth={2}
-                  dot={{ fill: '#B2FF00', r: 4 }}
+                  dot={{ fill: 'var(--accent-500, #B2FF00)', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -134,9 +134,9 @@ export function ProfileCharts({ overallHistory, pointsHistory }: ProfileChartsPr
                   type="monotone"
                   dataKey="cumulative_points"
                   name="Punti ATP"
-                  stroke="#6270F3"
+                  stroke="var(--primary-300, #6270F3)"
                   strokeWidth={2}
-                  dot={{ fill: '#6270F3', r: 4 }}
+                  dot={{ fill: 'var(--primary-300, #6270F3)', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

@@ -212,7 +212,7 @@ export function PairsManager({
 
       {/* Manual pair form */}
       {showManualForm && (
-        <div className="p-4 bg-primary-50 border-b border-[#9AB0F8]">
+        <div className="p-4 bg-primary-50 border-b border-primary-100">
           <p className="font-medium text-slate-800 dark:text-slate-100 mb-3">
             Aggiungi Coppia Manuale
           </p>
@@ -307,7 +307,7 @@ export function PairsManager({
             return (
               <div key={pair.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-[#6270F3] text-sm font-medium">
+                  <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300 text-sm font-medium">
                     Coppia {pair.seed}
                   </span>
                   <div className="flex items-center gap-2">

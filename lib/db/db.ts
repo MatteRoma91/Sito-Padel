@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'padel.db');
+export const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'padel.db');
 
 // Crea la directory se non esiste
 const dir = path.dirname(dbPath);

@@ -49,7 +49,10 @@ export async function PATCH(
 
   try {
     const data = await request.json();
-    const { full_name, nickname, role, skill_level, overall_score, bio, preferred_side, preferred_hand, birth_date, new_password } = data;
+    const { full_name, nickname, role, skill_level, overall_score, bio, preferred_side, preferred_hand, birth_date, is_hidden, new_password } = data;
+
+    // Can manage hidden flag (admin only)
+    const canManageHidden = isAdmin;
 
     // Update profile info
     const updates: { 
@@ -62,6 +65,7 @@ export async function PATCH(
       preferred_side?: FieldSide | null;
       preferred_hand?: Hand | null;
       birth_date?: string | null;
+      is_hidden?: number;
     } = {};
     
     if (full_name !== undefined) updates.full_name = full_name;
@@ -85,6 +89,11 @@ export async function PATCH(
     }
     if (birth_date !== undefined && (isOwnProfile || isAdmin)) {
       updates.birth_date = birth_date === '' || birth_date == null ? null : (birth_date as string);
+    }
+    
+    // is_hidden can only be set by admin or Gazzella
+    if (is_hidden !== undefined && canManageHidden) {
+      updates.is_hidden = is_hidden ? 1 : 0;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -113,8 +122,9 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
   }
 
-  if (currentUser.role !== 'admin') {
-    return NextResponse.json({ success: false, error: 'Solo gli admin possono eliminare utenti' }, { status: 403 });
+  const canDelete = currentUser.role === 'admin';
+  if (!canDelete) {
+    return NextResponse.json({ success: false, error: 'Non autorizzato a eliminare utenti' }, { status: 403 });
   }
 
   // Prevent deleting self

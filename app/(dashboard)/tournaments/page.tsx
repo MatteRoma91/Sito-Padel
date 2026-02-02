@@ -13,7 +13,7 @@ export default async function TournamentsPage() {
   const statusLabels: Record<string, { label: string; color: string }> = {
     draft: { label: 'Bozza', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
     open: { label: 'Iscrizioni aperte', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    in_progress: { label: 'In corso', color: 'bg-[#c5d4fc] text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-[#6270F3]' },
+    in_progress: { label: 'In corso', color: 'bg-[#c5d4fc] text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-primary-300' },
     completed: { label: 'Completato', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
   };
 
@@ -38,7 +38,7 @@ export default async function TournamentsPage() {
             <Link
               key={tournament.id}
               href={`/tournaments/${tournament.id}`}
-              className="card p-4 block hover:border-[#B2FF00] transition"
+              className="card p-4 block hover:border-accent-500 transition"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -81,7 +81,7 @@ export default async function TournamentsPage() {
                   </div>
                 </div>
                 
-                <Trophy className={`w-8 h-8 ${isPast ? 'text-slate-600 dark:text-slate-500' : 'text-[#B2FF00]'}`} />
+                <Trophy className={`w-8 h-8 ${isPast ? 'text-slate-600 dark:text-slate-500' : 'text-accent-500'}`} />
               </div>
             </Link>
           );

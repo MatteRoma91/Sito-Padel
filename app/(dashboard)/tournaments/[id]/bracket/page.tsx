@@ -8,6 +8,7 @@ import {
   getMatches,
   getTournamentRankings
 } from '@/lib/db/queries';
+import { canSeeHiddenUsers } from '@/lib/visibility';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
 import { BracketView } from '@/components/bracket/BracketView';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
@@ -31,6 +32,7 @@ export default async function TournamentBracketPage({
 
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const allUsers = getUsers();
   const pairs = getPairs(tournament.id);
@@ -44,13 +46,26 @@ export default async function TournamentBracketPage({
 
   // Build user map
   const userMap = new Map(allUsers.map(u => [u.id, u]));
+  
+  // Identify hidden user IDs for display filtering
+  const hiddenUserIds = canSeeHidden 
+    ? [] 
+    : allUsers.filter(u => u.is_hidden).map(u => u.id);
+  
+  // Filter rankings for display
+  const visibleRankings = rankings.filter(r => {
+    if (canSeeHidden) return true;
+    const pair = pairs.find(p => p.id === r.pair_id);
+    if (!pair) return false;
+    return !hiddenUserIds.includes(pair.player1_id) && !hiddenUserIds.includes(pair.player2_id);
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <Link 
           href={`/tournaments/${tournament.id}`} 
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-[#B2FF00] dark:hover:text-[#c4ff33] transition"
+          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Torna al torneo
@@ -70,7 +85,7 @@ export default async function TournamentBracketPage({
       {/* Header */}
       <div className="card p-6">
         <div className="flex items-center gap-3 mb-2">
-          <Grid3X3 className="w-6 h-6 text-[#B2FF00]" />
+          <Grid3X3 className="w-6 h-6 text-accent-500" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
             Tabellone
           </h1>
@@ -104,13 +119,14 @@ export default async function TournamentBracketPage({
           userMap={userMap}
           isAdmin={isAdmin ?? false}
           tournamentStatus={tournament.status}
+          hiddenUserIds={hiddenUserIds}
         />
       )}
 
       {/* Rankings */}
-      {rankings.length > 0 && (
+      {visibleRankings.length > 0 && (
         <TournamentRankingView
-          rankings={rankings}
+          rankings={visibleRankings}
           pairs={pairs}
           userMap={userMap}
         />

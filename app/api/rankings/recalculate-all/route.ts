@@ -34,6 +34,9 @@ export async function POST() {
       .sort((a, b) => a.date.localeCompare(b.date));
     let recalculated = 0;
 
+    // Seed PRIMA: stabilisce baseline 1 gen 2025 (es. David 90), poi tornei aggiungono delta → DB = seed + tornei
+    seedOverallScores();
+
     for (const tournament of completed) {
       const pairs = getPairs(tournament.id);
       const matches = getMatches(tournament.id);
@@ -52,7 +55,6 @@ export async function POST() {
     }
 
     recalculateCumulativeRankings();
-    seedOverallScores();
 
     return NextResponse.json({
       success: true,

@@ -13,7 +13,7 @@ export default async function NewTournamentPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-[#B2FF00] dark:hover:text-[#c4ff33] transition">
+      <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai tornei
       </Link>

@@ -43,7 +43,7 @@ export function PairsExtractor({ tournamentId, hasExistingPairs }: PairsExtracto
     return (
       <div className="card p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[#B2FF00]">
+          <div className="flex items-center gap-2 text-accent-500">
             <AlertTriangle className="w-5 h-5" />
             <span className="font-medium">Coppie già estratte</span>
           </div>
@@ -62,7 +62,7 @@ export function PairsExtractor({ tournamentId, hasExistingPairs }: PairsExtracto
     return (
       <div className="card p-4 border-[#e5ff99] bg-accent-50">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-[#B2FF00] shrink-0 mt-0.5" />
+          <AlertTriangle className="w-6 h-6 text-accent-500 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-medium text-[#629900]">
               Conferma rigenerazione coppie

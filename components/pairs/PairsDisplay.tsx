@@ -45,14 +45,14 @@ export function PairsDisplay({ pairs, userMap, rankingMap }: PairsDisplayProps) 
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#B2FF00] flex items-center justify-center text-slate-900 font-medium">
+                  <div className="w-10 h-10 rounded-full bg-accent-500 flex items-center justify-center text-slate-900 font-medium">
                     {(player2?.nickname || player2?.full_name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <p className="font-medium text-slate-800 dark:text-slate-100">
                       {player2?.nickname || player2?.full_name || player2?.username}
                     </p>
-                    <p className="text-sm text-[#B2FF00]">{points2} pt</p>
+                    <p className="text-sm text-accent-500">{points2} pt</p>
                   </div>
                 </div>
               </div>

@@ -90,6 +90,7 @@ export interface User {
   preferred_side: FieldSide | null;
   preferred_hand: Hand | null;
   birth_date: string | null;
+  is_hidden: number;
   created_at: string;
 }
 

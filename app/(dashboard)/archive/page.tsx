@@ -46,7 +46,7 @@ export default async function ArchivePage({
             <Link
               key={t.id}
               href={`/tournaments/${t.id}`}
-              className="card p-4 block hover:border-[#B2FF00] transition"
+              className="card p-4 block hover:border-accent-500 transition"
             >
               <div className="flex items-center justify-between">
                 <div>

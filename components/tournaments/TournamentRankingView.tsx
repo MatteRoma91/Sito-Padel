@@ -15,7 +15,7 @@ export function TournamentRankingView({ rankings, pairs, userMap }: TournamentRa
   const getMedal = (position: number) => {
     if (position === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
     if (position === 2) return <Medal className="w-5 h-5 text-slate-600" />;
-    if (position === 3) return <Award className="w-5 h-5 text-[#B2FF00]" />;
+    if (position === 3) return <Award className="w-5 h-5 text-accent-500" />;
     return null;
   };
 
@@ -30,7 +30,7 @@ export function TournamentRankingView({ rankings, pairs, userMap }: TournamentRa
     <div className="card">
       <div className="p-4 border-b border-slate-200 dark:border-slate-700">
         <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-[#B2FF00]" />
+          <Trophy className="w-5 h-5 text-accent-500" />
           Classifica Torneo
         </h3>
       </div>
@@ -61,7 +61,7 @@ export function TournamentRankingView({ rankings, pairs, userMap }: TournamentRa
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xl font-bold text-[#B2FF00]">{r.points}</span>
+                <span className="text-xl font-bold text-accent-500">{r.points}</span>
                 <span className="text-sm text-slate-700 dark:text-slate-300 ml-1">pt</span>
               </div>
             </div>

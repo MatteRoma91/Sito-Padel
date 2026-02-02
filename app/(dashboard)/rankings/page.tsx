@@ -1,15 +1,25 @@
+import { getCurrentUser } from '@/lib/auth';
 import { getUsers, getCumulativeRankings, getTournamentsPast, getTournamentRankings, getPairs } from '@/lib/db/queries';
+import { getVisibleUsers, canSeeHiddenUsers } from '@/lib/visibility';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
 import { UnifiedRankingsCard } from '@/components/rankings/UnifiedRankingsCard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RankingsPage() {
+  const currentUser = await getCurrentUser();
+  const canSeeHidden = canSeeHiddenUsers(currentUser);
+  
   const allUsers = getUsers();
   // Exclude only the 'admin' user account from rankings display (not all admins)
-  const users = allUsers.filter(u => u.username !== 'admin');
+  // Also filter hidden users based on viewer permissions
+  const users = getVisibleUsers(allUsers.filter(u => u.username !== 'admin'), currentUser);
   const cumulativeRankings = getCumulativeRankings();
   const pastTournaments = getTournamentsPast().slice(0, 5);
 
   const userMap = new Map(users.map(u => [u.id, u]));
+  // For tournament rankings, we need to know which users are hidden
+  const hiddenUserIds = new Set(allUsers.filter(u => u.is_hidden && !canSeeHidden).map(u => u.id));
 
   // Create ranking list with user info (admin users excluded via userMap)
   const rankedUsers = cumulativeRankings
@@ -51,18 +61,25 @@ export default async function RankingsPage() {
       {/* Recent tournament rankings */}
       {pastTournaments.length > 0 && (
         <div className="card">
-          <div className="p-4 border-b border-[#9AB0F8] dark:border-[#6270F3]/50">
+          <div className="p-4 border-b border-primary-100 dark:border-primary-300/50">
             <h2 className="font-semibold text-slate-800 dark:text-slate-100">
               Classifiche Tornei Recenti
             </h2>
           </div>
-          <div className="divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
+          <div className="divide-y divide-primary-100 dark:divide-primary-300/50">
             {pastTournaments.map(tournament => {
               const rankings = getTournamentRankings(tournament.id);
               const pairs = getPairs(tournament.id);
               const pairMap = new Map(pairs.map(p => [p.id, p]));
 
-              if (rankings.length === 0) return null;
+              // Filter out rankings where any player in the pair is hidden
+              const visibleRankings = rankings.filter(r => {
+                const pair = pairMap.get(r.pair_id);
+                if (!pair) return false;
+                return !hiddenUserIds.has(pair.player1_id) && !hiddenUserIds.has(pair.player2_id);
+              });
+
+              if (visibleRankings.length === 0) return null;
 
               return (
                 <div key={tournament.id} className="p-4">
@@ -73,7 +90,7 @@ export default async function RankingsPage() {
                     </span>
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {rankings.slice(0, 4).map((r, i) => {
+                    {visibleRankings.slice(0, 4).map((r, i) => {
                       const pair = pairMap.get(r.pair_id);
                       const p1 = pair ? userMap.get(pair.player1_id) : null;
                       const p2 = pair ? userMap.get(pair.player2_id) : null;
@@ -89,7 +106,7 @@ export default async function RankingsPage() {
                             <span className={`font-bold ${
                               i === 0 ? 'text-yellow-600' : 
                               i === 1 ? 'text-slate-600' : 
-                              i === 2 ? 'text-[#B2FF00]' : 
+                              i === 2 ? 'text-accent-500' : 
                               'text-slate-600'
                             }`}>
                               {r.position}°

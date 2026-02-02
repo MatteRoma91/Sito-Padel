@@ -12,7 +12,8 @@ export async function POST(
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
   }
 
-  if (currentUser.role !== 'admin') {
+  const canReset = currentUser.role === 'admin';
+  if (!canReset) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 

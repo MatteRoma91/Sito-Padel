@@ -23,7 +23,7 @@ export default async function CalendarPage() {
   const statusColors: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
     open: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    in_progress: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-[#6270F3]',
+    in_progress: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-primary-300',
     completed: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
   };
 
@@ -69,17 +69,17 @@ export default async function CalendarPage() {
                       <Link
                         key={t.id}
                         href={`/tournaments/${t.id}`}
-                        className={`card p-4 block hover:border-[#B2FF00] transition ${
+                        className={`card p-4 block hover:border-accent-500 transition ${
                           isPast ? 'opacity-60' : ''
-                        } ${isToday ? 'border-[#B2FF00] ring-2 ring-[#e5ff99]' : ''}`}
+                        } ${isToday ? 'border-accent-500 ring-2 ring-accent-100' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex gap-4">
                             {/* Date badge */}
                             <div className={`w-14 h-14 rounded-lg flex flex-col items-center justify-center shrink-0 ${
-                              isToday ? 'bg-[#B2FF00] text-slate-900' :
+                              isToday ? 'bg-accent-500 text-slate-900' :
                               isPast ? 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' :
-                              'bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-[#6270F3]'
+                              'bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300'
                             }`}>
                               <span className="text-xl font-bold leading-none">
                                 {new Date(t.date).getDate()}
@@ -115,7 +115,7 @@ export default async function CalendarPage() {
                               {statusLabels[t.status] || 'Bozza'}
                             </span>
                             {isToday && (
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-[#B2FF00] text-slate-900">
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-accent-500 text-slate-900">
                                 Oggi
                               </span>
                             )}

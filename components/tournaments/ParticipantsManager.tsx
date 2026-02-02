@@ -85,7 +85,7 @@ export function ParticipantsManager({
                 key={user.id}
                 onClick={() => addParticipant(user.id)}
                 disabled={loading === user.id}
-                className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/90 border border-[#9AB0F8] text-sm hover:border-[#B2FF00] transition disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/90 border border-primary-100 text-sm hover:border-accent-500 transition disabled:opacity-50"
               >
                 {user.nickname || user.full_name || user.username}
               </button>
@@ -107,7 +107,7 @@ export function ParticipantsManager({
           participatingUsers.map(user => (
             <div key={user.id} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#B2FF00] flex items-center justify-center text-slate-900 text-sm font-medium">
+                <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-slate-900 text-sm font-medium">
                   {(user.nickname || user.full_name || user.username).charAt(0).toUpperCase()}
                 </div>
                 <span className="font-medium text-slate-800 dark:text-slate-100">
@@ -138,7 +138,7 @@ export function ParticipantsManager({
           </div>
           <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all ${participatingUsers.length >= 16 ? 'bg-green-500' : 'bg-[#B2FF00]'}`}
+              className={`h-full transition-all ${participatingUsers.length >= 16 ? 'bg-green-500' : 'bg-accent-500'}`}
               style={{ width: `${Math.min(100, (participatingUsers.length / 16) * 100)}%` }}
             />
           </div>

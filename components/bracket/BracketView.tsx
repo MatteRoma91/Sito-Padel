@@ -13,6 +13,7 @@ interface BracketViewProps {
   userMap: Map<string, User>;
   isAdmin: boolean;
   tournamentStatus: string;
+  hiddenUserIds?: string[];
 }
 
 export function BracketView({ 
@@ -21,7 +22,8 @@ export function BracketView({
   matches, 
   userMap, 
   isAdmin,
-  tournamentStatus 
+  tournamentStatus,
+  hiddenUserIds = []
 }: BracketViewProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -34,6 +36,7 @@ export function BracketView({
   const [quarterfinalSelections, setQuarterfinalSelections] = useState<Record<string, { pair1: string; pair2: string }>>({});
 
   const pairMap = new Map(pairs.map(p => [p.id, p]));
+  const hiddenSet = new Set(hiddenUserIds);
 
   function getPairName(pairId: string | null): string {
     if (!pairId) return 'TBD';
@@ -41,8 +44,11 @@ export function BracketView({
     if (!pair) return 'TBD';
     const p1 = userMap.get(pair.player1_id);
     const p2 = userMap.get(pair.player2_id);
-    const n1 = p1?.nickname || p1?.full_name || '?';
-    const n2 = p2?.nickname || p2?.full_name || '?';
+    // Check if either player is hidden
+    const p1Hidden = hiddenSet.has(pair.player1_id);
+    const p2Hidden = hiddenSet.has(pair.player2_id);
+    const n1 = p1Hidden ? 'Giocatore nascosto' : (p1?.nickname || p1?.full_name || '?');
+    const n2 = p2Hidden ? 'Giocatore nascosto' : (p2?.nickname || p2?.full_name || '?');
     return `${n1} / ${n2}`;
   }
 
@@ -225,7 +231,7 @@ export function BracketView({
         className={`p-3 rounded-lg border ${
           isComplete 
             ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-            : 'bg-white dark:bg-white/90 border-[#9AB0F8]'
+            : 'bg-white dark:bg-white/90 border-primary-100'
         }`}
       >
         {isEditingThisQF ? (
@@ -281,7 +287,7 @@ export function BracketView({
                   min="0"
                   value={scores.pair1}
                   onChange={(e) => setScores(s => ({ ...s, pair1: e.target.value }))}
-                  className="w-12 px-2 py-1 text-center rounded border border-[#9AB0F8] bg-white text-slate-900 dark:text-slate-900"
+                  className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
                 />
               ) : (
                 <span className="font-mono">{match.score_pair1 ?? '-'}</span>
@@ -299,7 +305,7 @@ export function BracketView({
                   min="0"
                   value={scores.pair2}
                   onChange={(e) => setScores(s => ({ ...s, pair2: e.target.value }))}
-                  className="w-12 px-2 py-1 text-center rounded border border-[#9AB0F8] bg-white text-slate-900 dark:text-slate-900"
+                  className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
                 />
               ) : (
                 <span className="font-mono">{match.score_pair2 ?? '-'}</span>
@@ -389,7 +395,7 @@ export function BracketView({
         
         {/* Editing quarterfinals banner */}
         {editingQuarterfinals && (
-          <div className="p-4 bg-primary-50 border-b border-[#9AB0F8]">
+          <div className="p-4 bg-primary-50 border-b border-primary-100">
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-[#202ca1]">
                 Modalità Modifica Coppie

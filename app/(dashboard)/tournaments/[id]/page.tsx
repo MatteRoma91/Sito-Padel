@@ -10,6 +10,7 @@ import {
   getTournamentRankings,
   getCumulativeRankings
 } from '@/lib/db/queries';
+import { canSeeHiddenUsers } from '@/lib/visibility';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
@@ -31,6 +32,7 @@ export default async function TournamentDetailPage({
 
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const participants = getTournamentParticipants(tournament.id);
   const allUsers = getUsers();
@@ -45,13 +47,26 @@ export default async function TournamentDetailPage({
   // Build ranking map for pairs display
   const rankingMap = new Map(cumulativeRankings.map(r => [r.user_id, r.total_points]));
 
+  // Identify hidden user IDs for filtering display
+  const hiddenUserIds = new Set(allUsers.filter(u => u.is_hidden && !canSeeHidden).map(u => u.id));
+
+  // Filter pairs and rankings for display (non-admin viewers)
+  const visiblePairs = pairs.filter(p => 
+    canSeeHidden || (!hiddenUserIds.has(p.player1_id) && !hiddenUserIds.has(p.player2_id))
+  );
+  const visibleRankings = rankings.filter(r => {
+    const pair = pairs.find(p => p.id === r.pair_id);
+    if (!pair) return false;
+    return canSeeHidden || (!hiddenUserIds.has(pair.player1_id) && !hiddenUserIds.has(pair.player2_id));
+  });
+
   // Participating users
   const participatingUserIds = participants.filter(p => p.participating).map(p => p.user_id);
 
   const statusLabels: Record<string, { label: string; color: string }> = {
     draft: { label: 'Bozza', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
     open: { label: 'Iscrizioni aperte', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    in_progress: { label: 'In corso', color: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-[#6270F3]' },
+    in_progress: { label: 'In corso', color: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-primary-300' },
     completed: { label: 'Completato', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
   };
 
@@ -59,7 +74,7 @@ export default async function TournamentDetailPage({
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-[#B2FF00] dark:hover:text-[#c4ff33] transition">
+      <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai tornei
       </Link>
@@ -137,17 +152,17 @@ export default async function TournamentDetailPage({
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4 text-center">
-          <Users className="w-6 h-6 mx-auto text-[#B2FF00] mb-1" />
+          <Users className="w-6 h-6 mx-auto text-accent-500 mb-1" />
           <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{participatingUserIds.length}</p>
           <p className="text-sm text-slate-700 dark:text-slate-300">Partecipanti</p>
         </div>
         <div className="card p-4 text-center">
-          <Shuffle className="w-6 h-6 mx-auto text-[#B2FF00] mb-1" />
+          <Shuffle className="w-6 h-6 mx-auto text-accent-500 mb-1" />
           <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{pairs.length}</p>
           <p className="text-sm text-slate-700 dark:text-slate-300">Coppie</p>
         </div>
         <div className="card p-4 text-center">
-          <Trophy className="w-6 h-6 mx-auto text-[#B2FF00] mb-1" />
+          <Trophy className="w-6 h-6 mx-auto text-accent-500 mb-1" />
           <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
             {matches.filter(m => m.winner_pair_id).length}/{matches.length}
           </p>
@@ -191,7 +206,7 @@ export default async function TournamentDetailPage({
 
       {/* Navigation: Go to bracket page when 8 pairs */}
       {pairs.length === 8 && matches.length === 0 && (
-        <div className="card p-6 bg-primary-50 border-[#9AB0F8]">
+        <div className="card p-6 bg-primary-50 border-primary-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-[#202ca1] flex items-center gap-2">
@@ -219,7 +234,7 @@ export default async function TournamentDetailPage({
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Grid3X3 className="w-5 h-5 text-[#B2FF00]" />
+                <Grid3X3 className="w-5 h-5 text-accent-500" />
                 Tabellone in corso
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -238,21 +253,21 @@ export default async function TournamentDetailPage({
       )}
 
       {/* Pairs summary (visible when pairs exist but before matches) */}
-      {pairs.length > 0 && pairs.length < 8 && (
+      {visiblePairs.length > 0 && pairs.length < 8 && (
         <div className="card">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Shuffle className="w-5 h-5 text-[#B2FF00]" />
-              Coppie ({pairs.length}/8)
+              <Shuffle className="w-5 h-5 text-accent-500" />
+              Coppie ({visiblePairs.length}/8)
             </h3>
             {isAdmin && (
-              <Link href={`/tournaments/${tournament.id}/pairs`} className="text-sm text-[#B2FF00] hover:underline">
+              <Link href={`/tournaments/${tournament.id}/pairs`} className="text-sm text-accent-500 hover:underline">
                 Gestisci coppie
               </Link>
             )}
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
-            {pairs.map(pair => {
+            {visiblePairs.map(pair => {
               const player1 = userMap.get(pair.player1_id);
               const player2 = userMap.get(pair.player2_id);
               const points1 = rankingMap.get(pair.player1_id) || 0;
@@ -260,7 +275,7 @@ export default async function TournamentDetailPage({
               return (
                 <div key={pair.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-primary-900/30 text-[#202ca1] dark:text-[#6270F3] text-sm font-medium">
+                    <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-primary-900/30 text-[#202ca1] dark:text-primary-300 text-sm font-medium">
                       {pair.seed}
                     </span>
                     <span className="text-slate-800 dark:text-slate-100">
@@ -278,10 +293,10 @@ export default async function TournamentDetailPage({
       )}
 
       {/* Rankings */}
-      {rankings.length > 0 && (
+      {visibleRankings.length > 0 && (
         <TournamentRankingView
-          rankings={rankings}
-          pairs={pairs}
+          rankings={visibleRankings}
+          pairs={visiblePairs}
           userMap={userMap}
         />
       )}

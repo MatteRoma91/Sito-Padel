@@ -28,7 +28,7 @@ interface UnifiedRankingsCardProps {
 function getMedal(position: number) {
   if (position === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
   if (position === 2) return <Medal className="w-5 h-5 text-slate-600" />;
-  if (position === 3) return <Award className="w-5 h-5 text-[#B2FF00]" />;
+  if (position === 3) return <Award className="w-5 h-5 text-accent-500" />;
   return null;
 }
 
@@ -44,17 +44,17 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
 
   return (
     <div className="card">
-      <div className="p-4 border-b border-[#9AB0F8] dark:border-[#6270F3]/50 flex flex-wrap gap-2">
+      <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setActiveView('generale')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${
             activeView === 'generale'
-              ? 'bg-[#B2FF00]/20 text-slate-800 dark:text-slate-100 border border-[#B2FF00]/50'
+              ? 'bg-accent-500/20 text-slate-800 dark:text-slate-100 border border-accent-500/50'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Trophy className="w-5 h-5 text-[#B2FF00]" />
+          <Trophy className="w-5 h-5 text-accent-500" />
           Classifica Generale
         </button>
         <button
@@ -62,16 +62,16 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
           onClick={() => setActiveView('livello')}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition ${
             activeView === 'livello'
-              ? 'bg-[#B2FF00]/20 text-slate-800 dark:text-slate-100 border border-[#B2FF00]/50'
+              ? 'bg-accent-500/20 text-slate-800 dark:text-slate-100 border border-accent-500/50'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <BarChart2 className="w-5 h-5 text-[#B2FF00]" />
+          <BarChart2 className="w-5 h-5 text-accent-500" />
           Classifica per livello
         </button>
       </div>
 
-      <div className="divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
+      <div className="divide-y divide-primary-100 dark:divide-primary-300/50">
         {activeView === 'generale' && (
           <>
             {generalRanking.length === 0 ? (
@@ -110,7 +110,7 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-[#B2FF00]">{r.total_points}</span>
+                    <span className="text-xl font-bold text-accent-500">{r.total_points}</span>
                     <span className="text-sm text-slate-700 dark:text-slate-300 ml-1">pt</span>
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-[#B2FF00]">{r.overall_score ?? '-'}</span>
+                    <span className="text-xl font-bold text-accent-500">{r.overall_score ?? '-'}</span>
                     <span className="text-sm text-slate-700 dark:text-slate-300 ml-1">/ 100</span>
                   </div>
                 </div>

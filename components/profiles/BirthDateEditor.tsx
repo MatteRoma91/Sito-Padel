@@ -65,7 +65,7 @@ export function BirthDateEditor({ userId, birthDate, canEdit, embedded }: BirthD
     return (
       <div className="space-y-3">
         <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-          <Cake className="w-5 h-5 text-[#B2FF00]" />
+          <Cake className="w-5 h-5 text-accent-500" />
           Data di nascita
         </h2>
         <p className="text-slate-700 dark:text-slate-300 text-sm mb-4">
@@ -91,7 +91,7 @@ export function BirthDateEditor({ userId, birthDate, canEdit, embedded }: BirthD
   const content = (
     <>
       <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
-        <Cake className="w-5 h-5 text-[#B2FF00]" />
+        <Cake className="w-5 h-5 text-accent-500" />
         Data di nascita
       </h2>
       <p className="text-slate-700 dark:text-slate-300 text-sm mb-4">

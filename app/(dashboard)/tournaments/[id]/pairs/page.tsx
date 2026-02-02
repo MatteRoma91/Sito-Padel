@@ -56,7 +56,7 @@ export default async function TournamentPairsPage({
     <div className="max-w-4xl mx-auto space-y-6">
       <Link 
         href={`/tournaments/${tournament.id}`} 
-        className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-[#B2FF00] dark:hover:text-[#c4ff33] transition"
+        className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
       >
         <ArrowLeft className="w-4 h-4" />
         Torna al torneo
@@ -65,7 +65,7 @@ export default async function TournamentPairsPage({
       {/* Header */}
       <div className="card p-6">
         <div className="flex items-center gap-3 mb-2">
-          <Shuffle className="w-6 h-6 text-[#B2FF00]" />
+          <Shuffle className="w-6 h-6 text-accent-500" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
             Estrazione Coppie
           </h1>

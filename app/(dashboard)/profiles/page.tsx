@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { getUsers, getCumulativeRankings } from '@/lib/db/queries';
-import { Plus, User } from 'lucide-react';
+import { getVisibleUsers } from '@/lib/visibility';
+import { User } from 'lucide-react';
 import { CreateUserForm } from '@/components/profiles/CreateUserForm';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -13,7 +14,8 @@ export default async function ProfilesPage() {
   
   const allUsers = getUsers();
   // Exclude only the 'admin' user account from the players list (not all admins)
-  const users = allUsers.filter(u => u.username !== 'admin');
+  // Also filter hidden users based on viewer permissions
+  const users = getVisibleUsers(allUsers.filter(u => u.username !== 'admin'), currentUser);
   const userMap = new Map(users.map(u => [u.id, u]));
 
   // Stesso ordine della Classifica Generale (getCumulativeRankings è già ORDER BY total_points DESC)
@@ -41,19 +43,13 @@ export default async function ProfilesPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Giocatori</h1>
-        {isAdmin && (
-          <Link href="/profiles/new" className="btn btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nuovo Giocatore</span>
-          </Link>
-        )}
       </div>
 
       {/* Quick add form for admin */}
       {isAdmin && <CreateUserForm />}
 
       {/* Players list */}
-      <div className="card divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
+      <div className="card divide-y divide-primary-100 dark:divide-primary-300/50">
         {usersSortedByRanking.map(user => (
           <Link
             key={user.id}
@@ -72,14 +68,14 @@ export default async function ProfilesPage() {
               <p className="text-sm text-slate-700 dark:text-slate-300">
                 @{user.username}
                 {user.role === 'admin' && (
-                  <span className="ml-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-[#6270F3]">
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
                     Admin
                   </span>
                 )}
               </p>
             </div>
             <div className="text-right">
-              <span className="font-semibold text-[#B2FF00]">
+              <span className="font-semibold text-accent-500">
                 {rankingMap.get(user.id) || 0} pt
               </span>
             </div>

@@ -50,12 +50,12 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#3445F1] via-[#6270F3] to-[#9AB0F8]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-500 via-primary-300 to-primary-100">
       <div className="w-full max-w-sm">
         <div className="card p-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-100 mb-4">
-              <KeyRound className="w-8 h-8 text-[#B2FF00]" />
+              <KeyRound className="w-8 h-8 text-accent-500" />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Cambia Password</h1>
             <p className="text-slate-700 dark:text-slate-300 mt-1">

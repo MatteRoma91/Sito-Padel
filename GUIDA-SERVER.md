@@ -97,6 +97,23 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+## Backup e ripristino
+
+- **Backup completo**: Impostazioni → Strumenti → **Scarica backup completo**. Scarica un ZIP con database e avatar. Conservare il file fuori dal server (PC, cloud).
+- **Backup solo database**: stesso menu, **Scarica backup** (file `.db`).
+
+**Ripristino su nuovo server** (dopo crash o migrazione):
+
+1. Clonare/copiare l’applicazione, `npm install`, configurare `.env` (e `DATABASE_PATH` se diverso da `data/padel.db`).
+2. Copiare il file `padel-full-backup-*.zip` sul server.
+3. Fermare l’app: `pm2 stop padel-tour`.
+4. Eseguire: `node scripts/restore-backup.mjs /path/to/padel-full-backup-*.zip`.
+5. Riavviare l’app: `pm2 start padel-tour`.
+
+Eseguire lo script di ripristino preferibilmente con l’app ferma per evitare corruzione del database.
+
+---
+
 ## Comandi utili
 
 ```bash

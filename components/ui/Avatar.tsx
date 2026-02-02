@@ -43,7 +43,7 @@ export function Avatar({ src, name, size = 'md', className = '' }: AvatarProps) 
   }
 
   return (
-    <div className={`rounded-full bg-[#B2FF00] flex items-center justify-center text-slate-900 font-medium ${sizeClass} ${className}`}>
+    <div className={`rounded-full bg-accent-500 flex items-center justify-center text-slate-900 font-medium ${sizeClass} ${className}`}>
       {initial}
     </div>
   );

@@ -27,8 +27,9 @@ export async function POST(request: Request) {
   if (!currentUser) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
   }
-  if (currentUser.role !== 'admin') {
-    return NextResponse.json({ success: false, error: 'Solo gli admin possono creare utenti' }, { status: 403 });
+  const canCreate = currentUser.role === 'admin';
+  if (!canCreate) {
+    return NextResponse.json({ success: false, error: 'Non autorizzato a creare utenti' }, { status: 403 });
   }
 
   try {

@@ -9,13 +9,10 @@ import {
   Users, 
   Calendar,
   BarChart3,
-  Archive,
-  Activity,
-  KeyRound,
+  BookOpen,
+  Settings,
   LogOut,
   Menu,
-  Server,
-  RefreshCw,
   X
 } from 'lucide-react';
 import { useState } from 'react';
@@ -38,16 +35,12 @@ const navItems = [
   { href: '/profiles', label: 'Giocatori', icon: Users },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
-  { href: '/archive', label: 'Archivio', icon: Archive },
+  { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
 ];
 
-const accessiNavItem = { href: '/stats/accessi', label: 'Accessi', icon: Activity };
-const resetPasswordNavItem = { href: '/stats/reset-password', label: 'Reset Password', icon: KeyRound };
-const recalculateRankingsNavItem = { href: '/stats/recalculate-rankings', label: 'Ricalcola punteggi', icon: RefreshCw };
-const serverNavItem = { href: '/stats/server', label: 'Server', icon: Server };
+const settingsNavItem = { href: '/settings', label: 'Impostazioni', icon: Settings };
 
-const canSeeAccessi = (username: string) =>
-  username === 'admin' || username.toLowerCase() === 'gazzella';
+const canSeeSettings = (_username: string, role: string) => role === 'admin';
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
@@ -61,14 +54,14 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <>
       {/* Mobile header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#3445F1] border-b border-[#6270F3] px-4 py-2 flex items-center justify-between">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-primary-500 border-b border-primary-300 px-4 py-2 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/logo.png" alt="Banana Padel Tour" width={40} height={40} className="rounded-lg" />
           <span className="font-bold text-white">Banana Padel</span>
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-lg hover:bg-[#6270F3] text-white"
+          className="p-2 rounded-lg hover:bg-primary-300 text-white"
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -85,7 +78,7 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Sidebar */}
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-[#3445F1] border-r border-[#6270F3]
+        w-64 bg-primary-500 border-r border-primary-300
         transform transition-transform duration-200 ease-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         md:transform-none
@@ -113,8 +106,8 @@ export function Sidebar({ user }: SidebarProps) {
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                   ${isActive 
-                    ? 'bg-[#B2FF00] text-slate-900' 
-                    : 'text-white hover:bg-[#6270F3]'
+                    ? 'bg-accent-500 text-slate-900' 
+                    : 'text-white hover:bg-primary-300'
                   }
                 `}
               >
@@ -123,66 +116,21 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          {(canSeeAccessi(user.username) || user.role === 'admin') && (
+          {canSeeSettings(user.username, user.role) && (
             <>
               <div className="my-2 border-t border-white/20" />
-              {canSeeAccessi(user.username) && (() => {
-                const Icon = accessiNavItem.icon;
-                const isActive = pathname === accessiNavItem.href || pathname.startsWith(accessiNavItem.href + '/');
+              {(() => {
+                const Icon = settingsNavItem.icon;
+                const isActive = pathname === settingsNavItem.href || pathname.startsWith(settingsNavItem.href + '/');
                 return (
                   <Link
-                    key={accessiNavItem.href}
-                    href={accessiNavItem.href}
+                    key={settingsNavItem.href}
+                    href={settingsNavItem.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-[#B2FF00] text-slate-900' : 'text-white hover:bg-[#6270F3]'}`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-accent-500 text-slate-900' : 'text-white hover:bg-primary-300'}`}
                   >
                     <Icon className="w-5 h-5" />
-                    <span className="font-medium">{accessiNavItem.label}</span>
-                  </Link>
-                );
-              })()}
-              {canSeeAccessi(user.username) && (() => {
-                const Icon = serverNavItem.icon;
-                const isActive = pathname === serverNavItem.href || pathname.startsWith(serverNavItem.href + '/');
-                return (
-                  <Link
-                    key={serverNavItem.href}
-                    href={serverNavItem.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-[#B2FF00] text-slate-900' : 'text-white hover:bg-[#6270F3]'}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{serverNavItem.label}</span>
-                  </Link>
-                );
-              })()}
-              {user.role === 'admin' && (() => {
-                const Icon = resetPasswordNavItem.icon;
-                const isActive = pathname === resetPasswordNavItem.href || pathname.startsWith(resetPasswordNavItem.href + '/');
-                return (
-                  <Link
-                    key={resetPasswordNavItem.href}
-                    href={resetPasswordNavItem.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-[#B2FF00] text-slate-900' : 'text-white hover:bg-[#6270F3]'}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{resetPasswordNavItem.label}</span>
-                  </Link>
-                );
-              })()}
-              {user.role === 'admin' && (() => {
-                const Icon = recalculateRankingsNavItem.icon;
-                const isActive = pathname === recalculateRankingsNavItem.href || pathname.startsWith(recalculateRankingsNavItem.href + '/');
-                return (
-                  <Link
-                    key={recalculateRankingsNavItem.href}
-                    href={recalculateRankingsNavItem.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-[#B2FF00] text-slate-900' : 'text-white hover:bg-[#6270F3]'}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{recalculateRankingsNavItem.label}</span>
+                    <span className="font-medium">{settingsNavItem.label}</span>
                   </Link>
                 );
               })()}
@@ -195,7 +143,7 @@ export function Sidebar({ user }: SidebarProps) {
           <Link 
             href={`/profiles/${user.id}`}
             onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-[#6270F3] transition text-white"
+            className="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-primary-300 transition text-white"
           >
             <Avatar 
               src={user.avatar} 
@@ -213,7 +161,7 @@ export function Sidebar({ user }: SidebarProps) {
           </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-white hover:bg-[#6270F3] transition"
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-white hover:bg-primary-300 transition"
           >
             <LogOut className="w-5 h-5" />
             <span>Esci</span>

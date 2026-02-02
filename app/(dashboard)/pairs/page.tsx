@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { getTournamentsFuture, getTournamentParticipants, getUsers, getCumulativeRankings, getPairs } from '@/lib/db/queries';
+import { canSeeHiddenUsers } from '@/lib/visibility';
 import { Shuffle, AlertCircle } from 'lucide-react';
 import { PairsExtractor } from '@/components/pairs/PairsExtractor';
 import { PairsDisplay } from '@/components/pairs/PairsDisplay';
@@ -13,6 +14,7 @@ export default async function PairsPage({
   const params = await searchParams;
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const tournaments = getTournamentsFuture();
   const selectedTournamentId = params.tournament || tournaments[0]?.id;
@@ -32,6 +34,15 @@ export default async function PairsPage({
 
   const userMap = new Map(allUsers.map(u => [u.id, u]));
   const rankingMap = new Map(rankings.map(r => [r.user_id, r.total_points]));
+  
+  // Filter hidden users for display purposes (non-admin viewers)
+  const hiddenUserIds = new Set(allUsers.filter(u => u.is_hidden && !canSeeHidden).map(u => u.id));
+  const visibleParticipants = canSeeHidden 
+    ? participants 
+    : participants.filter(p => !hiddenUserIds.has(p.user_id));
+  const visiblePairs = canSeeHidden
+    ? existingPairs
+    : existingPairs.filter(p => !hiddenUserIds.has(p.player1_id) && !hiddenUserIds.has(p.player2_id));
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -47,7 +58,7 @@ export default async function PairsPage({
         {tournaments.length === 0 ? (
           <p className="text-slate-700 dark:text-slate-300">
             Nessun torneo futuro disponibile.{' '}
-            {isAdmin && <Link href="/tournaments/new" className="text-[#B2FF00] hover:underline">Crea un torneo</Link>}
+            {isAdmin && <Link href="/tournaments/new" className="text-accent-500 hover:underline">Crea un torneo</Link>}
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -57,8 +68,8 @@ export default async function PairsPage({
                 href={`/pairs?tournament=${t.id}`}
                 className={`px-4 py-2 rounded-lg border transition ${
                   t.id === selectedTournamentId
-                    ? 'bg-[#B2FF00] text-slate-900 border-[#B2FF00]'
-                    : 'bg-white dark:bg-white/90 border-[#9AB0F8] hover:border-[#B2FF00]'
+                    ? 'bg-accent-500 text-slate-900 border-accent-500'
+                    : 'bg-white dark:bg-white/90 border-primary-100 hover:border-accent-500'
                 }`}
               >
                 {t.name}
@@ -84,7 +95,7 @@ export default async function PairsPage({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-[#B2FF00]">{participants.length}/16</p>
+                <p className="text-2xl font-bold text-accent-500">{participants.length}/16</p>
                 <p className="text-sm text-slate-700 dark:text-slate-300">partecipanti</p>
               </div>
             </div>
@@ -116,9 +127,9 @@ export default async function PairsPage({
           )}
 
           {/* Display pairs */}
-          {existingPairs.length > 0 ? (
+          {visiblePairs.length > 0 ? (
             <PairsDisplay
-              pairs={existingPairs}
+              pairs={visiblePairs}
               userMap={userMap}
               rankingMap={rankingMap}
             />
@@ -143,7 +154,7 @@ export default async function PairsPage({
               </p>
             </div>
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {participants
+              {visibleParticipants
                 .map(p => ({
                   ...p,
                   user: userMap.get(p.user_id),
@@ -162,10 +173,10 @@ export default async function PairsPage({
                         {p.user?.nickname || p.user?.full_name || p.user?.username}
                       </span>
                     </div>
-                    <span className="text-[#B2FF00] font-medium">{p.points} pt</span>
+                    <span className="text-accent-500 font-medium">{p.points} pt</span>
                   </div>
                 ))}
-              {participants.length === 0 && (
+              {visibleParticipants.length === 0 && (
                 <p className="p-4 text-slate-700 dark:text-slate-300 text-sm">
                   Nessun partecipante
                 </p>
