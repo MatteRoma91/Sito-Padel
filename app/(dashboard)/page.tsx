@@ -95,26 +95,26 @@ export default async function HomePage() {
       {isAdmin && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/tournaments/new" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-50 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-accent-500" />
+            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+              <Plus className="w-6 h-6 text-slate-900" />
             </div>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuovo Torneo</span>
           </Link>
           <Link href="/profiles" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-50 flex items-center justify-center">
-              <Users className="w-6 h-6 text-accent-500" />
+            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+              <Users className="w-6 h-6 text-slate-900" />
             </div>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Giocatori</span>
           </Link>
           <Link href="/calendar" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-50 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-accent-500" />
+            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-slate-900" />
             </div>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Calendario</span>
           </Link>
           <Link href="/rankings" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-50 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-accent-500" />
+            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-slate-900" />
             </div>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Classifiche</span>
           </Link>

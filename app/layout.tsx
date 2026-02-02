@@ -43,7 +43,7 @@ export default async function RootLayout({
   const config = getSiteConfig();
   const configCss = buildConfigCss(config);
   return (
-    <html lang="it">
+    <html lang="it" className="dark">
       <body className={`${inter.className} antialiased min-h-screen bg-[var(--background)]`}>
         {configCss && (
           <style dangerouslySetInnerHTML={{ __html: configCss }} />
