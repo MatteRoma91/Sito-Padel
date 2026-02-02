@@ -7,6 +7,7 @@ import heic2any from 'heic2any';
 import type { User, SkillLevel } from '@/lib/types';
 import { SKILL_LEVEL_LABELS } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
+import { BirthDateEditor } from '@/components/profiles/BirthDateEditor';
 
 const HEIC_TYPES = ['image/heic', 'image/heif'];
 
@@ -133,6 +134,7 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
           bio: isOwnProfile ? (formData.get('bio') || null) : undefined,
           preferred_side: (isOwnProfile || isAdmin) ? (formData.get('preferred_side') || null) : undefined,
           preferred_hand: (isOwnProfile || isAdmin) ? (formData.get('preferred_hand') || null) : undefined,
+          birth_date: (isOwnProfile || isAdmin) ? (formData.get('birth_date') as string) || null : undefined,
           new_password: formData.get('new_password') || undefined,
         }),
         cache: 'no-store',
@@ -165,52 +167,59 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
     <div className="card p-6">
       <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Modifica Profilo</h2>
       
-      {/* Avatar upload */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative">
-          <Avatar 
-            src={avatarPreview} 
-            name={user.nickname || user.full_name || user.username} 
-            size="xl" 
-          />
-          {avatarLoading && (
-            <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
-            onChange={handleAvatarChange}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={avatarLoading}
-            className="btn btn-secondary text-sm flex items-center gap-2"
-          >
-            <Camera className="w-4 h-4" />
-            Cambia foto
-          </button>
-          {avatarPreview && (
-            <button
-              type="button"
-              onClick={handleAvatarDelete}
-              disabled={avatarLoading}
-              className="btn btn-secondary text-sm flex items-center gap-2 text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4" />
-              Rimuovi
-            </button>
-          )}
-        </div>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Avatar upload + Data di nascita (a destra) */}
+        <div className="flex flex-wrap items-start gap-6 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Avatar 
+                src={avatarPreview} 
+                name={user.nickname || user.full_name || user.username} 
+                size="xl" 
+              />
+              {avatarLoading && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarLoading}
+                className="btn btn-secondary text-sm flex items-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Cambia foto
+              </button>
+              {avatarPreview && (
+                <button
+                  type="button"
+                  onClick={handleAvatarDelete}
+                  disabled={avatarLoading}
+                  className="btn btn-secondary text-sm flex items-center gap-2 text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Rimuovi
+                </button>
+              )}
+            </div>
+          </div>
+          <BirthDateEditor
+            userId={user.id}
+            birthDate={user.birth_date}
+            canEdit={isAdmin || isOwnProfile}
+            embedded
+          />
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

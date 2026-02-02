@@ -16,9 +16,10 @@ interface BirthDateEditorProps {
   userId: string;
   birthDate: string | null;
   canEdit: boolean;
+  embedded?: boolean;
 }
 
-export function BirthDateEditor({ userId, birthDate, canEdit }: BirthDateEditorProps) {
+export function BirthDateEditor({ userId, birthDate, canEdit, embedded }: BirthDateEditorProps) {
   const router = useRouter();
   const [value, setValue] = useState(birthDate || '');
   const [loading, setLoading] = useState(false);
@@ -60,8 +61,35 @@ export function BirthDateEditor({ userId, birthDate, canEdit }: BirthDateEditorP
     }
   }
 
-  return (
-    <div className="card p-6">
+  if (embedded) {
+    return (
+      <div className="space-y-3">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+          <Cake className="w-5 h-5 text-[#B2FF00]" />
+          Data di nascita
+        </h2>
+        <p className="text-slate-700 dark:text-slate-300 text-sm mb-4">
+          {formatted ? `Compleanno: ${formatted}` : 'Non impostata'}
+        </p>
+        {canEdit && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Imposta o modifica
+            </label>
+            <input
+              name="birth_date"
+              type="date"
+              defaultValue={birthDate || ''}
+              className="input max-w-xs"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const content = (
+    <>
       <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
         <Cake className="w-5 h-5 text-[#B2FF00]" />
         Data di nascita
@@ -94,6 +122,8 @@ export function BirthDateEditor({ userId, birthDate, canEdit }: BirthDateEditorP
           {success && <p className="text-sm text-green-600 dark:text-green-400">{success}</p>}
         </div>
       )}
-    </div>
+    </>
   );
+
+  return <div className="card p-6">{content}</div>;
 }

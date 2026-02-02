@@ -7,7 +7,6 @@ import { getUserById, getCumulativeRankings, getTournaments, getTournamentPartic
 import { ROUND_LABELS } from '@/lib/bracket';
 import { ArrowLeft, Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
 import { EditProfileForm } from '@/components/profiles/EditProfileForm';
-import { BirthDateEditor } from '@/components/profiles/BirthDateEditor';
 import { DeleteUserButton } from '@/components/profiles/DeleteUserButton';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -205,13 +204,6 @@ export default async function ProfileDetailPage({
           </div>
         )}
       </div>
-
-      {/* Data di nascita - specchietto sempre visibile */}
-      <BirthDateEditor
-        userId={user.id}
-        birthDate={user.birth_date}
-        canEdit={isAdmin || isOwnProfile}
-      />
 
       {/* Bio section */}
       {user.bio && (
