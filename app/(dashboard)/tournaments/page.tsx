@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { getTournaments } from '@/lib/db/queries';
+import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { Plus, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
 
 export default async function TournamentsPage() {
@@ -48,6 +49,11 @@ export default async function TournamentsPage() {
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${status.color}`}>
                       {status.label}
                     </span>
+                    {tournament.category && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                        {TOURNAMENT_CATEGORY_LABELS[tournament.category]}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-slate-700 dark:text-slate-300">

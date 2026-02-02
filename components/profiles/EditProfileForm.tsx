@@ -131,6 +131,7 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
           nickname: formData.get('nickname'),
           role: isAdmin ? formData.get('role') : undefined,
           skill_level: isAdmin ? (formData.get('skill_level') || null) : undefined,
+          overall_score: isAdmin ? (formData.get('overall_score') === '' ? null : Number(formData.get('overall_score'))) : undefined,
           bio: isOwnProfile ? (formData.get('bio') || null) : undefined,
           preferred_side: (isOwnProfile || isAdmin) ? (formData.get('preferred_side') || null) : undefined,
           preferred_hand: (isOwnProfile || isAdmin) ? (formData.get('preferred_hand') || null) : undefined,
@@ -258,10 +259,24 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Livello di Gioco
-                <span className="ml-1 text-xs text-slate-600">(nascosto agli altri)</span>
+                Punteggio overall (0-100)
               </label>
-              <select name="skill_level" defaultValue={user.skill_level || ''} className="input">
+              <input
+                name="overall_score"
+                type="number"
+                min={0}
+                max={100}
+                defaultValue={user.overall_score ?? ''}
+                className="input w-24"
+                placeholder="50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Livello di Gioco
+                <span className="ml-1 text-xs text-slate-600">(derivato da overall)</span>
+              </label>
+              <select name="skill_level" defaultValue={user.skill_level || ''} className="input" disabled>
                 <option value="">Non assegnato</option>
                 {(Object.keys(SKILL_LEVEL_LABELS) as SkillLevel[]).map(level => (
                   <option key={level} value={level}>{SKILL_LEVEL_LABELS[level]}</option>

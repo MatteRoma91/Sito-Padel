@@ -10,6 +10,7 @@ import {
   getTournamentRankings,
   getCumulativeRankings
 } from '@/lib/db/queries';
+import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
 import { TournamentStatusChanger } from '@/components/tournaments/TournamentStatusChanger';
@@ -74,6 +75,11 @@ export default async function TournamentDetailPage({
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${status.color}`}>
                 {status.label}
               </span>
+              {tournament.category && (
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                  {TOURNAMENT_CATEGORY_LABELS[tournament.category]}
+                </span>
+              )}
             </div>
             
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-slate-700 dark:text-slate-300">

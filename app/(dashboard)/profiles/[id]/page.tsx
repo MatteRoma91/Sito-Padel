@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
-import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats } from '@/lib/db/queries';
+import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats, getOverallScoreHistory, getPointsHistory } from '@/lib/db/queries';
 import { ROUND_LABELS } from '@/lib/bracket';
+import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
 import { ArrowLeft, Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
 import { EditProfileForm } from '@/components/profiles/EditProfileForm';
 import { DeleteUserButton } from '@/components/profiles/DeleteUserButton';
+import { ProfileCharts } from '@/components/profiles/ProfileCharts';
 import { Avatar } from '@/components/ui/Avatar';
 
 export default async function ProfileDetailPage({
@@ -41,6 +43,8 @@ export default async function ProfileDetailPage({
 
   const matchHistory = getMatchHistoryForUser(user.id);
   const playerStats = getPlayerStats(user.id);
+  const overallHistory = getOverallScoreHistory(user.id);
+  const pointsHistory = getPointsHistory(user.id);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -89,7 +93,7 @@ export default async function ProfileDetailPage({
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-6 pt-6 border-t border-[#9AB0F8] dark:border-[#6270F3]/50">
           <div className="text-center">
             <p className="text-2xl font-bold text-[#B2FF00]">{userRanking?.total_points || 0}</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Punti Totali</p>
@@ -104,7 +108,19 @@ export default async function ProfileDetailPage({
             <p className="text-2xl font-bold text-[#B2FF00]">{participatedTournaments.length}</p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Tornei</p>
           </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-[#B2FF00]">{user.overall_score ?? '-'}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">Punteggio overall</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+              {user.overall_score != null ? OVERALL_LEVEL_LABELS[overallScoreToLevel(user.overall_score)] : '-'}
+            </p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">Livello</p>
+          </div>
         </div>
+
+        <ProfileCharts overallHistory={overallHistory} pointsHistory={pointsHistory} />
 
         {/* Statistiche di gioco - solo se ha partite */}
         {matchHistory.length > 0 && (

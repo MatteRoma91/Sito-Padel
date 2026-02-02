@@ -5,6 +5,8 @@ import { Plus, User } from 'lucide-react';
 import { CreateUserForm } from '@/components/profiles/CreateUserForm';
 import { Avatar } from '@/components/ui/Avatar';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilesPage() {
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
@@ -12,8 +14,28 @@ export default async function ProfilesPage() {
   const allUsers = getUsers();
   // Exclude only the 'admin' user account from the players list (not all admins)
   const users = allUsers.filter(u => u.username !== 'admin');
-  const rankings = getCumulativeRankings();
-  const rankingMap = new Map(rankings.map(r => [r.user_id, r.total_points]));
+  const userMap = new Map(users.map(u => [u.id, u]));
+
+  // Stesso ordine della Classifica Generale (getCumulativeRankings è già ORDER BY total_points DESC)
+  const cumulativeRankings = getCumulativeRankings();
+  const rankingMap = new Map(cumulativeRankings.map(r => [r.user_id, r.total_points]));
+  const rankedUserIds = new Set(cumulativeRankings.map(r => r.user_id));
+  const usersInRankingOrder = cumulativeRankings
+    .map(r => userMap.get(r.user_id))
+    .filter((u): u is NonNullable<typeof u> => u != null);
+  const usersNotInRanking = users
+    .filter(u => !rankedUserIds.has(u.id))
+    .sort((a, b) => (a.nickname || a.username || '').localeCompare(b.nickname || b.username || ''));
+  const usersSortedByRanking = [...usersInRankingOrder, ...usersNotInRanking];
+
+  // #region agent log
+  const sample = usersSortedByRanking.slice(0, 10).map((u) => ({
+    id: u.id,
+    name: u.nickname || u.username,
+    pts: rankingMap.get(u.id) ?? 0,
+  }));
+  fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'profiles/page.tsx', message: 'profiles order same as Classifica Generale', data: { rankingMapSize: rankingMap.size, usersCount: users.length, sample }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H1,H2,H3' }) }).catch(() => {});
+  // #endregion
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -32,7 +54,7 @@ export default async function ProfilesPage() {
 
       {/* Players list */}
       <div className="card divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
-        {users.map(user => (
+        {usersSortedByRanking.map(user => (
           <Link
             key={user.id}
             href={`/profiles/${user.id}`}

@@ -3,12 +3,15 @@ import { getCurrentUser } from '@/lib/auth';
 import { 
   getPairs, 
   getMatches, 
+  getTournamentById,
   deleteTournamentRankings, 
   insertTournamentRanking,
   recalculateCumulativeRankings,
+  applyTournamentResultToOverall,
   updateTournament
 } from '@/lib/db/queries';
 import { calculateTournamentRankings, isTournamentComplete } from '@/lib/rankings';
+import type { TournamentCategory } from '@/lib/types';
 
 export async function POST(
   request: Request,
@@ -25,6 +28,11 @@ export async function POST(
   }
 
   try {
+    const tournament = getTournamentById(tournamentId);
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
     const pairs = getPairs(tournamentId);
     const matches = getMatches(tournamentId);
 
@@ -35,8 +43,10 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Calculate rankings
-    const rankings = calculateTournamentRankings(pairs, matches);
+    const category: TournamentCategory = tournament.category ?? 'master_1000';
+
+    // Calculate rankings (points depend on tournament category)
+    const rankings = calculateTournamentRankings(pairs, matches, category);
 
     // Save rankings
     deleteTournamentRankings(tournamentId);
@@ -46,6 +56,9 @@ export async function POST(
 
     // Update cumulative rankings
     recalculateCumulativeRankings();
+
+    // Update overall score (partita +1/-1, 1° +2, 8° -2)
+    applyTournamentResultToOverall(tournamentId);
 
     // Update tournament status to completed
     updateTournament(tournamentId, { status: 'completed' });

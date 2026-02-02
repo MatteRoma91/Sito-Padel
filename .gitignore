@@ -1,32 +1,40 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # testing
-/coverage
+coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
+dist/
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+*.log
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# local env files
+# local env files (NON committare segreti)
+.env
 .env*.local
+.env.development
+.env.production
+.env.test
 
 # vercel
 .vercel
@@ -35,5 +43,32 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# database
+# database (SQLite e dati locali)
 /data/
+
+# upload utenti (avatar generati a runtime; in repo resta solo .gitkeep)
+/public/avatars/*
+!/public/avatars/.gitkeep
+
+# PM2 / process manager
+.pm2/
+*.pm2.log
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# cache e temporanei
+.cache/
+*.tmp
+.temp/
+tmp/
+temp/

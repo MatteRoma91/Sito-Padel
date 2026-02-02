@@ -147,4 +147,18 @@ export function initSchema() {
   } catch {
     // Column already exists
   }
+
+  // Tournament category (Grande Slam / Master 1000)
+  try {
+    db.exec(`ALTER TABLE tournaments ADD COLUMN category TEXT NOT NULL DEFAULT 'master_1000'`);
+  } catch {
+    // Column already exists
+  }
+
+  // Overall score 0-100 per livello di gioco
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN overall_score INTEGER`);
+  } catch {
+    // Column already exists
+  }
 }

@@ -3,7 +3,8 @@ import { initSchema } from './schema';
 import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
-import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel } from '../types';
+import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory } from '../types';
+import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA } from '../types';
 
 let initialized = false;
 
@@ -55,14 +56,23 @@ export function createUser(data: { username: string; password?: string; full_nam
   return id;
 }
 
-export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'nickname' | 'role' | 'skill_level' | 'bio' | 'preferred_side' | 'preferred_hand' | 'birth_date'>>): void {
+export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'nickname' | 'role' | 'skill_level' | 'overall_score' | 'bio' | 'preferred_side' | 'preferred_hand' | 'birth_date'>>): void {
   ensureDb();
   const fields: string[] = [];
-  const values: (string | null)[] = [];
+  const values: (string | number | null)[] = [];
   if (data.full_name !== undefined) { fields.push('full_name = ?'); values.push(data.full_name); }
   if (data.nickname !== undefined) { fields.push('nickname = ?'); values.push(data.nickname); }
   if (data.role !== undefined) { fields.push('role = ?'); values.push(data.role); }
   if (data.skill_level !== undefined) { fields.push('skill_level = ?'); values.push(data.skill_level); }
+  if (data.overall_score !== undefined) {
+    const score = data.overall_score === null ? null : Math.max(0, Math.min(100, data.overall_score));
+    fields.push('overall_score = ?');
+    values.push(score);
+    const level = overallScoreToLevel(score ?? 50);
+    const skill = overallLevelToSkillLevel(level);
+    fields.push('skill_level = ?');
+    values.push(skill);
+  }
   if (data.bio !== undefined) { fields.push('bio = ?'); values.push(data.bio); }
   if (data.preferred_side !== undefined) { fields.push('preferred_side = ?'); values.push(data.preferred_side); }
   if (data.preferred_hand !== undefined) { fields.push('preferred_hand = ?'); values.push(data.preferred_hand); }
@@ -103,6 +113,107 @@ export function updateUserAvatar(id: string, avatarPath: string | null): void {
 export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null): void {
   ensureDb();
   getDb().prepare('UPDATE users SET skill_level = ? WHERE id = ?').run(skillLevel, id);
+}
+
+/** Applica i risultati del torneo al punteggio overall: partita vinta +1, persa -1, 1° +2, 8° -2. */
+export function applyTournamentResultToOverall(tournamentId: string): void {
+  ensureDb();
+  const pairs = getPairs(tournamentId);
+  const matches = getMatches(tournamentId).filter(m => m.winner_pair_id != null);
+  const rankings = getTournamentRankings(tournamentId);
+
+  const pairIdToPosition = new Map(rankings.map(r => [r.pair_id, r.position]));
+  const pairIdToPair = new Map(pairs.map(p => [p.id, p]));
+
+  const userIdToWins = new Map<string, number>();
+  const userIdToLosses = new Map<string, number>();
+  const userIdToPosition = new Map<string, number>();
+
+  for (const pair of pairs) {
+    const pos = pairIdToPosition.get(pair.id);
+    if (pos != null) {
+      userIdToPosition.set(pair.player1_id, pos);
+      userIdToPosition.set(pair.player2_id, pos);
+    }
+    userIdToWins.set(pair.player1_id, 0);
+    userIdToWins.set(pair.player2_id, 0);
+    userIdToLosses.set(pair.player1_id, 0);
+    userIdToLosses.set(pair.player2_id, 0);
+  }
+
+  for (const m of matches) {
+    const winnerId = m.winner_pair_id!;
+    const loserId = m.pair1_id === winnerId ? m.pair2_id : m.pair1_id;
+    if (!loserId) continue;
+    const winnerPair = pairIdToPair.get(winnerId);
+    const loserPair = pairIdToPair.get(loserId);
+    if (winnerPair) {
+      userIdToWins.set(winnerPair.player1_id, (userIdToWins.get(winnerPair.player1_id) ?? 0) + 1);
+      userIdToWins.set(winnerPair.player2_id, (userIdToWins.get(winnerPair.player2_id) ?? 0) + 1);
+    }
+    if (loserPair) {
+      userIdToLosses.set(loserPair.player1_id, (userIdToLosses.get(loserPair.player1_id) ?? 0) + 1);
+      userIdToLosses.set(loserPair.player2_id, (userIdToLosses.get(loserPair.player2_id) ?? 0) + 1);
+    }
+  }
+
+  for (const pair of pairs) {
+    for (const userId of [pair.player1_id, pair.player2_id]) {
+      const wins = userIdToWins.get(userId) ?? 0;
+      const losses = userIdToLosses.get(userId) ?? 0;
+      const position = userIdToPosition.get(userId);
+      let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
+      if (position === 1) delta += TOURNAMENT_WIN_DELTA;
+      if (position === 8) delta += TOURNAMENT_LAST_DELTA;
+
+      const user = getUserById(userId);
+      const current = user?.overall_score != null ? user.overall_score : 50;
+      const newScore = Math.max(0, Math.min(100, current + delta));
+      updateUser(userId, { overall_score: newScore });
+    }
+  }
+}
+
+const OVERALL_SCORE_SEED: { name: string; score: number }[] = [
+  { name: 'Faber', score: 90 }, { name: 'David', score: 90 }, { name: 'Cora', score: 86 }, { name: 'Gerva', score: 83 },
+  { name: 'Mich', score: 82 }, { name: 'Braccio', score: 76 }, { name: 'Gazzella', score: 74 }, { name: 'Merzio', score: 73 },
+  { name: 'Dile', score: 72 }, { name: 'Fabio', score: 71 }, { name: 'Dibby', score: 70 }, { name: 'Scimmia', score: 69 },
+  { name: 'Danti', score: 67 }, { name: 'Veca', score: 65 }, { name: 'Valerio', score: 65 }, { name: 'Ema baldi', score: 60 },
+  { name: 'Porra', score: 58 }, { name: 'Fefo', score: 56 }, { name: 'Jullios', score: 54 }, { name: 'Samba', score: 48 },
+  { name: 'Marco', score: 45 },
+];
+
+/** Data di inizio per i grafici: lo storico parte dal 1 gennaio 2025 e si aggiorna a ogni torneo completato. */
+const CHART_START_DATE = '2025-01-01';
+
+/** Restituisce il punteggio seed per l'utente (se in OVERALL_SCORE_SEED), altrimenti null. */
+function getSeedOverallScoreForUser(userId: string): number | null {
+  const user = getUserById(userId);
+  if (!user) return null;
+  const norm = (s: string) => (s || '').trim().toLowerCase();
+  const nNick = norm(user.nickname ?? '');
+  const nUser = norm(user.username ?? '');
+  const nFull = norm(user.full_name ?? '');
+  const entry = OVERALL_SCORE_SEED.find(
+    (e) => norm(e.name) === nNick || norm(e.name) === nUser || norm(e.name) === nFull
+  );
+  return entry != null ? Math.max(0, Math.min(100, entry.score)) : null;
+}
+
+/** Assegna i punteggi overall dalla lista (match per nickname o username, case-insensitive). */
+export function seedOverallScores(entries?: { name: string; score: number }[]): void {
+  ensureDb();
+  const list = entries ?? OVERALL_SCORE_SEED;
+  const users = getUsers();
+  const norm = (s: string) => (s || '').trim().toLowerCase();
+  for (const entry of list) {
+    const n = norm(entry.name);
+    const user = users.find(u => norm(u.nickname ?? '') === n || norm(u.username ?? '') === n || norm(u.full_name ?? '') === n);
+    if (user) {
+      const clamped = Math.max(0, Math.min(100, entry.score));
+      updateUser(user.id, { overall_score: clamped });
+    }
+  }
 }
 
 export function deleteUser(id: string): void {
@@ -177,17 +288,18 @@ export function getAllPastTournamentDates(): { date: string }[] {
   return getDb().prepare("SELECT DISTINCT date FROM tournaments WHERE date < date('now') ORDER BY date DESC").all() as { date: string }[];
 }
 
-export function createTournament(data: { name: string; date: string; time?: string; venue?: string; created_by: string }): string {
+export function createTournament(data: { name: string; date: string; time?: string; venue?: string; category?: TournamentCategory; created_by: string }): string {
   ensureDb();
   const id = randomUUID();
+  const category = data.category === 'grand_slam' ? 'grand_slam' : 'master_1000';
   getDb().prepare(
-    `INSERT INTO tournaments (id, name, date, time, venue, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, data.name, data.date, data.time || null, data.venue || null, data.created_by);
+    `INSERT INTO tournaments (id, name, date, time, venue, category, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, data.name, data.date, data.time || null, data.venue || null, category, data.created_by);
   return id;
 }
 
-export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status'>>): void {
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category'>>): void {
   ensureDb();
   const fields: string[] = [];
   const values: (string | null)[] = [];
@@ -196,6 +308,7 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
   if (data.time !== undefined) { fields.push('time = ?'); values.push(data.time); }
   if (data.venue !== undefined) { fields.push('venue = ?'); values.push(data.venue); }
   if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
+  if (data.category !== undefined) { fields.push('category = ?'); values.push(data.category === 'grand_slam' ? 'grand_slam' : 'master_1000'); }
   if (fields.length === 0) return;
   values.push(id);
   getDb().prepare(`UPDATE tournaments SET ${fields.join(', ')} WHERE id = ?`).run(...values);
@@ -364,6 +477,18 @@ export interface MatchHistoryEntry {
   isWin: boolean;
 }
 
+/** Ordine cronologia partite (per torneo): 1) 7°/8° o 5°/6° o Finale o 3°/4° → 2) Semi Cons. o Semifinali → 3) Quarti. */
+const ROUND_DISPLAY_ORDER: Record<string, number> = {
+  consolation_seventh: 0,  // 7° e 8° posto
+  consolation_final: 1,     // 5° e 6° posto
+  final: 2,                 // Finale
+  third_place: 3,           // 3° e 4° posto
+  consolation_semi: 4,      // Semi Consolazione
+  semifinal: 5,             // Semifinali
+  quarterfinal: 6,          // Quarti di Finale
+};
+const DEFAULT_ROUND_ORDER = 99;
+
 export function getMatchHistoryForUser(userId: string): MatchHistoryEntry[] {
   ensureDb();
   const db = getDb();
@@ -441,6 +566,15 @@ export function getMatchHistoryForUser(userId: string): MatchHistoryEntry[] {
       isWin,
     });
   }
+
+  // Ordine: per torneo (data DESC), poi round: (7°/8° o 5°/6° o Finale o 3°/4°) → (Semi Cons. o Semifinali) → Quarti
+  const roundOrder = (round: string) => ROUND_DISPLAY_ORDER[round] ?? DEFAULT_ROUND_ORDER;
+  result.sort((a, b) => {
+    const dateCmp = b.date.localeCompare(a.date);
+    if (dateCmp !== 0) return dateCmp;
+    return roundOrder(a.round) - roundOrder(b.round);
+  });
+
   return result;
 }
 
@@ -528,6 +662,95 @@ export function getPlayerStats(userId: string): PlayerStats {
     bestWinStreak,
     favoritePartner,
   };
+}
+
+// ============ HISTORY FOR CHARTS ============
+
+export interface OverallScoreHistoryEntry {
+  date: string;
+  overall_score: number;
+}
+
+export interface PointsHistoryEntry {
+  date: string;
+  cumulative_points: number;
+}
+
+/** Tornei in cui l'utente ha partecipato (è in una coppia), ordinati per data ASC. */
+function getTournamentsForUserChronologically(userId: string): Tournament[] {
+  ensureDb();
+  const pairs = getDb().prepare('SELECT tournament_id FROM pairs WHERE player1_id = ? OR player2_id = ?').all(userId, userId) as { tournament_id: string }[];
+  const tournamentIds = Array.from(new Set(pairs.map((p) => p.tournament_id)));
+  if (tournamentIds.length === 0) return [];
+  const all = getTournaments();
+  const byId = new Map(all.map((t) => [t.id, t]));
+  const list = tournamentIds.map((id) => byId.get(id)).filter(Boolean) as Tournament[];
+  list.sort((a, b) => a.date.localeCompare(b.date));
+  return list;
+}
+
+/** Storico overall: inizio 1 gen 2025 (seed o 50), poi un punto per ogni torneo completato (data >= 2025-01-01). */
+export function getOverallScoreHistory(userId: string): OverallScoreHistoryEntry[] {
+  ensureDb();
+  const allTournaments = getTournamentsForUserChronologically(userId);
+  const tournaments = allTournaments.filter((t) => t.date >= CHART_START_DATE);
+  const initialScore = getSeedOverallScoreForUser(userId) ?? 50;
+  const result: OverallScoreHistoryEntry[] = [{ date: CHART_START_DATE, overall_score: initialScore }];
+  let score = initialScore;
+
+  for (const t of tournaments) {
+    const pairs = getPairs(t.id);
+    const userPair = pairs.find((p) => p.player1_id === userId || p.player2_id === userId);
+    if (!userPair) continue;
+
+    const matches = getMatches(t.id).filter((m) => m.winner_pair_id != null);
+    const rankings = getTournamentRankings(t.id);
+    const pairIdToPosition = new Map(rankings.map((r) => [r.pair_id, r.position]));
+
+    let wins = 0;
+    let losses = 0;
+    for (const m of matches) {
+      const winnerId = m.winner_pair_id!;
+      const loserId = m.pair1_id === winnerId ? m.pair2_id : m.pair1_id;
+      if (!loserId) continue;
+      if (winnerId === userPair.id) wins++;
+      else if (loserId === userPair.id) losses++;
+    }
+    const position = pairIdToPosition.get(userPair.id);
+
+    let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
+    if (position === 1) delta += TOURNAMENT_WIN_DELTA;
+    if (position === 8) delta += TOURNAMENT_LAST_DELTA;
+
+    score = Math.max(0, Math.min(100, score + delta));
+    result.push({ date: t.date, overall_score: score });
+  }
+
+  // Non aggiungiamo un punto con data "oggi" per allineare al valore in DB: creerebbe l'impressione
+  // che siano stati assegnati punti in una data in cui non c'è stato nessun torneo.
+  return result;
+}
+
+/** Storico punti ATP cumulativi: inizio 1 gen 2025 con 0, poi un punto per ogni torneo completato (data >= 2025-01-01). */
+export function getPointsHistory(userId: string): PointsHistoryEntry[] {
+  ensureDb();
+  const allTournaments = getTournamentsForUserChronologically(userId);
+  const tournaments = allTournaments.filter((t) => t.date >= CHART_START_DATE);
+  const result: PointsHistoryEntry[] = [{ date: CHART_START_DATE, cumulative_points: 0 }];
+  let cumulative = 0;
+
+  for (const t of tournaments) {
+    const pairs = getPairs(t.id);
+    const userPair = pairs.find((p) => p.player1_id === userId || p.player2_id === userId);
+    if (!userPair) continue;
+
+    const rankings = getTournamentRankings(t.id);
+    const row = rankings.find((r) => r.pair_id === userPair.id);
+    const points = row?.points ?? 0;
+    cumulative += points;
+    result.push({ date: t.date, cumulative_points: cumulative });
+  }
+  return result;
 }
 
 // ============ RANKINGS ============

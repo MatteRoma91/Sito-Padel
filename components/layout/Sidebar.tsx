@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Server,
+  RefreshCw,
   X
 } from 'lucide-react';
 import { useState } from 'react';
@@ -42,6 +43,7 @@ const navItems = [
 
 const accessiNavItem = { href: '/stats/accessi', label: 'Accessi', icon: Activity };
 const resetPasswordNavItem = { href: '/stats/reset-password', label: 'Reset Password', icon: KeyRound };
+const recalculateRankingsNavItem = { href: '/stats/recalculate-rankings', label: 'Ricalcola punteggi', icon: RefreshCw };
 const serverNavItem = { href: '/stats/server', label: 'Server', icon: Server };
 
 const canSeeAccessi = (username: string) =>
@@ -166,6 +168,21 @@ export function Sidebar({ user }: SidebarProps) {
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{resetPasswordNavItem.label}</span>
+                  </Link>
+                );
+              })()}
+              {user.role === 'admin' && (() => {
+                const Icon = recalculateRankingsNavItem.icon;
+                const isActive = pathname === recalculateRankingsNavItem.href || pathname.startsWith(recalculateRankingsNavItem.href + '/');
+                return (
+                  <Link
+                    key={recalculateRankingsNavItem.href}
+                    href={recalculateRankingsNavItem.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-[#B2FF00] text-slate-900' : 'text-white hover:bg-[#6270F3]'}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{recalculateRankingsNavItem.label}</span>
                   </Link>
                 );
               })()}

@@ -1,12 +1,14 @@
-import type { Match, Pair, TournamentRanking } from './types';
-import { POSITION_POINTS } from './types';
+import type { Match, Pair, TournamentRanking, TournamentCategory } from './types';
+import { getPositionPoints } from './types';
 
 /**
- * Calcola le classifiche di un torneo basandosi sui risultati delle partite
+ * Calcola le classifiche di un torneo basandosi sui risultati delle partite.
+ * I punti dipendono dalla categoria del torneo (Grande Slam / Master 1000).
  */
 export function calculateTournamentRankings(
   pairs: Pair[],
-  matches: Match[]
+  matches: Match[],
+  category: TournamentCategory = 'master_1000'
 ): TournamentRanking[] {
   const rankings: TournamentRanking[] = [];
   const pairPositions = new Map<string, number>();
@@ -54,7 +56,7 @@ export function calculateTournamentRankings(
         tournament_id: pair.tournament_id,
         pair_id: pair.id,
         position,
-        points: POSITION_POINTS[position] || 0,
+        points: getPositionPoints(category, position),
         is_override: 0,
       });
     }

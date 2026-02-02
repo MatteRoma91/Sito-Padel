@@ -41,12 +41,11 @@ export async function POST(
     const rankings = getCumulativeRankings();
     const rankingMap = new Map(rankings.map(r => [r.user_id, r.total_points]));
 
-    // Get skill levels
     const users = getUsersByIds(participatingIds);
     const skillLevelMap = new Map(users.map(u => [u.id, u.skill_level]));
+    const overallScoreMap = new Map(users.map(u => [u.id, u.overall_score ?? 50]));
 
-    // Extract pairs using skill levels and rankings
-    const extractedPairs = extractPairs(participatingIds, rankingMap, skillLevelMap);
+    const extractedPairs = extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap);
 
     // Delete existing pairs, matches, and rankings
     deleteMatches(tournamentId);

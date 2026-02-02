@@ -49,7 +49,7 @@ export async function PATCH(
 
   try {
     const data = await request.json();
-    const { full_name, nickname, role, skill_level, bio, preferred_side, preferred_hand, birth_date, new_password } = data;
+    const { full_name, nickname, role, skill_level, overall_score, bio, preferred_side, preferred_hand, birth_date, new_password } = data;
 
     // Update profile info
     const updates: { 
@@ -57,6 +57,7 @@ export async function PATCH(
       nickname?: string; 
       role?: UserRole; 
       skill_level?: SkillLevel | null;
+      overall_score?: number | null;
       bio?: string | null;
       preferred_side?: FieldSide | null;
       preferred_hand?: Hand | null;
@@ -67,6 +68,10 @@ export async function PATCH(
     if (nickname !== undefined) updates.nickname = nickname;
     if (role !== undefined && isAdmin) updates.role = role as UserRole;
     if (skill_level !== undefined && isAdmin) updates.skill_level = skill_level as SkillLevel | null;
+    if (overall_score !== undefined && isAdmin) {
+      const v = overall_score === null || overall_score === '' ? null : Math.max(0, Math.min(100, Number(overall_score)));
+      updates.overall_score = v;
+    }
     
     // Bio is only editable by the profile owner (not admin unless it's their own profile)
     if (bio !== undefined && isOwnProfile) updates.bio = bio as string | null;

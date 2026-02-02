@@ -23,17 +23,20 @@ export async function POST(request: Request) {
 
   try {
     const data = await request.json();
-    const { name, date, time, venue } = data;
+    const { name, date, time, venue, category } = data;
 
     if (!name || !date) {
       return NextResponse.json({ success: false, error: 'Nome e data richiesti' }, { status: 400 });
     }
+
+    const validCategory = category === 'grand_slam' ? 'grand_slam' : 'master_1000';
 
     const id = createTournament({
       name,
       date,
       time: time || undefined,
       venue: venue || undefined,
+      category: validCategory,
       created_by: user.id,
     });
 

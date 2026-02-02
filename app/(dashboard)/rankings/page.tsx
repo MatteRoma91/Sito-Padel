@@ -1,5 +1,6 @@
 import { getUsers, getCumulativeRankings, getTournamentsPast, getTournamentRankings, getPairs } from '@/lib/db/queries';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
+import { UnifiedRankingsCard } from '@/components/rankings/UnifiedRankingsCard';
 
 export default async function RankingsPage() {
   const allUsers = getUsers();
@@ -19,88 +20,33 @@ export default async function RankingsPage() {
     .filter(r => r.user)
     .sort((a, b) => b.total_points - a.total_points);
 
-  // Get medals for display
-  const getMedal = (position: number) => {
-    if (position === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
-    if (position === 2) return <Medal className="w-5 h-5 text-slate-600" />;
-    if (position === 3) return <Award className="w-5 h-5 text-[#B2FF00]" />;
-    return null;
-  };
+  // Classifica per livello (overall_score 0-100)
+  const levelRankedUsers = [...users]
+    .filter(u => u.username !== 'admin')
+    .sort((a, b) => (b.overall_score ?? 0) - (a.overall_score ?? 0));
+
+  const generalRanking = rankedUsers.map(r => ({
+    user_id: r.user_id,
+    total_points: r.total_points,
+    userName: r.user?.nickname || r.user?.full_name || r.user?.username || '?',
+    gold_medals: r.gold_medals,
+    silver_medals: r.silver_medals,
+    bronze_medals: r.bronze_medals,
+    wooden_spoons: r.wooden_spoons,
+  }));
+
+  const levelRanking = levelRankedUsers.map(u => ({
+    id: u.id,
+    userName: u.nickname || u.full_name || u.username || '?',
+    overall_score: u.overall_score,
+    levelLabel: u.overall_score != null ? OVERALL_LEVEL_LABELS[overallScoreToLevel(u.overall_score)] : '-',
+  }));
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Classifiche</h1>
 
-      {/* Cumulative ranking */}
-      <div className="card">
-        <div className="p-4 border-b border-[#9AB0F8] dark:border-[#6270F3]/50">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#B2FF00]" />
-            Classifica Generale
-          </h2>
-          <p className="text-sm text-slate-700 dark:text-slate-300">
-            Punti totali accumulati in tutti i tornei
-          </p>
-        </div>
-
-        <div className="divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
-          {rankedUsers.length === 0 ? (
-            <p className="p-4 text-slate-700 dark:text-slate-300">
-              Nessuna classifica disponibile. Completa un torneo per vedere i risultati.
-            </p>
-          ) : (
-            rankedUsers.map((r, i) => (
-              <div 
-                key={r.user_id} 
-                className={`flex items-center justify-between p-4 ${
-                  i < 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-[#0c1451]/20' : ''
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-bold
-                    ${i === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                      i === 1 ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300' :
-                      i === 2 ? 'bg-accent-100 text-[#629900]' :
-                      'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-500'}
-                  `}>
-                    {i + 1}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
-                        {r.user?.nickname || r.user?.full_name || r.user?.username}
-                      </span>
-                      {getMedal(i + 1)}
-                    </div>
-                    {/* Medals display */}
-                    {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0) && (
-                      <div className="flex items-center gap-2 mt-1 text-sm">
-                        {r.gold_medals > 0 && (
-                          <span title="Ori">🥇{r.gold_medals}</span>
-                        )}
-                        {r.silver_medals > 0 && (
-                          <span title="Argenti">🥈{r.silver_medals}</span>
-                        )}
-                        {r.bronze_medals > 0 && (
-                          <span title="Bronzi">🥉{r.bronze_medals}</span>
-                        )}
-                        {r.wooden_spoons > 0 && (
-                          <span title="Cucchiarelle">🥄{r.wooden_spoons}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xl font-bold text-[#B2FF00]">{r.total_points}</span>
-                  <span className="text-sm text-slate-700 dark:text-slate-300 ml-1">pt</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      <UnifiedRankingsCard generalRanking={generalRanking} levelRanking={levelRanking} />
 
       {/* Recent tournament rankings */}
       {pastTournaments.length > 0 && (

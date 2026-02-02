@@ -31,6 +31,7 @@ export function EditTournamentForm({ tournament }: EditTournamentFormProps) {
           date: formData.get('date'),
           time: formData.get('time'),
           venue: formData.get('venue'),
+          category: formData.get('category') || 'master_1000',
         }),
       });
 
@@ -86,6 +87,16 @@ export function EditTournamentForm({ tournament }: EditTournamentFormProps) {
             defaultValue={tournament.name}
             className="input"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Categoria
+          </label>
+          <select name="category" className="input" defaultValue={tournament.category ?? 'master_1000'}>
+            <option value="master_1000">Master 1000</option>
+            <option value="grand_slam">Grande Slam</option>
+          </select>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
