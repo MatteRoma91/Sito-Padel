@@ -25,7 +25,7 @@ const players = [
   { username: 'dile', nickname: 'Dile' },
   { username: 'david', nickname: 'David' },
   { username: 'scimmia', nickname: 'Scimmia' },
-  { username: 'valerio', nickname: 'Valerio (Veca)' },
+  { username: 'valerio', nickname: 'Valerio' },
   { username: 'merzio', nickname: 'Merzio' },
   { username: 'danti', nickname: 'Danti' },
   { username: 'ema.baldi', nickname: 'Ema Baldi' },
