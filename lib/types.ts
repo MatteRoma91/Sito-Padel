@@ -113,6 +113,7 @@ export interface Tournament {
   created_by: string;
   created_at: string;
   completed_at?: string | null;
+  mvp_deadline?: string | null;
 }
 
 export interface TournamentParticipant {

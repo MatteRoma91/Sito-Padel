@@ -42,7 +42,7 @@ export default async function HomePage() {
   const tourName = config.text_tour_name || 'Banana Padel Tour';
   const welcomeSubtitle = config.text_welcome_subtitle || "Ricordati che vincere non è importante... ma il Broccoburgher sì!!";
 
-  const mvpVotingTournaments = user ? getTournamentsWithOpenMvpVoting(user.id) : [];
+  const mvpVotingTournaments = user ? getTournamentsWithOpenMvpVoting(user.id, isAdmin) : [];
 
   // Top 5 players (excluding admins)
   const topPlayers = rankings.map(r => {
@@ -94,18 +94,6 @@ export default async function HomePage() {
         />
       )}
 
-      {/* MVP Voting - tornei dove l'utente può votare e non ha ancora votato */}
-      {mvpVotingTournaments.map(({ tournament, status }) => (
-        <MvpVoteCard
-          key={tournament.id}
-          tournamentId={tournament.id}
-          tournamentName={tournament.name}
-          closesAt={status.closesAt}
-          allVoted={status.allVoted}
-          candidates={status.candidates}
-        />
-      ))}
-
       {/* Admin quick actions */}
       {isAdmin && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -136,6 +124,21 @@ export default async function HomePage() {
         </div>
       )}
 
+      {/* MVP Voting - subito sotto le quick action, sopra calendario (striscia gialla) */}
+      {mvpVotingTournaments.map(({ tournament, status }) => (
+        <MvpVoteCard
+          key={tournament.id}
+          tournamentId={tournament.id}
+          tournamentName={tournament.name}
+          closesAt={status.closesAt}
+          allVoted={status.allVoted}
+          candidates={status.candidates}
+          canVote={status.voterCanVote && !status.userHasVoted}
+          isAdmin={isAdmin}
+          needsAdminAssignment={status.needsAdminAssignment}
+        />
+      ))}
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Calendario unificato: tornei e compleanni per mese */}
         <HomeCalendar tournaments={calendarTournaments} birthdays={calendarBirthdays} />
@@ -162,8 +165,8 @@ export default async function HomePage() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
                     ${i === 0 ? 'bg-yellow-400 text-yellow-900' : 
                       i === 1 ? 'bg-slate-300 text-slate-700' :
-                      i === 2 ? 'bg-primary-300 text-white' :
-                      'bg-slate-100 text-slate-700'}
+                      i === 2 ? 'bg-amber-600 text-white' :
+                      'bg-primary-300 text-white'}
                   `}>
                     {i + 1}
                   </div>

@@ -6,7 +6,8 @@ import {
   getUsers, 
   getPairs, 
   getMatches,
-  getTournamentRankings
+  getTournamentRankings,
+  getMvpVotingStatus,
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
@@ -16,6 +17,7 @@ import { ExportPdfButton } from '@/components/tournaments/ExportPdfButton';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
 import { ConsolidateResultsButton } from '@/components/tournaments/ConsolidateResultsButton';
 import { ReopenTournamentButton } from '@/components/tournaments/ReopenTournamentButton';
+import { ReopenMvpVotingButton } from '@/components/tournaments/ReopenMvpVotingButton';
 import { isTournamentComplete } from '@/lib/rankings';
 
 export default async function TournamentBracketPage({
@@ -54,6 +56,11 @@ export default async function TournamentBracketPage({
     ? [] 
     : allUsers.filter(u => u.is_hidden).map(u => u.id);
   
+  const mvpStatus = tournament.status === 'completed' && tournament.completed_at
+    ? getMvpVotingStatus(id, currentUser?.id ?? null)
+    : null;
+  const mvpVotingClosed = !!mvpStatus && !mvpStatus.isOpen;
+
   // Filter rankings for display
   const visibleRankings = rankings.filter(r => {
     if (canSeeHidden) return true;
@@ -105,6 +112,11 @@ export default async function TournamentBracketPage({
       {/* Reopen tournament button (admin only, completed tournaments) */}
       {isAdmin && tournament.status === 'completed' && (
         <ReopenTournamentButton tournamentId={tournament.id} />
+      )}
+
+      {/* Riapri votazione MVP (admin only, when MVP voting was closed) */}
+      {isAdmin && tournament.status === 'completed' && tournament.completed_at && mvpVotingClosed && (
+        <ReopenMvpVotingButton tournamentId={tournament.id} tournamentName={tournament.name} />
       )}
 
       {/* Consolidate results button (admin only, when all matches have results but not yet completed) */}

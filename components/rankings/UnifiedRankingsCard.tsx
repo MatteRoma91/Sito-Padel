@@ -34,10 +34,10 @@ function getMedal(position: number) {
 }
 
 function positionStyle(i: number) {
-  if (i === 0) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
-  if (i === 1) return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
-  if (i === 2) return 'bg-accent-100 text-[#629900]';
-  return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-500';
+  if (i === 0) return 'bg-yellow-400 text-yellow-900 dark:bg-yellow-500 dark:text-yellow-900';
+  if (i === 1) return 'bg-slate-300 text-slate-700 dark:bg-slate-400 dark:text-slate-900';
+  if (i === 2) return 'bg-amber-600 text-white dark:bg-amber-600 dark:text-white';
+  return 'bg-primary-300 text-white dark:bg-primary-400 dark:text-white';
 }
 
 export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRankingsCardProps) {

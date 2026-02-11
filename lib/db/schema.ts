@@ -134,6 +134,11 @@ export function initSchema() {
     // Column already exists
   }
   try {
+    db.exec(`ALTER TABLE tournaments ADD COLUMN mvp_deadline TEXT`);
+  } catch {
+    // Column already exists
+  }
+  try {
     db.exec(`ALTER TABLE cumulative_rankings ADD COLUMN mvp_count INTEGER NOT NULL DEFAULT 0`);
   } catch {
     // Column already exists
@@ -152,7 +157,7 @@ export function initSchema() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS tournament_mvp (
       tournament_id TEXT PRIMARY KEY REFERENCES tournaments(id) ON DELETE CASCADE,
-      mvp_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE
+      mvp_user_id TEXT REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
@@ -297,5 +302,27 @@ export function initSchema() {
     }
   } catch {
     // Migrazione fallita o non necessaria
+  }
+
+  // Migrazione: tournament_mvp con mvp_user_id nullable (chiudere senza assegnare MVP)
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(tournament_mvp)").all() as { name: string; type: string; notnull: number }[];
+    const mvpCol = tableInfo.find(c => c.name === 'mvp_user_id');
+    if (mvpCol?.notnull === 1) {
+      db.exec(`
+        CREATE TABLE tournament_mvp_new (
+          tournament_id TEXT PRIMARY KEY REFERENCES tournaments(id) ON DELETE CASCADE,
+          mvp_user_id TEXT REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec(`
+        INSERT INTO tournament_mvp_new (tournament_id, mvp_user_id)
+        SELECT tournament_id, mvp_user_id FROM tournament_mvp WHERE mvp_user_id IS NOT NULL AND mvp_user_id != ''
+      `);
+      db.exec(`DROP TABLE tournament_mvp`);
+      db.exec(`ALTER TABLE tournament_mvp_new RENAME TO tournament_mvp`);
+    }
+  } catch {
+    // ignore
   }
 }

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Clock } from 'lucide-react';
+import { Star, Clock, Settings } from 'lucide-react';
+import { MvpAdminModal } from '@/components/tournaments/MvpAdminModal';
 
 interface MvpVoteCardProps {
   tournamentId: string;
@@ -10,6 +11,9 @@ interface MvpVoteCardProps {
   closesAt: string | null;
   allVoted: boolean;
   candidates: { id: string; name: string }[];
+  canVote?: boolean;
+  isAdmin?: boolean;
+  needsAdminAssignment?: boolean;
 }
 
 function getTimeLeft(closesAt: string | null): { hours: number; minutes: number; seconds: number; isPast: boolean } {
@@ -35,9 +39,13 @@ export function MvpVoteCard({
   closesAt,
   allVoted,
   candidates,
+  canVote = true,
+  isAdmin = false,
+  needsAdminAssignment = false,
 }: MvpVoteCardProps) {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(closesAt));
+  const [adminModalOpen, setAdminModalOpen] = useState(needsAdminAssignment);
   const [selected, setSelected] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -83,19 +91,52 @@ export function MvpVoteCard({
 
   return (
     <div className="card p-6 border-2 border-accent-500/50 bg-accent-50/30 dark:bg-accent-900/10">
-      <div className="flex items-center gap-2 mb-4">
-        <Star className="w-6 h-6 text-amber-500" />
-        <h2 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
-          Vota l&apos;MVP del torneo {tournamentName}
-        </h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Star className="w-6 h-6 text-amber-500" />
+          <h2 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
+            {needsAdminAssignment
+              ? `Assegnazione MVP richiesta: ${tournamentName}`
+              : canVote
+                ? `Vota l'MVP del torneo ${tournamentName}`
+                : `Votazione MVP: ${tournamentName}`}
+          </h2>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setAdminModalOpen(true)}
+            className="btn btn-secondary flex items-center gap-2 text-sm"
+          >
+            <Settings className="w-4 h-4" />
+            {needsAdminAssignment ? 'Assegna / Conferma MVP' : 'Gestione MVP'}
+          </button>
+        )}
       </div>
+
+      <MvpAdminModal
+        tournamentId={tournamentId}
+        tournamentName={tournamentName}
+        open={adminModalOpen}
+        onClose={() => setAdminModalOpen(false)}
+      />
 
       <div className="flex items-center gap-2 mb-4 text-sm text-slate-700 dark:text-slate-300">
         <Clock className="w-4 h-4" />
-        <span className="font-medium">Chiusura: {countdownText}</span>
+        <span className="font-medium">
+          {needsAdminAssignment ? 'Votazione chiusa' : `Chiusura: ${countdownText}`}
+        </span>
       </div>
 
-      {candidates.length === 0 ? (
+      {needsAdminAssignment ? (
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          La votazione è terminata. Clicca &quot;Assegna / Conferma MVP&quot; per assegnare l&apos;MVP o confermare che non ci sarà alcun MVP.
+        </p>
+      ) : !canVote ? (
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Votazione in corso. Solo i partecipanti possono votare.
+        </p>
+      ) : candidates.length === 0 ? (
         <p className="text-sm text-slate-600">Nessun candidato disponibile.</p>
       ) : (
         <>
