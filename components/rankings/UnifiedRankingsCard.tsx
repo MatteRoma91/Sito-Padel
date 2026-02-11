@@ -11,6 +11,7 @@ export interface GeneralRankingEntry {
   silver_medals: number;
   bronze_medals: number;
   wooden_spoons: number;
+  mvp_count?: number;
 }
 
 export interface LevelRankingEntry {
@@ -99,12 +100,13 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                         </span>
                         {getMedal(i + 1)}
                       </div>
-                      {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0) && (
+                      {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0 || (r.mvp_count ?? 0) > 0) && (
                         <div className="flex items-center gap-2 mt-1 text-sm">
                           {r.gold_medals > 0 && <span title="Ori">🥇{r.gold_medals}</span>}
                           {r.silver_medals > 0 && <span title="Argenti">🥈{r.silver_medals}</span>}
                           {r.bronze_medals > 0 && <span title="Bronzi">🥉{r.bronze_medals}</span>}
                           {r.wooden_spoons > 0 && <span title="Cucchiarelle">🥄{r.wooden_spoons}</span>}
+                          {(r.mvp_count ?? 0) > 0 && <span title="MVP">⭐{r.mvp_count}</span>}
                         </div>
                       )}
                     </div>

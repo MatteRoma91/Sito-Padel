@@ -251,23 +251,24 @@ export function getUsersWithLoginCounts(): UserWithLoginCount[] {
 }
 
 // ============ LOGIN ATTEMPTS (rate limiting) ============
+// Blocco per (IP + username): sbagliare con un profilo non blocca l'accesso con altri dallo stesso IP
 
 export interface LoginAttempt {
   ip: string;
+  username: string;
   failed_count: number;
   locked_until: string;
-  attempted_username: string;
 }
 
-export function getLoginAttempts(ip: string): LoginAttempt | undefined {
+export function getLoginAttempts(ip: string, username: string): LoginAttempt | undefined {
   ensureDb();
-  return getDb().prepare('SELECT ip, failed_count, locked_until, attempted_username FROM login_attempts WHERE ip = ?').get(ip) as LoginAttempt | undefined;
+  return getDb().prepare('SELECT ip, username, failed_count, locked_until FROM login_attempts WHERE ip = ? AND username = ?').get(ip, username) as LoginAttempt | undefined;
 }
 
 export function recordLoginFailure(ip: string, username: string): void {
   ensureDb();
   const db = getDb();
-  const existing = getLoginAttempts(ip);
+  const existing = getLoginAttempts(ip, username);
   const now = new Date();
   const lockedUntil = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
 
@@ -275,32 +276,32 @@ export function recordLoginFailure(ip: string, username: string): void {
     const newCount = existing.failed_count + 1;
     const lock = newCount >= 5 ? lockedUntil : '';
     db.prepare(
-      'UPDATE login_attempts SET failed_count = ?, locked_until = ?, attempted_username = ? WHERE ip = ?'
-    ).run(newCount, lock, username || '', ip);
+      'UPDATE login_attempts SET failed_count = ?, locked_until = ? WHERE ip = ? AND username = ?'
+    ).run(newCount, lock, ip, username);
   } else {
     const lock = 1 >= 5 ? lockedUntil : '';
     db.prepare(
-      'INSERT INTO login_attempts (ip, failed_count, locked_until, attempted_username) VALUES (?, 1, ?, ?)'
-    ).run(ip, lock, username || '');
+      'INSERT INTO login_attempts (ip, username, failed_count, locked_until) VALUES (?, ?, 1, ?)'
+    ).run(ip, username || 'unknown', lock);
   }
 }
 
-export function recordLoginSuccess(ip: string): void {
+export function recordLoginSuccess(ip: string, username: string): void {
   ensureDb();
-  getDb().prepare('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+  getDb().prepare('DELETE FROM login_attempts WHERE ip = ? AND username = ?').run(ip, username);
 }
 
-export function resetLoginAttempts(ip: string): boolean {
+export function resetLoginAttempts(ip: string, username: string): boolean {
   ensureDb();
-  const result = getDb().prepare('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+  const result = getDb().prepare('DELETE FROM login_attempts WHERE ip = ? AND username = ?').run(ip, username);
   return result.changes > 0;
 }
 
-export function getBlockedIps(): LoginAttempt[] {
+export function getBlockedAttempts(): LoginAttempt[] {
   ensureDb();
   const now = new Date().toISOString();
   return getDb().prepare(
-    'SELECT ip, failed_count, locked_until, attempted_username FROM login_attempts WHERE locked_until != "" AND locked_until > ? ORDER BY locked_until DESC'
+    'SELECT ip, username, failed_count, locked_until FROM login_attempts WHERE locked_until != "" AND locked_until > ? ORDER BY locked_until DESC'
   ).all(now) as LoginAttempt[];
 }
 
@@ -395,7 +396,7 @@ export function createTournament(data: { name: string; date: string; time?: stri
   return id;
 }
 
-export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players'>>): void {
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'completed_at'>>): void {
   ensureDb();
   const existing = getTournamentById(id);
 
@@ -407,6 +408,7 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
   if (data.time !== undefined) { fields.push('time = ?'); values.push(data.time); }
   if (data.venue !== undefined) { fields.push('venue = ?'); values.push(data.venue); }
   if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
+  if (data.completed_at !== undefined) { fields.push('completed_at = ?'); values.push(data.completed_at); }
 
   // Calcola il nuovo max_players (se fornito) o quello esistente
   const effectiveMaxPlayers = data.max_players !== undefined
@@ -901,6 +903,184 @@ export function insertTournamentRanking(data: TournamentRanking): void {
   ).run(data.tournament_id, data.pair_id, data.position, data.points, data.is_override, data.position, data.points, data.is_override);
 }
 
+// ============ MVP VOTING ============
+
+const MVP_VOTING_HOURS = 48;
+
+export function getTournamentParticipantUserIds(tournamentId: string): string[] {
+  ensureDb();
+  const rows = getDb().prepare(`
+    SELECT DISTINCT player1_id as user_id FROM pairs WHERE tournament_id = ?
+    UNION
+    SELECT DISTINCT player2_id FROM pairs WHERE tournament_id = ?
+  `).all(tournamentId, tournamentId) as { user_id: string }[];
+  return rows.map(r => r.user_id);
+}
+
+export function getTournamentMvp(tournamentId: string): string | null {
+  ensureDb();
+  const row = getDb().prepare('SELECT mvp_user_id FROM tournament_mvp WHERE tournament_id = ?').get(tournamentId) as { mvp_user_id: string } | undefined;
+  return row?.mvp_user_id ?? null;
+}
+
+export function finalizeMvpIfNeeded(tournamentId: string): void {
+  ensureDb();
+  const db = getDb();
+  const existing = db.prepare('SELECT 1 FROM tournament_mvp WHERE tournament_id = ?').get(tournamentId);
+  if (existing) return;
+
+  const tournament = getTournamentById(tournamentId);
+  if (!tournament || tournament.status !== 'completed' || !tournament.completed_at) return;
+
+  const participantIds = getTournamentParticipantUserIds(tournamentId);
+  if (participantIds.length === 0) return;
+
+  const votes = db.prepare('SELECT voted_user_id FROM mvp_votes WHERE tournament_id = ?').all(tournamentId) as { voted_user_id: string }[];
+  const completedAt = new Date(tournament.completed_at);
+  const deadline = new Date(completedAt.getTime() + MVP_VOTING_HOURS * 60 * 60 * 1000);
+  const now = new Date();
+
+  const allVoted = votes.length >= participantIds.length;
+  const timeExpired = now >= deadline;
+
+  if (!allVoted && !timeExpired) return;
+
+  const counts = new Map<string, number>();
+  for (const v of votes) {
+    counts.set(v.voted_user_id, (counts.get(v.voted_user_id) ?? 0) + 1);
+  }
+  let winnerId: string | null = null;
+  let maxVotes = 0;
+  for (const [uid, c] of Array.from(counts.entries())) {
+    if (c > maxVotes) {
+      maxVotes = c;
+      winnerId = uid;
+    }
+  }
+  if (winnerId) {
+    db.prepare('INSERT INTO tournament_mvp (tournament_id, mvp_user_id) VALUES (?, ?)').run(tournamentId, winnerId);
+    recalculateCumulativeRankings();
+  }
+}
+
+export function isMvpVotingOpen(tournamentId: string): boolean {
+  ensureDb();
+  const db = getDb();
+  if (db.prepare('SELECT 1 FROM tournament_mvp WHERE tournament_id = ?').get(tournamentId)) return false;
+
+  const tournament = getTournamentById(tournamentId);
+  if (!tournament || tournament.status !== 'completed' || !tournament.completed_at) return false;
+
+  const participantIds = getTournamentParticipantUserIds(tournamentId);
+  const votes = db.prepare('SELECT 1 FROM mvp_votes WHERE tournament_id = ?').all(tournamentId);
+  const completedAt = new Date(tournament.completed_at);
+  const deadline = new Date(completedAt.getTime() + MVP_VOTING_HOURS * 60 * 60 * 1000);
+  const now = new Date();
+
+  if (now >= deadline) return false;
+  if (votes.length >= participantIds.length) return false;
+  return true;
+}
+
+export interface MvpVotingStatus {
+  isOpen: boolean;
+  closesAt: string | null;
+  allVoted: boolean;
+  participantCount: number;
+  votedCount: number;
+  userHasVoted: boolean;
+  userVotedFor: string | null;
+  voterCanVote: boolean;
+  candidates: { id: string; name: string }[];
+}
+
+export function getMvpVotingStatus(tournamentId: string, userId: string | null): MvpVotingStatus {
+  ensureDb();
+  finalizeMvpIfNeeded(tournamentId);
+  const db = getDb();
+  const tournament = getTournamentById(tournamentId);
+  const participantIds = getTournamentParticipantUserIds(tournamentId);
+  const participantSet = new Set(participantIds);
+
+  const result: MvpVotingStatus = {
+    isOpen: false,
+    closesAt: null,
+    allVoted: false,
+    participantCount: participantIds.length,
+    votedCount: 0,
+    userHasVoted: false,
+    userVotedFor: null,
+    voterCanVote: false,
+    candidates: [],
+  };
+
+  if (!tournament || tournament.status !== 'completed' || !tournament.completed_at) return result;
+
+  const completedAt = new Date(tournament.completed_at);
+  const deadline = new Date(completedAt.getTime() + MVP_VOTING_HOURS * 60 * 60 * 1000);
+  result.closesAt = deadline.toISOString();
+
+  const mvpExists = db.prepare('SELECT 1 FROM tournament_mvp WHERE tournament_id = ?').get(tournamentId);
+  if (mvpExists) return result;
+
+  const votes = db.prepare('SELECT voter_user_id, voted_user_id FROM mvp_votes WHERE tournament_id = ?').all(tournamentId) as { voter_user_id: string; voted_user_id: string }[];
+  result.votedCount = votes.length;
+  result.allVoted = votes.length >= participantIds.length;
+
+  if (userId) {
+    const userVote = votes.find(v => v.voter_user_id === userId);
+    result.userHasVoted = !!userVote;
+    result.userVotedFor = userVote?.voted_user_id ?? null;
+    result.voterCanVote = participantSet.has(userId);
+  }
+
+  const now = new Date();
+  result.isOpen = now < deadline && !result.allVoted;
+
+  const users = getUsersByIds(participantIds);
+  result.candidates = users
+    .filter(u => !userId || u.id !== userId)
+    .map(u => ({
+      id: u.id,
+      name: u.nickname || u.full_name || u.username || '?',
+    }));
+
+  return result;
+}
+
+export function submitMvpVote(tournamentId: string, voterId: string, votedUserId: string): boolean {
+  ensureDb();
+  const participantIds = getTournamentParticipantUserIds(tournamentId);
+  if (!participantIds.includes(voterId)) return false;
+  if (!participantIds.includes(votedUserId)) return false;
+  if (voterId === votedUserId) return false;
+
+  getDb().prepare(
+    'INSERT OR REPLACE INTO mvp_votes (tournament_id, voter_user_id, voted_user_id) VALUES (?, ?, ?)'
+  ).run(tournamentId, voterId, votedUserId);
+  return true;
+}
+
+export function getTournamentsWithOpenMvpVoting(userId: string): Array<{ tournament: Tournament; status: MvpVotingStatus }> {
+  ensureDb();
+  const tournaments = getDb().prepare(`
+    SELECT * FROM tournaments 
+    WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at != ''
+    ORDER BY completed_at DESC
+  `).all() as Tournament[];
+
+  const result: Array<{ tournament: Tournament; status: MvpVotingStatus }> = [];
+  for (const t of tournaments) {
+    const status = getMvpVotingStatus(t.id, userId);
+    if (status.isOpen && status.voterCanVote && !status.userHasVoted) {
+      result.push({ tournament: t, status });
+    }
+  }
+  return result;
+}
+
+// ============ CUMULATIVE RANKINGS ============
+
 export function getCumulativeRankings(): CumulativeRanking[] {
   ensureDb();
   return getDb().prepare('SELECT * FROM cumulative_rankings ORDER BY total_points DESC').all() as CumulativeRanking[];
@@ -976,29 +1156,39 @@ export function recalculateCumulativeRankings(): void {
     GROUP BY u.id
   `).all() as { user_id: string; count: number }[];
 
+  // MVP: da tournament_mvp
+  const mvpCounts = db.prepare(`
+    SELECT mvp_user_id as user_id, COUNT(*) as count
+    FROM tournament_mvp
+    GROUP BY mvp_user_id
+  `).all() as { user_id: string; count: number }[];
+
   // Crea mappe per accesso rapido
   const goldMap = new Map(goldMedals.map(m => [m.user_id, m.count]));
   const silverMap = new Map(silverMedals.map(m => [m.user_id, m.count]));
   const bronzeMap = new Map(bronzeMedals.map(m => [m.user_id, m.count]));
   const spoonMap = new Map(woodenSpoons.map(m => [m.user_id, m.count]));
+  const mvpMap = new Map(mvpCounts.map(m => [m.user_id, m.count]));
 
   // Aggiorna tutti i record (solo quelli non in override per i punti)
   const stmt = db.prepare(
-    `INSERT INTO cumulative_rankings (user_id, total_points, is_override, gold_medals, silver_medals, bronze_medals, wooden_spoons)
-     VALUES (?, ?, 0, ?, ?, ?, ?)
+    `INSERT INTO cumulative_rankings (user_id, total_points, is_override, gold_medals, silver_medals, bronze_medals, wooden_spoons, mvp_count)
+     VALUES (?, ?, 0, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET 
        total_points = CASE WHEN is_override = 0 THEN ? ELSE total_points END,
        gold_medals = ?,
        silver_medals = ?,
        bronze_medals = ?,
-       wooden_spoons = ?`
+       wooden_spoons = ?,
+       mvp_count = ?`
   );
-  
+
   for (const p of points) {
     const gold = goldMap.get(p.user_id) || 0;
     const silver = silverMap.get(p.user_id) || 0;
     const bronze = bronzeMap.get(p.user_id) || 0;
     const spoon = spoonMap.get(p.user_id) || 0;
-    stmt.run(p.user_id, p.total, gold, silver, bronze, spoon, p.total, gold, silver, bronze, spoon);
+    const mvp = mvpMap.get(p.user_id) || 0;
+    stmt.run(p.user_id, p.total, gold, silver, bronze, spoon, mvp, p.total, gold, silver, bronze, spoon, mvp);
   }
 }

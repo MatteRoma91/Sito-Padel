@@ -43,6 +43,7 @@ export default async function RankingsPage() {
     silver_medals: r.silver_medals,
     bronze_medals: r.bronze_medals,
     wooden_spoons: r.wooden_spoons,
+    mvp_count: r.mvp_count ?? 0,
   }));
 
   const levelRanking = levelRankedUsers.map(u => ({

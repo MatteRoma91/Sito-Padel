@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
-import { getBlockedIps } from '@/lib/db/queries';
+import { getBlockedAttempts } from '@/lib/db/queries';
 
 export async function GET() {
   const admin = await isAdmin();
@@ -8,6 +8,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
   }
 
-  const blocked = getBlockedIps();
+  const blocked = getBlockedAttempts();
   return NextResponse.json({ blocked });
 }

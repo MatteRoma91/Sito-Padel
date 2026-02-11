@@ -128,6 +128,33 @@ export function initSchema() {
   } catch {
     // Column already exists
   }
+  try {
+    db.exec(`ALTER TABLE tournaments ADD COLUMN completed_at TEXT`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.exec(`ALTER TABLE cumulative_rankings ADD COLUMN mvp_count INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // Column already exists
+  }
+
+  // Tabella mvp_votes e tournament_mvp
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mvp_votes (
+      tournament_id TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+      voter_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      voted_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (tournament_id, voter_user_id)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tournament_mvp (
+      tournament_id TEXT PRIMARY KEY REFERENCES tournaments(id) ON DELETE CASCADE,
+      mvp_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 
   // Medal columns for cumulative_rankings
   try {
@@ -218,13 +245,57 @@ export function initSchema() {
     insertStmt.run(key, value);
   }
 
-  // Tabella login_attempts per rate limiting
+  // Migrazione: BroccoChallenger ha 4 posizioni (non 8) - correggi testi se hanno la vecchia versione
+  try {
+    const broccoClassifica = db.prepare('SELECT value FROM site_config WHERE key = ?').get('text_regolamento_classifica_punti_brocco') as { value: string } | undefined;
+    if (broccoClassifica?.value?.includes('8° = 0') || broccoClassifica?.value?.includes('2° = 330')) {
+      db.prepare('UPDATE site_config SET value = ? WHERE key = ?')
+        .run('1° = 500 pt, 2° = 250, 3° = 175, 4° = 80.', 'text_regolamento_classifica_punti_brocco');
+    }
+    const modalita8 = db.prepare('SELECT value FROM site_config WHERE key = ?').get('text_regolamento_modalita_8') as { value: string } | undefined;
+    if (modalita8?.value?.includes('8° = 0') || modalita8?.value?.includes('2° = 330')) {
+      db.prepare('UPDATE site_config SET value = ? WHERE key = ?')
+        .run("Torneo a 8 giocatori (4 coppie): si disputa in girone all'italiana (round-robin). La categoria è fissa BroccoChallenger 500. Punti ATP per posizione: 1° = 500, 2° = 250, 3° = 175, 4° = 80.", 'text_regolamento_modalita_8');
+    }
+  } catch {
+    // ignore
+  }
+
+  // Tabella login_attempts per rate limiting (blocco per IP+username, non solo IP)
   db.exec(`
     CREATE TABLE IF NOT EXISTS login_attempts (
-      ip TEXT PRIMARY KEY,
+      ip TEXT NOT NULL,
+      username TEXT NOT NULL,
       failed_count INTEGER NOT NULL DEFAULT 0,
       locked_until TEXT NOT NULL DEFAULT '',
-      attempted_username TEXT NOT NULL DEFAULT ''
+      PRIMARY KEY (ip, username)
     )
   `);
+
+  // Migrazione da schema vecchio (ip unico) a nuovo (ip+username)
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(login_attempts)").all() as { name: string }[];
+    const hasAttemptedUsername = tableInfo.some(c => c.name === 'attempted_username');
+    const hasUsername = tableInfo.some(c => c.name === 'username');
+    if (hasAttemptedUsername && !hasUsername) {
+      db.exec(`ALTER TABLE login_attempts RENAME TO login_attempts_old`);
+      db.exec(`
+        CREATE TABLE login_attempts (
+          ip TEXT NOT NULL,
+          username TEXT NOT NULL,
+          failed_count INTEGER NOT NULL DEFAULT 0,
+          locked_until TEXT NOT NULL DEFAULT '',
+          PRIMARY KEY (ip, username)
+        )
+      `);
+      db.exec(`
+        INSERT OR IGNORE INTO login_attempts (ip, username, failed_count, locked_until)
+        SELECT ip, COALESCE(NULLIF(attempted_username, ''), 'unknown'), failed_count, locked_until
+        FROM login_attempts_old WHERE locked_until != ''
+      `);
+      db.exec(`DROP TABLE login_attempts_old`);
+    }
+  } catch {
+    // Migrazione fallita o non necessaria
+  }
 }

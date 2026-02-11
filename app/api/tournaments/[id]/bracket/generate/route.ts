@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getPairs, deleteMatches, insertMatches } from '@/lib/db/queries';
-import { generateBracket } from '@/lib/bracket';
+import { getTournamentById, getPairs, deleteMatches, insertMatches } from '@/lib/db/queries';
+import { generateBracket, generateRoundRobinFor4Pairs } from '@/lib/bracket';
 
 export async function POST(
   request: Request,
@@ -18,17 +18,23 @@ export async function POST(
   }
 
   try {
+    const tournament = getTournamentById(tournamentId);
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
     const pairs = getPairs(tournamentId);
-    
-    if (pairs.length !== 8) {
+
+    const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+    if (pairs.length !== expectedPairs) {
       return NextResponse.json({ 
         success: false, 
-        error: `Servono 8 coppie per generare il tabellone, trovate ${pairs.length}` 
+        error: `Servono ${expectedPairs} coppie per generare la struttura, trovate ${pairs.length}` 
       }, { status: 400 });
     }
 
-    // Generate bracket
-    const matches = generateBracket(pairs);
+    // Generate bracket / girone
+    const matches = expectedPairs === 4 ? generateRoundRobinFor4Pairs(pairs) : generateBracket(pairs);
 
     // Delete existing matches
     deleteMatches(tournamentId);

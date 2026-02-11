@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { 
+  getTournamentById,
   getTournamentParticipants, 
   getCumulativeRankings,
   getUsersByIds,
@@ -9,7 +10,7 @@ import {
   deleteTournamentRankings,
   insertPairs
 } from '@/lib/db/queries';
-import { extractPairs } from '@/lib/pairs';
+import { extractPairs, extractPairsFor8Players } from '@/lib/pairs';
 
 export async function POST(
   request: Request,
@@ -26,14 +27,21 @@ export async function POST(
   }
 
   try {
+    const tournament = getTournamentById(tournamentId);
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
     // Get participating users
     const participants = getTournamentParticipants(tournamentId);
     const participatingIds = participants.filter(p => p.participating).map(p => p.user_id);
 
-    if (participatingIds.length !== 16) {
+    const expectedPlayers = tournament.max_players === 8 ? 8 : 16;
+
+    if (participatingIds.length !== expectedPlayers) {
       return NextResponse.json({ 
         success: false, 
-        error: `Servono esattamente 16 partecipanti, trovati ${participatingIds.length}` 
+        error: `Servono esattamente ${expectedPlayers} partecipanti, trovati ${participatingIds.length}` 
       }, { status: 400 });
     }
 
@@ -45,7 +53,10 @@ export async function POST(
     const skillLevelMap = new Map(users.map(u => [u.id, u.skill_level]));
     const overallScoreMap = new Map(users.map(u => [u.id, u.overall_score ?? 50]));
 
-    const extractedPairs = extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap);
+    const extractedPairs =
+      expectedPlayers === 8
+        ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap)
+        : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap);
 
     // Delete existing pairs, matches, and rankings
     deleteMatches(tournamentId);

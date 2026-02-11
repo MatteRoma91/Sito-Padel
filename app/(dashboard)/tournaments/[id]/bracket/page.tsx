@@ -39,8 +39,10 @@ export default async function TournamentBracketPage({
   const matches = getMatches(tournament.id);
   const rankings = getTournamentRankings(tournament.id);
 
+  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+
   // If no pairs, redirect to pairs page (admin) or tournament page (player)
-  if (pairs.length < 8) {
+  if (pairs.length < expectedPairs) {
     redirect(isAdmin ? `/tournaments/${id}/pairs` : `/tournaments/${id}`);
   }
 
@@ -96,7 +98,7 @@ export default async function TournamentBracketPage({
       </div>
 
       {/* Generate bracket if no matches yet */}
-      {matches.length === 0 && pairs.length === 8 && isAdmin && (
+      {matches.length === 0 && pairs.length === expectedPairs && isAdmin && (
         <GenerateBracketButton tournamentId={tournament.id} />
       )}
 
@@ -114,6 +116,7 @@ export default async function TournamentBracketPage({
       {matches.length > 0 && (
         <BracketView
           tournamentId={tournament.id}
+          maxPlayers={tournament.max_players}
           pairs={pairs}
           matches={matches}
           userMap={userMap}

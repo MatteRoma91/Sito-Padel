@@ -10,11 +10,88 @@ export function calculateTournamentRankings(
   matches: Match[],
   category: TournamentCategory = 'master_1000'
 ): TournamentRanking[] {
-  const rankings: TournamentRanking[] = [];
-  const pairPositions = new Map<string, number>();
-
   const mainMatches = matches.filter(m => m.bracket_type === 'main');
   const consolationMatches = matches.filter(m => m.bracket_type === 'consolation');
+
+  // Formato girone all'italiana (4 coppie, round_robin)
+  const hasRoundRobin = mainMatches.some(m => m.round === 'round_robin');
+  if (hasRoundRobin) {
+    const standingsMap = new Map<string, {
+      wins: number;
+      losses: number;
+      gamesFor: number;
+      gamesAgainst: number;
+    }>();
+
+    for (const pair of pairs) {
+      standingsMap.set(pair.id, {
+        wins: 0,
+        losses: 0,
+        gamesFor: 0,
+        gamesAgainst: 0,
+      });
+    }
+
+    for (const m of mainMatches.filter(m => m.round === 'round_robin')) {
+      if (!m.pair1_id || !m.pair2_id) continue;
+      if (m.score_pair1 == null || m.score_pair2 == null) continue;
+
+      const s1 = standingsMap.get(m.pair1_id);
+      const s2 = standingsMap.get(m.pair2_id);
+      if (!s1 || !s2) continue;
+
+      s1.gamesFor += m.score_pair1;
+      s1.gamesAgainst += m.score_pair2;
+      s2.gamesFor += m.score_pair2;
+      s2.gamesAgainst += m.score_pair1;
+
+      if (m.score_pair1 > m.score_pair2) {
+        s1.wins += 1;
+        s2.losses += 1;
+      } else if (m.score_pair2 > m.score_pair1) {
+        s2.wins += 1;
+        s1.losses += 1;
+      }
+      // Pareggi non previsti: vittoria vale 1, sconfitta 0
+    }
+
+    const rows = Array.from(standingsMap.entries()).map(([pairId, s]) => {
+      const pair = pairs.find(p => p.id === pairId);
+      const seed = pair?.seed ?? 999;
+      const pointsGirone = s.wins; // vittoria = 1, sconfitta = 0
+      return {
+        pairId,
+        seed,
+        wins: s.wins,
+        losses: s.losses,
+        gamesFor: s.gamesFor,
+        gamesAgainst: s.gamesAgainst,
+        diff: s.gamesFor - s.gamesAgainst,
+        pointsGirone,
+      };
+    }).sort((a, b) => {
+      if (b.pointsGirone !== a.pointsGirone) return b.pointsGirone - a.pointsGirone;
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      return a.seed - b.seed;
+    });
+
+    const rankings: TournamentRanking[] = [];
+    rows.forEach((row, idx) => {
+      const position = idx + 1; // 1–4
+      rankings.push({
+        tournament_id: pairs[0]?.tournament_id ?? '',
+        pair_id: row.pairId,
+        position,
+        points: getPositionPoints(category, position),
+        is_override: 0,
+      });
+    });
+
+    return rankings;
+  }
+
+  const rankings: TournamentRanking[] = [];
+  const pairPositions = new Map<string, number>();
 
   // Finale -> 1° e 2° posto
   const final = mainMatches.find(m => m.round === 'final');

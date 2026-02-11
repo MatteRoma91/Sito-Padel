@@ -14,8 +14,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Username e password richiesti' }, { status: 400 });
     }
 
-    // Verifica se l'IP è bloccato
-    const attempts = getLoginAttempts(ip);
+    // Verifica se (IP + username) è bloccato (blocco per profilo, non per IP)
+    const attempts = getLoginAttempts(ip, username);
     if (attempts?.locked_until && new Date(attempts.locked_until) > new Date()) {
       return NextResponse.json({ success: false, error: BLOCKED_MESSAGE }, { status: 403 });
     }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const result = await login(username, password);
 
     if (result.success) {
-      recordLoginSuccess(ip);
+      recordLoginSuccess(ip, username);
       return NextResponse.json({ success: true, mustChangePassword: result.mustChangePassword });
     } else {
       recordLoginFailure(ip, username);

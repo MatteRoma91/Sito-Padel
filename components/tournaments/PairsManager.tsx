@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 
 interface PairsManagerProps {
   tournamentId: string;
+  maxPlayers: number;
   pairs: Pair[];
   participatingUserIds: string[];
   userMap: Map<string, User>;
@@ -17,6 +18,7 @@ interface PairsManagerProps {
 
 export function PairsManager({
   tournamentId,
+  maxPlayers,
   pairs,
   participatingUserIds,
   userMap,
@@ -41,8 +43,11 @@ export function PairsManager({
   // Available players for manual pair creation
   const availablePlayers = participatingUserIds.filter(id => !playersInPairs.has(id));
 
+  const expectedPlayers = maxPlayers === 8 ? 8 : 16;
+  const expectedPairs = maxPlayers === 8 ? 4 : 8;
+
   // Check if we have enough players for extraction
-  const canExtract = participatingUserIds.length === 16;
+  const canExtract = participatingUserIds.length === expectedPlayers;
 
   async function handleExtract() {
     setLoading(true);
@@ -146,7 +151,7 @@ export function PairsManager({
               Gestione Coppie
             </h3>
             <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
-              {pairs.length}/8 coppie formate
+              {pairs.length}/{expectedPairs} coppie formate
               {availablePlayers.length > 0 && ` • ${availablePlayers.length} giocatori disponibili`}
             </p>
           </div>
@@ -294,7 +299,9 @@ export function PairsManager({
             <Shuffle className="w-12 h-12 mx-auto mb-3 text-slate-600 dark:text-slate-500" />
             <p className="text-slate-700 dark:text-slate-300">
               Nessuna coppia formata.
-              {canExtract ? ' Usa l\'estrazione automatica o aggiungi manualmente.' : ` Servono 16 partecipanti (attualmente ${participatingUserIds.length}).`}
+              {canExtract
+                ? ' Usa l\'estrazione automatica o aggiungi manualmente.'
+                : ` Servono ${expectedPlayers} partecipanti (attualmente ${participatingUserIds.length}).`}
             </p>
           </div>
         ) : (

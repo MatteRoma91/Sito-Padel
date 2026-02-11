@@ -60,8 +60,11 @@ export async function POST(
     // Update overall score (partita +1/-1, 1° +2, 8° -2)
     applyTournamentResultToOverall(tournamentId);
 
-    // Update tournament status to completed
-    updateTournament(tournamentId, { status: 'completed' });
+    // Update tournament status to completed and set completed_at for MVP voting window
+    updateTournament(tournamentId, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true, rankings });
   } catch (error) {

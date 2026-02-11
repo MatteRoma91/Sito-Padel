@@ -259,4 +259,98 @@ export const ROUND_LABELS: Record<MatchRound, string> = {
   consolation_semi: 'Semi Consolazione',
   consolation_final: '5° e 6° posto',
   consolation_seventh: '7° e 8° posto',
+  round_robin: 'Girone',
 };
+
+/**
+ * Genera il calendario per un girone all'italiana con 4 coppie.
+ * Ogni coppia incontra tutte le altre una volta (6 partite totali).
+ * Le partite sono distribuite su 3 \"slot\" tramite order_in_round:
+ *  - Slot 0: A–B, C–D
+ *  - Slot 1: A–C, B–D
+ *  - Slot 2: A–D, B–C
+ */
+export function generateRoundRobinFor4Pairs(pairs: Pair[]): GeneratedMatch[] {
+  if (pairs.length !== 4) {
+    throw new Error(`Servono 4 coppie per il girone, trovate ${pairs.length}`);
+  }
+
+  // Ordina per seed per avere coppie A, B, C, D stabili
+  const [A, B, C, D] = [...pairs].sort((p1, p2) => p1.seed - p2.seed);
+
+  const matches: GeneratedMatch[] = [];
+
+  // Slot 0
+  matches.push(
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: A.id,
+      pair2_id: B.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 0,
+    },
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: C.id,
+      pair2_id: D.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 0,
+    },
+  );
+
+  // Slot 1
+  matches.push(
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: A.id,
+      pair2_id: C.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 1,
+    },
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: B.id,
+      pair2_id: D.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 1,
+    },
+  );
+
+  // Slot 2
+  matches.push(
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: A.id,
+      pair2_id: D.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 2,
+    },
+    {
+      round: 'round_robin',
+      bracket_type: 'main',
+      pair1_id: B.id,
+      pair2_id: C.id,
+      score_pair1: null,
+      score_pair2: null,
+      winner_pair_id: null,
+      order_in_round: 2,
+    },
+  );
+
+  return matches;
+}

@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCurrentUser } from '@/lib/auth';
-import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig } from '@/lib/db/queries';
+import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig, getTournamentsWithOpenMvpVoting } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
 import { Trophy, Users, Calendar, BarChart3, Plus } from 'lucide-react';
 import { CountdownBroccoburgher } from '@/components/home/CountdownBroccoburgher';
+import { MvpVoteCard } from '@/components/home/MvpVoteCard';
 import { HomeCalendar } from '@/components/home/HomeCalendar';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -40,6 +41,8 @@ export default async function HomePage() {
   const config = getSiteConfig();
   const tourName = config.text_tour_name || 'Banana Padel Tour';
   const welcomeSubtitle = config.text_welcome_subtitle || "Ricordati che vincere non è importante... ma il Broccoburgher sì!!";
+
+  const mvpVotingTournaments = user ? getTournamentsWithOpenMvpVoting(user.id) : [];
 
   // Top 5 players (excluding admins)
   const topPlayers = rankings.map(r => {
@@ -90,6 +93,18 @@ export default async function HomePage() {
           date={nextBroccoburgher.date}
         />
       )}
+
+      {/* MVP Voting - tornei dove l'utente può votare e non ha ancora votato */}
+      {mvpVotingTournaments.map(({ tournament, status }) => (
+        <MvpVoteCard
+          key={tournament.id}
+          tournamentId={tournament.id}
+          tournamentName={tournament.name}
+          closesAt={status.closesAt}
+          allVoted={status.allVoted}
+          candidates={status.candidates}
+        />
+      ))}
 
       {/* Admin quick actions */}
       {isAdmin && (

@@ -180,7 +180,7 @@ export default async function ProfileDetailPage({
         )}
 
         {/* Medals section */}
-        {userRanking && (userRanking.gold_medals > 0 || userRanking.silver_medals > 0 || userRanking.bronze_medals > 0 || userRanking.wooden_spoons > 0) && (
+        {userRanking && (userRanking.gold_medals > 0 || userRanking.silver_medals > 0 || userRanking.bronze_medals > 0 || userRanking.wooden_spoons > 0 || (userRanking.mvp_count ?? 0) > 0) && (
           <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-primary-100 dark:border-primary-300/50">
             {userRanking.gold_medals > 0 && (
               <div className="flex items-center gap-1" title="Medaglie d'Oro">
@@ -204,6 +204,12 @@ export default async function ProfileDetailPage({
               <div className="flex items-center gap-1" title="Cucchiarelle di Legno">
                 <span className="text-2xl">🥄</span>
                 <span className="font-bold text-amber-900">{userRanking.wooden_spoons}</span>
+              </div>
+            )}
+            {(userRanking.mvp_count ?? 0) > 0 && (
+              <div className="flex items-center gap-1" title="MVP">
+                <span className="text-2xl">⭐</span>
+                <span className="font-bold text-amber-600">{userRanking.mvp_count}</span>
               </div>
             )}
           </div>

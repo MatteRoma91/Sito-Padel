@@ -8,6 +8,7 @@ import { Play, Check, Trophy, RefreshCw, Users, X } from 'lucide-react';
 
 interface BracketViewProps {
   tournamentId: string;
+  maxPlayers: number;
   pairs: Pair[];
   matches: Match[];
   userMap: Map<string, User>;
@@ -18,6 +19,7 @@ interface BracketViewProps {
 
 export function BracketView({ 
   tournamentId, 
+  maxPlayers,
   pairs, 
   matches, 
   userMap, 
@@ -185,13 +187,14 @@ export function BracketView({
   }
 
   if (matches.length === 0) {
+    const expectedPairs = maxPlayers === 8 ? 4 : 8;
     return (
       <div className="card p-6 text-center">
         <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-700 dark:text-slate-300" />
         <p className="text-slate-700 dark:text-slate-300 mb-4">
           Il tabellone non è ancora stato generato
         </p>
-        {isAdmin && pairs.length === 8 && (
+        {isAdmin && pairs.length === expectedPairs && (
           <button
             onClick={generateBracket}
             disabled={loading}
@@ -207,6 +210,7 @@ export function BracketView({
 
   const mainMatches = matches.filter(m => m.bracket_type === 'main');
   const consolationMatches = matches.filter(m => m.bracket_type === 'consolation');
+  const isRoundRobin = mainMatches.some(m => m.round === 'round_robin');
   const quarterfinalMatches = mainMatches.filter(m => m.round === 'quarterfinal');
   
   // Check if any quarterfinal has a result (if so, cannot edit pairs)
@@ -280,7 +284,9 @@ export function BracketView({
             <div className={`flex items-center justify-between py-1 ${
               match.winner_pair_id === match.pair1_id ? 'font-bold text-green-600 dark:text-green-400' : ''
             }`}>
-              <span className="truncate">{getPairName(match.pair1_id)}</span>
+              <span className="truncate bg-white dark:bg-white text-slate-900 border border-slate-300 rounded-md px-2 py-1">
+                {getPairName(match.pair1_id)}
+              </span>
               {isEditing ? (
                 <input
                   type="number"
@@ -298,7 +304,9 @@ export function BracketView({
             <div className={`flex items-center justify-between py-1 border-t border-slate-200 dark:border-slate-700 ${
               match.winner_pair_id === match.pair2_id ? 'font-bold text-green-600 dark:text-green-400' : ''
             }`}>
-              <span className="truncate">{getPairName(match.pair2_id)}</span>
+              <span className="truncate bg-white dark:bg-white text-slate-900 border border-slate-300 rounded-md px-2 py-1">
+                {getPairName(match.pair2_id)}
+              </span>
               {isEditing ? (
                 <input
                   type="number"
@@ -362,6 +370,152 @@ export function BracketView({
       {roundMatches.sort((a, b) => a.order_in_round - b.order_in_round).map(renderMatch)}
     </div>
   );
+
+  if (isRoundRobin) {
+    const rrMatches = mainMatches.filter(m => m.round === 'round_robin');
+
+    // Build standings
+    const standingsMap = new Map<string, {
+      played: number;
+      wins: number;
+      losses: number;
+      points: number;
+      gamesFor: number;
+      gamesAgainst: number;
+    }>();
+
+    for (const pair of pairs) {
+      standingsMap.set(pair.id, {
+        played: 0,
+        wins: 0,
+        losses: 0,
+        points: 0,
+        gamesFor: 0,
+        gamesAgainst: 0,
+      });
+    }
+
+    for (const m of rrMatches) {
+      if (!m.pair1_id || !m.pair2_id) continue;
+      if (m.score_pair1 == null || m.score_pair2 == null) continue;
+
+      const s1 = standingsMap.get(m.pair1_id);
+      const s2 = standingsMap.get(m.pair2_id);
+      if (!s1 || !s2) continue;
+
+      s1.played += 1;
+      s2.played += 1;
+      s1.gamesFor += m.score_pair1;
+      s1.gamesAgainst += m.score_pair2;
+      s2.gamesFor += m.score_pair2;
+      s2.gamesAgainst += m.score_pair1;
+
+      if (m.score_pair1 > m.score_pair2) {
+        s1.wins += 1;
+        s1.points += 1;
+        s2.losses += 1;
+      } else if (m.score_pair2 > m.score_pair1) {
+        s2.wins += 1;
+        s2.points += 1;
+        s1.losses += 1;
+      }
+    }
+
+    const standings = Array.from(standingsMap.entries()).map(([pairId, s]) => {
+      const pair = pairMap.get(pairId);
+      const seed = pair?.seed ?? 999;
+      return {
+        pairId,
+        name: getPairName(pairId),
+        seed,
+        ...s,
+        diff: s.gamesFor - s.gamesAgainst,
+      };
+    }).sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      return a.seed - b.seed;
+    });
+
+    const slots = [0, 1, 2];
+
+    return (
+      <div className="space-y-6">
+        <div className="card">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100">Girone all&apos;italiana</h3>
+            {isAdmin && (
+              <button
+                onClick={generateBracket}
+                disabled={loading}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Rigenerazione...' : 'Rigenera Calendario'}
+              </button>
+            )}
+          </div>
+
+          <div className="p-4 grid md:grid-cols-2 gap-6">
+            {/* Matches by slot */}
+            <div className="space-y-4">
+              {slots.map(slot => {
+                const slotMatches = rrMatches.filter(m => m.order_in_round === slot);
+                if (slotMatches.length === 0) return null;
+                return (
+                  <div key={slot} className="space-y-2">
+                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Slot {slot + 1}
+                    </h4>
+                    <div className="space-y-2">
+                      {slotMatches.map(renderMatch)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Standings */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Classifica Girone (vittoria = 1 punto)
+              </h4>
+              <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-700">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-900/40">
+                    <tr>
+                      <th className="px-3 py-2 text-left">#</th>
+                      <th className="px-3 py-2 text-left">Coppia</th>
+                      <th className="px-3 py-2 text-center">G</th>
+                      <th className="px-3 py-2 text-center">V</th>
+                      <th className="px-3 py-2 text-center">P</th>
+                      <th className="px-3 py-2 text-center">Punti</th>
+                      <th className="px-3 py-2 text-center">Game</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row, idx) => (
+                      <tr key={row.pairId} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900/20' : 'bg-slate-50 dark:bg-slate-900/10'}>
+                        <td className="px-3 py-1 text-center">{idx + 1}</td>
+                        <td className="px-3 py-1">{row.name}</td>
+                        <td className="px-3 py-1 text-center">{row.played}</td>
+                        <td className="px-3 py-1 text-center">{row.wins}</td>
+                        <td className="px-3 py-1 text-center">{row.losses}</td>
+                        <td className="px-3 py-1 text-center">{row.points}</td>
+                        <td className="px-3 py-1 text-center">
+                          {row.gamesFor}:{row.gamesAgainst} ({row.diff >= 0 ? '+' : ''}{row.diff})
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

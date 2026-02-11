@@ -9,14 +9,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { ip } = await request.json();
-    if (!ip || typeof ip !== 'string') {
-      return NextResponse.json({ error: 'IP richiesto' }, { status: 400 });
+    const { ip, username } = await request.json();
+    if (!ip || typeof ip !== 'string' || !username || typeof username !== 'string') {
+      return NextResponse.json({ error: 'IP e username richiesti' }, { status: 400 });
     }
 
-    const ok = resetLoginAttempts(ip.trim());
+    const ok = resetLoginAttempts(ip.trim(), username.trim());
     if (!ok) {
-      return NextResponse.json({ error: 'IP non trovato o non bloccato' }, { status: 404 });
+      return NextResponse.json({ error: 'Combinazione IP/username non trovata o non bloccata' }, { status: 404 });
     }
     return NextResponse.json({ success: true });
   } catch {

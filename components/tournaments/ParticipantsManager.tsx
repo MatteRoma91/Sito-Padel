@@ -10,13 +10,15 @@ interface ParticipantsManagerProps {
   participants: TournamentParticipant[];
   allUsers: User[];
   userMap: Map<string, User>;
+  maxPlayers?: number;
 }
 
 export function ParticipantsManager({ 
   tournamentId, 
   participants, 
   allUsers, 
-  userMap 
+  userMap,
+  maxPlayers = 16,
 }: ParticipantsManagerProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
@@ -64,11 +66,12 @@ export function ParticipantsManager({
     <div className="card">
       <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
         <h2 className="font-semibold text-slate-800 dark:text-slate-100">
-          Partecipanti ({participatingUsers.length}/16)
+          Partecipanti ({participatingUsers.length}/{maxPlayers})
         </h2>
         <button
           onClick={() => setShowAdd(!showAdd)}
-          className="btn btn-secondary flex items-center gap-2 text-sm py-1"
+          disabled={participatingUsers.length >= maxPlayers}
+          className="btn btn-secondary flex items-center gap-2 text-sm py-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <UserPlus className="w-4 h-4" />
           Aggiungi
@@ -85,7 +88,7 @@ export function ParticipantsManager({
                 key={user.id}
                 onClick={() => addParticipant(user.id)}
                 disabled={loading === user.id}
-                className="px-3 py-1.5 rounded-lg bg-white dark:bg-white/90 border border-primary-100 text-sm hover:border-accent-500 transition disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-white dark:bg-white text-slate-900 border border-slate-300 text-sm hover:bg-slate-50 hover:border-slate-400 transition disabled:opacity-50"
               >
                 {user.nickname || user.full_name || user.username}
               </button>
@@ -101,7 +104,7 @@ export function ParticipantsManager({
       <div className="divide-y divide-slate-200 dark:divide-slate-700">
         {participatingUsers.length === 0 ? (
           <p className="p-4 text-slate-700 dark:text-slate-300 text-sm">
-            Nessun partecipante. Aggiungi almeno 16 giocatori per formare le coppie.
+            Nessun partecipante. Aggiungi almeno {maxPlayers} giocatori per formare le coppie.
           </p>
         ) : (
           participatingUsers.map(user => (
@@ -132,17 +135,17 @@ export function ParticipantsManager({
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-slate-700 dark:text-slate-300">Progresso</span>
-            <span className={participatingUsers.length >= 16 ? 'text-green-600' : 'text-slate-700 dark:text-slate-300'}>
-              {participatingUsers.length}/16
+            <span className={participatingUsers.length >= maxPlayers ? 'text-green-600' : 'text-slate-700 dark:text-slate-300'}>
+              {participatingUsers.length}/{maxPlayers}
             </span>
           </div>
           <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all ${participatingUsers.length >= 16 ? 'bg-green-500' : 'bg-accent-500'}`}
-              style={{ width: `${Math.min(100, (participatingUsers.length / 16) * 100)}%` }}
+              className={`h-full transition-all ${participatingUsers.length >= maxPlayers ? 'bg-green-500' : 'bg-accent-500'}`}
+              style={{ width: `${Math.min(100, (participatingUsers.length / maxPlayers) * 100)}%` }}
             />
           </div>
-          {participatingUsers.length >= 16 && (
+          {participatingUsers.length >= maxPlayers && (
             <p className="text-sm text-green-600 dark:text-green-400 mt-2">
               ✓ Pronto per l&apos;estrazione delle coppie!
             </p>

@@ -4,7 +4,7 @@ export type UserRole = 'admin' | 'player';
 
 export type TournamentStatus = 'draft' | 'open' | 'in_progress' | 'completed';
 
-export type TournamentCategory = 'grand_slam' | 'master_1000';
+export type TournamentCategory = 'grand_slam' | 'master_1000' | 'brocco_500';
 
 export type SkillLevel = 'A_GOLD' | 'A_SILVER' | 'B_GOLD' | 'B_SILVER' | 'C';
 
@@ -39,11 +39,17 @@ export function overallLevelToSkillLevel(level: OverallLevel): SkillLevel | null
   return level;
 }
 
-/** Delta per aggiornamento overall a fine torneo */
+/** Delta per aggiornamento overall a fine torneo (torneo 16 giocatori) */
 export const MATCH_WIN_DELTA = 1;
 export const MATCH_LOSS_DELTA = -1;
 export const TOURNAMENT_WIN_DELTA = 2;
 export const TOURNAMENT_LAST_DELTA = -2;
+
+/** Delta per torneo a 8 giocatori / 4 coppie: 1° +3, ultimo (4°) -3 */
+export const TOURNAMENT_WIN_DELTA_8 = 3;
+export const TOURNAMENT_LAST_DELTA_8 = -3;
+/** Posizione "ultimo" nel torneo a 4 coppie */
+export const TOURNAMENT_LAST_POSITION_8 = 4;
 
 export const SKILL_LEVEL_VALUES: Record<SkillLevel, number> = {
   'A_GOLD': 5,
@@ -71,7 +77,8 @@ export type MatchRound =
   | 'third_place'
   | 'consolation_semi'
   | 'consolation_final'
-  | 'consolation_seventh';
+  | 'consolation_seventh'
+  | 'round_robin';
 
 export type BracketType = 'main' | 'consolation';
 
@@ -102,8 +109,10 @@ export interface Tournament {
   venue: string | null;
   status: TournamentStatus;
   category: TournamentCategory;
+  max_players: number;
   created_by: string;
   created_at: string;
+  completed_at?: string | null;
 }
 
 export interface TournamentParticipant {
@@ -150,6 +159,7 @@ export interface CumulativeRanking {
   silver_medals: number;
   bronze_medals: number;
   wooden_spoons: number;
+  mvp_count: number;
 }
 
 // Punti per posizione (legacy, usare getPositionPoints per categoria)
@@ -164,10 +174,15 @@ export const POSITION_POINTS_GRAND_SLAM: Record<number, number> = {
 export const POSITION_POINTS_MASTER_1000: Record<number, number> = {
   1: 1000, 2: 650, 3: 400, 4: 200, 5: 100, 6: 50, 7: 25, 8: 10,
 };
+// BroccoChallenger 500: torneo a 4 coppie (girone), solo 4 posizioni finali
+export const POSITION_POINTS_BROCCO_500: Record<number, number> = {
+  1: 500, 2: 250, 3: 175, 4: 80,
+};
 
 export const POSITION_POINTS_BY_CATEGORY: Record<TournamentCategory, Record<number, number>> = {
   grand_slam: POSITION_POINTS_GRAND_SLAM,
   master_1000: POSITION_POINTS_MASTER_1000,
+  brocco_500: POSITION_POINTS_BROCCO_500,
 };
 
 export function getPositionPoints(category: TournamentCategory, position: number): number {
@@ -178,16 +193,18 @@ export function getPositionPoints(category: TournamentCategory, position: number
 export const TOURNAMENT_CATEGORY_LABELS: Record<TournamentCategory, string> = {
   grand_slam: 'Grande Slam',
   master_1000: 'Master 1000',
+  brocco_500: 'BroccoChallenger 500',
 };
 
-// Sistema medaglie
-export type MedalType = 'gold' | 'silver' | 'bronze' | 'wooden_spoon';
+// Sistema medaglie e badge
+export type MedalType = 'gold' | 'silver' | 'bronze' | 'wooden_spoon' | 'mvp';
 
 export const MEDAL_LABELS: Record<MedalType, string> = {
   gold: 'Oro',
   silver: 'Argento',
   bronze: 'Bronzo',
   wooden_spoon: 'Cucchiarella',
+  mvp: 'MVP',
 };
 
 export const MEDAL_ICONS: Record<MedalType, string> = {
@@ -195,4 +212,5 @@ export const MEDAL_ICONS: Record<MedalType, string> = {
   silver: '🥈',
   bronze: '🥉',
   wooden_spoon: '🥄',
+  mvp: '⭐',
 };

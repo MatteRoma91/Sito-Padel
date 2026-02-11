@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getTournamentParticipants, setParticipating, removeParticipant } from '@/lib/db/queries';
+import { getTournamentById, getTournamentParticipants, setParticipating, removeParticipant } from '@/lib/db/queries';
 
 export async function GET(
   request: Request,
@@ -35,6 +35,21 @@ export async function POST(
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId richiesto' }, { status: 400 });
+    }
+
+    if (participating) {
+      const tournament = getTournamentById(id);
+      if (tournament) {
+        const participants = getTournamentParticipants(id);
+        const currentCount = participants.filter(p => p.participating).length;
+        const maxPlayers = tournament.max_players ?? 16;
+        if (currentCount >= maxPlayers) {
+          return NextResponse.json({
+            success: false,
+            error: `Numero massimo di partecipanti raggiunto (${maxPlayers}).`,
+          }, { status: 400 });
+        }
+      }
     }
 
     setParticipating(id, userId, participating);

@@ -7,6 +7,7 @@ export function CreateTournamentForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [maxPlayers, setMaxPlayers] = useState<number>(16);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -16,6 +17,13 @@ export function CreateTournamentForm() {
     const formData = new FormData(e.currentTarget);
     
     try {
+      const numericMaxPlayers = Number(formData.get('max_players') || 16);
+      const payloadMaxPlayers = numericMaxPlayers === 8 ? 8 : 16;
+      const payloadCategory =
+        payloadMaxPlayers === 8
+          ? 'brocco_500'
+          : (formData.get('category') as string | null) || 'master_1000';
+
       const res = await fetch('/api/tournaments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,7 +32,8 @@ export function CreateTournamentForm() {
           date: formData.get('date'),
           time: formData.get('time'),
           venue: formData.get('venue'),
-          category: formData.get('category') || 'master_1000',
+          category: payloadCategory,
+          maxPlayers: payloadMaxPlayers,
         }),
       });
 
@@ -67,9 +76,31 @@ export function CreateTournamentForm() {
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
           Categoria
         </label>
-        <select name="category" className="input" defaultValue="master_1000">
-          <option value="master_1000">Master 1000</option>
-          <option value="grand_slam">Grande Slam</option>
+        {maxPlayers === 8 ? (
+          <div className="input bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-not-allowed">
+            BroccoChallenger 500 (fissata)
+          </div>
+        ) : (
+          <select name="category" className="input" defaultValue="master_1000">
+            <option value="master_1000">Master 1000</option>
+            <option value="grand_slam">Grande Slam</option>
+          </select>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+          Numero giocatori
+        </label>
+        <select
+          name="max_players"
+          className="input"
+          defaultValue="16"
+          required
+          onChange={(e) => setMaxPlayers(Number(e.target.value) === 8 ? 8 : 16)}
+        >
+          <option value="16">16 (8 coppie, tabellone)</option>
+          <option value="8">8 (4 coppie, girone all&apos;italiana)</option>
         </select>
       </div>
 

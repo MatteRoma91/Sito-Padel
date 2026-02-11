@@ -21,6 +21,30 @@ const LABELS: Record<string, string> = {
   color_primary_900: 'Primary 900',
 };
 
+/** Breve descrizione di dove è usato ogni colore nell'interfaccia */
+const USAGE_DESCRIPTIONS: Record<string, string> = {
+  color_accent_50: 'Sfondi box informativi (avvisi, estrazione coppie, riapri torneo), card bronzo in classifica',
+  color_accent_100: 'Medaglia bronzo (3° posto), box info coppie, anello giorno evidenziato in calendario',
+  color_accent_200: 'Variante per sfumature e sfondi chiari',
+  color_accent_300: 'Variante per hover e sfumature',
+  color_accent_400: 'Hover su link e pulsanti accent',
+  color_accent_500: 'Icone principali, link, pulsante primario, voce attiva sidebar, countdown, avatar senza foto',
+  color_accent_600: 'Stato attivo (pressione) del pulsante primario',
+  color_accent_700: 'Variante per testo e sfumature scure',
+  color_accent_800: 'Variante per sfumature',
+  color_accent_900: 'Variante per sfumature più scure',
+  color_primary_50: 'Sfondo header card (participants, bracket), box statistiche profilo',
+  color_primary_100: 'Bordi card, divider, input, badge stato torneo, pulsante secondario',
+  color_primary_200: 'Variante per sfumature chiare',
+  color_primary_300: 'Bordo sidebar, hover voci menu laterale',
+  color_primary_400: 'Hover su elementi primary',
+  color_primary_500: 'Sfondo sidebar, gradienti login e hero dashboard',
+  color_primary_600: 'Variante per elementi primary più scuri',
+  color_primary_700: 'Testo su badge e etichette primary',
+  color_primary_800: 'Hover su liste e righe (sfondo)',
+  color_primary_900: 'Sfondo badge, varianti scure',
+};
+
 interface ColorsTabProps {
   config: Record<string, string>;
 }
@@ -106,11 +130,14 @@ export function ColorsTab({ config }: ColorsTabProps) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
                 {LABELS[key]}
               </label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {USAGE_DESCRIPTIONS[key]}
+              </p>
               <input
                 type="text"
                 value={values[key] || ''}
                 onChange={(e) => update(key, e.target.value)}
-                className="input py-1.5 text-sm font-mono"
+                className="input py-1.5 text-sm font-mono mt-1"
               />
             </div>
           </div>
