@@ -4,7 +4,7 @@ import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory } from '../types';
-import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA } from '../types';
+import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8 } from '../types';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
 let initialized = false;
@@ -117,9 +117,12 @@ export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null):
   getDb().prepare('UPDATE users SET skill_level = ? WHERE id = ?').run(skillLevel, id);
 }
 
-/** Applica i risultati del torneo al punteggio overall: partita vinta +1, persa -1, 1° +2, 8° -2. */
+/** Applica i risultati del torneo al punteggio overall. 16 giocatori: partita +1/-1, 1° +2, 8° -2. 8 giocatori: partita +1/-1, 1° +3, 4° (ultimo) -3. */
 export function applyTournamentResultToOverall(tournamentId: string): void {
   ensureDb();
+  const tournament = getTournamentById(tournamentId);
+  const is8Player = tournament?.max_players === 8;
+
   const pairs = getPairs(tournamentId);
   const matches = getMatches(tournamentId).filter(m => m.winner_pair_id != null);
   const rankings = getTournamentRankings(tournamentId);
@@ -159,14 +162,18 @@ export function applyTournamentResultToOverall(tournamentId: string): void {
     }
   }
 
+  const posWinDelta = is8Player ? TOURNAMENT_WIN_DELTA_8 : TOURNAMENT_WIN_DELTA;
+  const lastPos = is8Player ? TOURNAMENT_LAST_POSITION_8 : 8;
+  const lastDelta = is8Player ? TOURNAMENT_LAST_DELTA_8 : TOURNAMENT_LAST_DELTA;
+
   for (const pair of pairs) {
     for (const userId of [pair.player1_id, pair.player2_id]) {
       const wins = userIdToWins.get(userId) ?? 0;
       const losses = userIdToLosses.get(userId) ?? 0;
       const position = userIdToPosition.get(userId);
       let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
-      if (position === 1) delta += TOURNAMENT_WIN_DELTA;
-      if (position === 8) delta += TOURNAMENT_LAST_DELTA;
+      if (position === 1) delta += posWinDelta;
+      if (position === lastPos) delta += lastDelta;
 
       const user = getUserById(userId);
       const current = user?.overall_score != null ? user.overall_score : 50;
@@ -243,6 +250,60 @@ export function getUsersWithLoginCounts(): UserWithLoginCount[] {
   ).all() as UserWithLoginCount[];
 }
 
+// ============ LOGIN ATTEMPTS (rate limiting) ============
+
+export interface LoginAttempt {
+  ip: string;
+  failed_count: number;
+  locked_until: string;
+  attempted_username: string;
+}
+
+export function getLoginAttempts(ip: string): LoginAttempt | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT ip, failed_count, locked_until, attempted_username FROM login_attempts WHERE ip = ?').get(ip) as LoginAttempt | undefined;
+}
+
+export function recordLoginFailure(ip: string, username: string): void {
+  ensureDb();
+  const db = getDb();
+  const existing = getLoginAttempts(ip);
+  const now = new Date();
+  const lockedUntil = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+
+  if (existing) {
+    const newCount = existing.failed_count + 1;
+    const lock = newCount >= 5 ? lockedUntil : '';
+    db.prepare(
+      'UPDATE login_attempts SET failed_count = ?, locked_until = ?, attempted_username = ? WHERE ip = ?'
+    ).run(newCount, lock, username || '', ip);
+  } else {
+    const lock = 1 >= 5 ? lockedUntil : '';
+    db.prepare(
+      'INSERT INTO login_attempts (ip, failed_count, locked_until, attempted_username) VALUES (?, 1, ?, ?)'
+    ).run(ip, lock, username || '');
+  }
+}
+
+export function recordLoginSuccess(ip: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+}
+
+export function resetLoginAttempts(ip: string): boolean {
+  ensureDb();
+  const result = getDb().prepare('DELETE FROM login_attempts WHERE ip = ?').run(ip);
+  return result.changes > 0;
+}
+
+export function getBlockedIps(): LoginAttempt[] {
+  ensureDb();
+  const now = new Date().toISOString();
+  return getDb().prepare(
+    'SELECT ip, failed_count, locked_until, attempted_username FROM login_attempts WHERE locked_until != "" AND locked_until > ? ORDER BY locked_until DESC'
+  ).all(now) as LoginAttempt[];
+}
+
 // ============ SITE CONFIG ============
 
 export function getSiteConfig(): Record<string, string> {
@@ -316,27 +377,60 @@ export function getAllPastTournamentDates(): { date: string }[] {
   return getDb().prepare("SELECT DISTINCT date FROM tournaments WHERE date < date('now') ORDER BY date DESC").all() as { date: string }[];
 }
 
-export function createTournament(data: { name: string; date: string; time?: string; venue?: string; category?: TournamentCategory; created_by: string }): string {
+export function createTournament(data: { name: string; date: string; time?: string; venue?: string; category?: TournamentCategory; max_players?: number; created_by: string }): string {
   ensureDb();
   const id = randomUUID();
-  const category = data.category === 'grand_slam' ? 'grand_slam' : 'master_1000';
+  const maxPlayers = data.max_players === 8 ? 8 : 16;
+  const category: TournamentCategory =
+    maxPlayers === 8
+      ? 'brocco_500'
+      : data.category === 'grand_slam'
+        ? 'grand_slam'
+        : 'master_1000';
+
   getDb().prepare(
-    `INSERT INTO tournaments (id, name, date, time, venue, category, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, data.name, data.date, data.time || null, data.venue || null, category, data.created_by);
+    `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, data.name, data.date, data.time || null, data.venue || null, category, maxPlayers, data.created_by);
   return id;
 }
 
-export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category'>>): void {
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players'>>): void {
   ensureDb();
+  const existing = getTournamentById(id);
+
   const fields: string[] = [];
   const values: (string | null)[] = [];
+
   if (data.name !== undefined) { fields.push('name = ?'); values.push(data.name); }
   if (data.date !== undefined) { fields.push('date = ?'); values.push(data.date); }
   if (data.time !== undefined) { fields.push('time = ?'); values.push(data.time); }
   if (data.venue !== undefined) { fields.push('venue = ?'); values.push(data.venue); }
   if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
-  if (data.category !== undefined) { fields.push('category = ?'); values.push(data.category === 'grand_slam' ? 'grand_slam' : 'master_1000'); }
+
+  // Calcola il nuovo max_players (se fornito) o quello esistente
+  const effectiveMaxPlayers = data.max_players !== undefined
+    ? (data.max_players === 8 ? 8 : 16)
+    : (existing?.max_players ?? 16);
+
+  // Gestione categoria: forzata a brocco_500 per tornei da 8 giocatori
+  if (data.category !== undefined || effectiveMaxPlayers === 8) {
+    const newCategory: TournamentCategory =
+      effectiveMaxPlayers === 8
+        ? 'brocco_500'
+        : data.category === 'grand_slam'
+          ? 'grand_slam'
+          : (data.category === 'master_1000' ? 'master_1000' : (existing?.category ?? 'master_1000'));
+
+    fields.push('category = ?');
+    values.push(newCategory);
+  }
+
+  if (data.max_players !== undefined) {
+    fields.push('max_players = ?');
+    values.push(String(effectiveMaxPlayers));
+  }
+
   if (fields.length === 0) return;
   values.push(id);
   getDb().prepare(`UPDATE tournaments SET ${fields.join(', ')} WHERE id = ?`).run(...values);
@@ -746,9 +840,14 @@ export function getOverallScoreHistory(userId: string): OverallScoreHistoryEntry
     }
     const position = pairIdToPosition.get(userPair.id);
 
+    const is8Player = t.max_players === 8;
+    const posWinDelta = is8Player ? TOURNAMENT_WIN_DELTA_8 : TOURNAMENT_WIN_DELTA;
+    const lastPos = is8Player ? TOURNAMENT_LAST_POSITION_8 : 8;
+    const lastDelta = is8Player ? TOURNAMENT_LAST_DELTA_8 : TOURNAMENT_LAST_DELTA;
+
     let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
-    if (position === 1) delta += TOURNAMENT_WIN_DELTA;
-    if (position === 8) delta += TOURNAMENT_LAST_DELTA;
+    if (position === 1) delta += posWinDelta;
+    if (position === lastPos) delta += lastDelta;
 
     score = Math.max(0, Math.min(100, score + delta));
     result.push({ date: t.date, overall_score: score });
