@@ -52,7 +52,7 @@ export default function ChangePasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-500 via-primary-300 to-primary-100">
       <div className="w-full max-w-sm">
-        <div className="card p-8">
+        <div className="card p-6 sm:p-8">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-100 mb-4">
               <KeyRound className="w-8 h-8 text-accent-500" />

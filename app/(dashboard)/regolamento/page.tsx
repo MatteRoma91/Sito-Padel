@@ -33,7 +33,7 @@ export default function RegolamentoPage() {
       : [];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl w-full mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
         {title}
       </h1>

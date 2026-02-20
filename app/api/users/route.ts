@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createUser, getUserByUsername, getUsers } from '@/lib/db/queries';
+import { createUserSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 
 export async function GET() {
   const currentUser = await getCurrentUser();
@@ -33,12 +34,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = await request.json();
+    const body = await request.json();
+    const data = parseOrThrow(createUserSchema, body);
     const { username, full_name, nickname, role } = data;
-
-    if (!username) {
-      return NextResponse.json({ success: false, error: 'Username richiesto' }, { status: 400 });
-    }
 
     // Check if username exists
     const existing = getUserByUsername(username);
@@ -58,6 +56,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, id });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     console.error('Create user error:', error);
     return NextResponse.json({ success: false, error: 'Errore del server' }, { status: 500 });
   }

@@ -45,10 +45,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-500 via-primary-300 to-primary-100">
       <div className="w-full max-w-sm">
-        <div className="card p-8">
+        <div className="card p-6 sm:p-8">
           <div className="text-center mb-8">
             <div className="inline-block mb-4">
-              <Image src="/logo.png" alt="Banana Padel Tour" width={100} height={100} className="rounded-xl" />
+              <Image src="/logo.png" alt="Banana Padel Tour" width={100} height={100} sizes="(max-width: 640px) 80px, 100px" className="rounded-xl max-w-full h-auto w-20 h-20 sm:w-[6.25rem] sm:h-[6.25rem]" priority />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Banana Padel Tour</h1>
             <p className="text-slate-700 dark:text-slate-300 mt-1">Accedi per continuare</p>

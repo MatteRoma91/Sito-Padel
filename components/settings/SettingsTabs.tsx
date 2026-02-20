@@ -64,7 +64,7 @@ export function SettingsTabs({
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+              className={`flex items-center gap-2 min-h-[2.75rem] px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === t.id
                   ? 'bg-accent-500/20 text-slate-800 dark:text-slate-100 border border-accent-500/50'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-primary-100 dark:hover:bg-primary-800/50'

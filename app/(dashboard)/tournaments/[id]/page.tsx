@@ -8,15 +8,36 @@ import {
   getPairs, 
   getMatches,
   getTournamentRankings,
-  getCumulativeRankings
+  getCumulativeRankings,
+  getSiteConfig
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
+import { buildMetadata } from '@/lib/seo';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
 import { TournamentStatusChanger } from '@/components/tournaments/TournamentStatusChanger';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
-import { ExportPdfButton } from '@/components/tournaments/ExportPdfButton';
+
+const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
+  ssr: false,
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const tournament = getTournamentById(id);
+  const config = getSiteConfig();
+  const tourName = config.text_tour_name || 'Banana Padel Tour';
+  if (!tournament) return { title: 'Torneo non trovato' };
+  return buildMetadata({
+    title: tournament.name,
+    description: `Torneo ${tournament.name} - ${new Date(tournament.date).toLocaleDateString('it-IT')} - ${tourName}`,
+    path: `/tournaments/${id}`,
+    tourName,
+    noIndex: true,
+  });
+}
 
 export default async function TournamentDetailPage({
   params,
@@ -75,7 +96,7 @@ export default async function TournamentDetailPage({
   const status = statusLabels[tournament.status] || statusLabels.draft;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl w-full mx-auto space-y-6">
       <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai tornei

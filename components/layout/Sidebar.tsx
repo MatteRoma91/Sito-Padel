@@ -10,6 +10,7 @@ import {
   Calendar,
   BarChart3,
   BookOpen,
+  MessageCircle,
   Settings,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/tournaments', label: 'Tornei', icon: Trophy },
   { href: '/profiles', label: 'Giocatori', icon: Users },
+  { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
@@ -61,7 +63,8 @@ export function Sidebar({ user }: SidebarProps) {
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-lg hover:bg-primary-300 text-white"
+          className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-300 text-white"
+          aria-label={mobileOpen ? 'Chiudi menu' : 'Apri menu'}
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>

@@ -61,7 +61,7 @@ export function MvpAdminModal({ tournamentId, tournamentName, open, onClose }: M
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
           >
             <X className="w-5 h-5" />
           </button>

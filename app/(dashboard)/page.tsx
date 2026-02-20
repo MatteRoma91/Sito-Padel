@@ -1,13 +1,17 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCurrentUser } from '@/lib/auth';
 import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig, getTournamentsWithOpenMvpVoting } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
 import { Trophy, Users, Calendar, BarChart3, Plus } from 'lucide-react';
-import { CountdownBroccoburgher } from '@/components/home/CountdownBroccoburgher';
-import { MvpVoteCard } from '@/components/home/MvpVoteCard';
-import { HomeCalendar } from '@/components/home/HomeCalendar';
 import { Avatar } from '@/components/ui/Avatar';
+
+const CountdownBroccoburgher = dynamic(() => import('@/components/home/CountdownBroccoburgher').then((m) => ({ default: m.CountdownBroccoburgher })));
+const MvpVoteCard = dynamic(() => import('@/components/home/MvpVoteCard').then((m) => ({ default: m.MvpVoteCard })));
+const HomeCalendar = dynamic(() => import('@/components/home/HomeCalendar').then((m) => ({ default: m.HomeCalendar })), {
+  loading: () => <div className="card p-4 h-64 animate-pulse rounded-lg" />,
+});
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -51,16 +55,16 @@ export default async function HomePage() {
   }).filter(r => r.player).slice(0, 5);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl w-full mx-auto space-y-8 px-2 sm:px-0">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 via-primary-300 to-primary-100 p-6 shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 via-primary-300 to-primary-100 p-4 sm:p-6 shadow-lg">
         <div className="absolute -right-4 -bottom-4 opacity-30">
-          <Image src="/logo.png" alt="" width={150} height={150} className="rotate-12" />
+          <Image src="/logo.png" alt="" width={150} height={150} className="rotate-12 max-w-full h-auto" loading="lazy" />
         </div>
-        <div className="relative z-10 flex items-center gap-4">
-          <Image src="/logo.png" alt="Banana Padel Tour" width={80} height={80} className="rounded-2xl shadow-md hidden sm:block" />
-          <div>
-            <h1 className="text-3xl font-bold text-white drop-shadow-sm">
+        <div className="relative z-10 flex flex-wrap items-center gap-4">
+          <Image src="/logo.png" alt="Banana Padel Tour" width={80} height={80} className="rounded-2xl shadow-md hidden sm:block w-16 h-16 sm:w-20 sm:h-20" priority />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-sm">
               Ciao, {user?.nickname || user?.full_name || user?.username}! 👋
             </h1>
             <p className="text-white/95 mt-2 text-lg font-medium">

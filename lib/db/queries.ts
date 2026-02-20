@@ -3,13 +3,14 @@ import { initSchema } from './schema';
 import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS } from '../constants';
 import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory } from '../types';
 import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8 } from '../types';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
 let initialized = false;
 
-function ensureDb() {
+export function ensureDb() {
   if (!initialized) {
     initSchema();
     seed();
@@ -47,7 +48,7 @@ export function createUser(data: { username: string; password?: string; full_nam
   ensureDb();
   const id = randomUUID();
   const password = data.password || DEFAULT_PASSWORD;
-  const passwordHash = bcrypt.hashSync(password, 10);
+  const passwordHash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
   // New users must change password unless explicitly set to false (e.g., admin creating themselves)
   const mustChange = data.mustChangePassword !== undefined ? (data.mustChangePassword ? 1 : 0) : 1;
   getDb().prepare(
@@ -86,7 +87,7 @@ export function updateUser(id: string, data: Partial<Pick<User, 'full_name' | 'n
 
 export function updateUserPassword(id: string, newPassword: string, clearMustChange: boolean = false): void {
   ensureDb();
-  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  const passwordHash = bcrypt.hashSync(newPassword, BCRYPT_ROUNDS);
   if (clearMustChange) {
     getDb().prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(passwordHash, id);
   } else {
@@ -101,9 +102,10 @@ export function setMustChangePassword(id: string, mustChange: boolean): void {
 
 const RESET_PASSWORD = 'abc123';
 
-export function resetUserPassword(userId: string): void {
+export function resetUserPassword(userId: string, newPassword?: string): void {
   ensureDb();
-  const passwordHash = bcrypt.hashSync(RESET_PASSWORD, 10);
+  const pwd = (newPassword?.trim() || '').length > 0 ? newPassword!.trim() : RESET_PASSWORD;
+  const passwordHash = bcrypt.hashSync(pwd, BCRYPT_ROUNDS);
   getDb().prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(passwordHash, userId);
 }
 

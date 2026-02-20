@@ -83,8 +83,19 @@ export function initSchema() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_tournaments_date ON tournaments(date);
+    CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+    CREATE INDEX IF NOT EXISTS idx_tournaments_date_status ON tournaments(date, status);
     CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
+    CREATE INDEX IF NOT EXISTS idx_matches_pair1 ON matches(pair1_id);
+    CREATE INDEX IF NOT EXISTS idx_matches_pair2 ON matches(pair2_id);
     CREATE INDEX IF NOT EXISTS idx_pairs_tournament ON pairs(tournament_id);
+    CREATE INDEX IF NOT EXISTS idx_pairs_player1 ON pairs(player1_id);
+    CREATE INDEX IF NOT EXISTS idx_pairs_player2 ON pairs(player2_id);
+    CREATE INDEX IF NOT EXISTS idx_pairs_tournament_seed ON pairs(tournament_id, seed);
+    CREATE INDEX IF NOT EXISTS idx_tournament_participants_tournament ON tournament_participants(tournament_id);
+    CREATE INDEX IF NOT EXISTS idx_tournament_participants_user ON tournament_participants(user_id);
+    CREATE INDEX IF NOT EXISTS idx_tournament_rankings_tournament ON tournament_rankings(tournament_id);
+    CREATE INDEX IF NOT EXISTS idx_users_full_name ON users(full_name);
   `);
 
   // Migration: add new columns to existing database
@@ -154,6 +165,7 @@ export function initSchema() {
       PRIMARY KEY (tournament_id, voter_user_id)
     )
   `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_mvp_votes_tournament ON mvp_votes(tournament_id)`);
   db.exec(`
     CREATE TABLE IF NOT EXISTS tournament_mvp (
       tournament_id TEXT PRIMARY KEY REFERENCES tournaments(id) ON DELETE CASCADE,
@@ -276,6 +288,7 @@ export function initSchema() {
       PRIMARY KEY (ip, username)
     )
   `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_login_attempts_locked ON login_attempts(locked_until)`);
 
   // Migrazione da schema vecchio (ip unico) a nuovo (ip+username)
   try {
@@ -325,4 +338,38 @@ export function initSchema() {
   } catch {
     // ignore
   }
+
+  // Chat: conversazioni e messaggi (DM + gruppi torneo)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL CHECK(type IN ('dm', 'tournament')),
+      tournament_id TEXT REFERENCES tournaments(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_conversations_type ON chat_conversations(type)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_conversations_tournament ON chat_conversations(tournament_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_participants (
+      conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (conversation_id, user_id)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(user_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+      sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON chat_messages(created_at)`);
 }

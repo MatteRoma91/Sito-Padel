@@ -2,7 +2,11 @@ import { getCurrentUser } from '@/lib/auth';
 import { getUsers, getCumulativeRankings, getTournamentsPast, getTournamentRankings, getPairs } from '@/lib/db/queries';
 import { getVisibleUsers, canSeeHiddenUsers } from '@/lib/visibility';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
-import { UnifiedRankingsCard } from '@/components/rankings/UnifiedRankingsCard';
+import nextDynamic from 'next/dynamic';
+
+const UnifiedRankingsCard = nextDynamic(() => import('@/components/rankings/UnifiedRankingsCard').then((m) => ({ default: m.UnifiedRankingsCard })), {
+  loading: () => <div className="card p-6 h-96 animate-pulse rounded-lg" />,
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +58,7 @@ export default async function RankingsPage() {
   }));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl w-full mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Classifiche</h1>
 
       <UnifiedRankingsCard generalRanking={generalRanking} levelRanking={levelRanking} />

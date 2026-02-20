@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Pair, Match, User } from '@/lib/types';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { Play, Check, Trophy, RefreshCw, Users, X } from 'lucide-react';
+import { useLiveMatchScores } from '@/hooks/useLiveMatchScores';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -39,6 +40,7 @@ export function BracketView({
 
   const pairMap = new Map(pairs.map(p => [p.id, p]));
   const hiddenSet = new Set(hiddenUserIds);
+  const { getScore } = useLiveMatchScores(tournamentId);
 
   function getPairName(pairId: string | null): string {
     if (!pairId) return 'TBD';
@@ -218,11 +220,15 @@ export function BracketView({
   const canEditQuarterfinals = isAdmin && tournamentStatus !== 'completed' && !anyQuarterfinalHasResult;
 
   const renderMatch = (match: Match) => {
+    const live = getScore(match.id);
+    const score1 = live?.score_pair1 ?? match.score_pair1;
+    const score2 = live?.score_pair2 ?? match.score_pair2;
+    const winnerId = live?.winner_pair_id ?? match.winner_pair_id;
     const isEditing = activeMatch === match.id;
     const isQuarterfinal = match.round === 'quarterfinal';
     const isEditingThisQF = editingQuarterfinals && isQuarterfinal;
     const canEdit = isAdmin && tournamentStatus !== 'completed' && match.pair1_id && match.pair2_id;
-    const isComplete = match.winner_pair_id !== null;
+    const isComplete = winnerId !== null;
 
     // Get available pairs for this match in editing mode
     const selectedElsewhere = getSelectedPairsInEditing(match.id);
@@ -282,7 +288,7 @@ export function BracketView({
           <>
             {/* Pair 1 */}
             <div className={`flex items-center justify-between py-1 ${
-              match.winner_pair_id === match.pair1_id ? 'font-bold text-green-600 dark:text-green-400' : ''
+              winnerId === match.pair1_id ? 'font-bold text-green-600 dark:text-green-400' : ''
             }`}>
               <span className="truncate bg-white dark:bg-white text-slate-900 border border-slate-300 rounded-md px-2 py-1">
                 {getPairName(match.pair1_id)}
@@ -296,13 +302,13 @@ export function BracketView({
                   className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
                 />
               ) : (
-                <span className="font-mono">{match.score_pair1 ?? '-'}</span>
+                <span className="font-mono">{score1 ?? '-'}</span>
               )}
             </div>
 
             {/* Pair 2 */}
             <div className={`flex items-center justify-between py-1 border-t border-slate-200 dark:border-slate-700 ${
-              match.winner_pair_id === match.pair2_id ? 'font-bold text-green-600 dark:text-green-400' : ''
+              winnerId === match.pair2_id ? 'font-bold text-green-600 dark:text-green-400' : ''
             }`}>
               <span className="truncate bg-white dark:bg-white text-slate-900 border border-slate-300 rounded-md px-2 py-1">
                 {getPairName(match.pair2_id)}
@@ -316,7 +322,7 @@ export function BracketView({
                   className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
                 />
               ) : (
-                <span className="font-mono">{match.score_pair2 ?? '-'}</span>
+                <span className="font-mono">{score2 ?? '-'}</span>
               )}
             </div>
 
@@ -345,8 +351,8 @@ export function BracketView({
                     onClick={() => {
                       setActiveMatch(match.id);
                       setScores({
-                        pair1: match.score_pair1?.toString() || '',
-                        pair2: match.score_pair2?.toString() || '',
+                        pair1: (score1 ?? match.score_pair1)?.toString() || '',
+                        pair2: (score2 ?? match.score_pair2)?.toString() || '',
                       });
                     }}
                     className="btn btn-secondary text-xs py-1 w-full"

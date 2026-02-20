@@ -10,11 +10,17 @@ import {
   getMvpVotingStatus,
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
-import { BracketView } from '@/components/bracket/BracketView';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
-import { ExportPdfButton } from '@/components/tournaments/ExportPdfButton';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
+
+const BracketView = dynamic(() => import('@/components/bracket/BracketView').then((m) => ({ default: m.BracketView })), {
+  loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
+});
+const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
+  ssr: false,
+});
 import { ConsolidateResultsButton } from '@/components/tournaments/ConsolidateResultsButton';
 import { ReopenTournamentButton } from '@/components/tournaments/ReopenTournamentButton';
 import { ReopenMvpVotingButton } from '@/components/tournaments/ReopenMvpVotingButton';
@@ -70,7 +76,7 @@ export default async function TournamentBracketPage({
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl w-full mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <Link 
           href={`/tournaments/${tournament.id}`} 
