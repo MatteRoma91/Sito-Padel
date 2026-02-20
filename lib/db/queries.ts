@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { getDb } from './db';
 import { initSchema } from './schema';
 import { seed } from './seed';
@@ -309,7 +310,7 @@ export function getBlockedAttempts(): LoginAttempt[] {
 
 // ============ SITE CONFIG ============
 
-export function getSiteConfig(): Record<string, string> {
+function getSiteConfigImpl(): Record<string, string> {
   ensureDb();
   const rows = getDb().prepare('SELECT key, value FROM site_config').all() as { key: string; value: string }[];
   const result: Record<string, string> = {};
@@ -319,6 +320,9 @@ export function getSiteConfig(): Record<string, string> {
   }
   return result;
 }
+
+/** Deduplicato per richiesta (generateMetadata + layout condividono il risultato). */
+export const getSiteConfig = cache(getSiteConfigImpl);
 
 export function setSiteConfig(key: string, value: string): void {
   ensureDb();

@@ -50,6 +50,15 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
+  // Pre-warm DB per evitare cold start sulla prima richiesta (initSchema + seed lenti)
+  try {
+    const { ensureDb } = require('./lib/db/queries');
+    ensureDb();
+    console.log('> DB pre-warmed');
+  } catch (e) {
+    console.warn('> DB pre-warm skip:', e?.message || e);
+  }
+
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url || '', true);
     handle(req, res, parsedUrl);
@@ -66,6 +75,7 @@ app.prepare().then(() => {
   io.on('connection', async (socket) => {
     const userId = await getUserIdFromHandshake(socket.handshake);
     socket.userId = userId;
+    if (userId) socket.join(`user:${userId}`);
 
     socket.on('tournament:join', (tournamentId) => {
       if (tournamentId && typeof tournamentId === 'string') {
@@ -100,7 +110,7 @@ app.prepare().then(() => {
       const { conversationId, body } = payload || {};
       if (!conversationId || typeof body !== 'string') return;
 
-      const { isParticipant, insertMessage } = require('./lib/db/chat-queries');
+      const { isParticipant, insertMessage, getParticipantIds } = require('./lib/db/chat-queries');
       if (!isParticipant(conversationId, userId)) return;
 
       try {
@@ -112,6 +122,12 @@ app.prepare().then(() => {
           body: msg.body,
           created_at: msg.created_at,
         });
+        const participantIds = getParticipantIds(conversationId);
+        for (const pid of participantIds) {
+          if (pid !== userId) {
+            io.to(`user:${pid}`).emit('chat:unread', { userId: pid, conversationId });
+          }
+        }
       } catch {
         // validation failed
       }

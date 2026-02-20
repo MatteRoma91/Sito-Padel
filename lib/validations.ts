@@ -82,7 +82,8 @@ export const chatMessageSchema = z.object({
 export const createDmSchema = z.object({
   other_user_id: z.string().uuid().optional(),
   tournament_id: z.string().uuid().optional(),
-}).refine(d => d.other_user_id ?? d.tournament_id, { message: 'Fornire other_user_id o tournament_id' });
+  broadcast: z.boolean().optional(),
+}).refine(d => d.other_user_id ?? d.tournament_id ?? d.broadcast, { message: 'Fornire other_user_id, tournament_id o broadcast' });
 
 /** Errore di validazione Zod (restituire 400 invece di 500) */
 export class ValidationError extends Error {

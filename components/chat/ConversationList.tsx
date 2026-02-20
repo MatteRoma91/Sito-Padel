@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MessageCircle, Users, Trophy } from 'lucide-react';
+import { MessageCircle, Users, Trophy, Megaphone } from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -29,9 +29,10 @@ interface TournamentItem {
 interface ConversationListProps {
   activeId: string | null;
   onSelect: (id: string) => void;
+  deletedConversationId?: string | null;
 }
 
-export function ConversationList({ activeId, onSelect }: ConversationListProps) {
+export function ConversationList({ activeId, onSelect, deletedConversationId }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
@@ -71,6 +72,28 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
           type: 'dm',
           title: other ? (other.nickname || other.full_name || other.username) : 'Utente',
           otherUser: other ? { id: other.id, full_name: other.full_name, nickname: other.nickname } : null,
+        }, ...prev];
+      });
+      onSelect(data.conversation.id);
+      setShowNew(false);
+    }
+  };
+
+  const openOrCreateBroadcast = async () => {
+    const res = await fetch('/api/chat/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ broadcast: true }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setConversations(prev => {
+        const existing = prev.find(c => c.id === data.conversation.id);
+        if (existing) return prev;
+        return [{
+          id: data.conversation.id,
+          type: 'broadcast',
+          title: 'Chat con tutti',
         }, ...prev];
       });
       onSelect(data.conversation.id);
@@ -128,6 +151,17 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3 max-h-64 overflow-y-auto">
           <div>
             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
+              <Megaphone className="w-4 h-4" /> Messaggio a tutti
+            </p>
+            <button
+              onClick={openOrCreateBroadcast}
+              className="block w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium bg-primary-50 dark:bg-primary-900/20"
+            >
+              Chat con tutti gli utenti
+            </button>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1">
               <Users className="w-4 h-4" /> Messaggio privato
             </p>
             {users.length === 0 ? (
@@ -176,7 +210,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
           </p>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
-            {conversations.map(c => (
+            {conversations.filter(c => c.id !== deletedConversationId).map(c => (
               <button
                 key={c.id}
                 onClick={() => onSelect(c.id)}
@@ -187,7 +221,7 @@ export function ConversationList({ activeId, onSelect }: ConversationListProps) 
                 }`}
               >
                 <div className="w-10 h-10 rounded-full bg-primary-200 dark:bg-primary-800 flex items-center justify-center text-primary-700 dark:text-primary-300 flex-shrink-0">
-                  {c.type === 'tournament' ? <Trophy className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                  {c.type === 'broadcast' ? <Megaphone className="w-5 h-5" /> : c.type === 'tournament' ? <Trophy className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800 dark:text-slate-100 truncate">{c.title}</p>

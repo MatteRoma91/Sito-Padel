@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
+import { ChatLinkWithBadge } from '@/components/ui/ChatLinkWithBadge';
 
 interface SidebarProps {
   user: {
@@ -101,18 +102,32 @@ export function Sidebar({ user }: SidebarProps) {
             const Icon = item.icon;
             const isActive = pathname === item.href || 
               (item.href !== '/' && pathname.startsWith(item.href));
+            const linkClass = `
+              flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+              ${isActive 
+                ? 'bg-accent-500 text-slate-900' 
+                : 'text-white hover:bg-primary-300'
+              }
+            `;
+            if (item.href === '/chat') {
+              return (
+                <ChatLinkWithBadge
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={linkClass}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </ChatLinkWithBadge>
+              );
+            }
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                  ${isActive 
-                    ? 'bg-accent-500 text-slate-900' 
-                    : 'text-white hover:bg-primary-300'
-                  }
-                `}
+                className={linkClass}
               >
                 <Icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>

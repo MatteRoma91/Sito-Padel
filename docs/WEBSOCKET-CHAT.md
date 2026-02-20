@@ -64,7 +64,8 @@ Il client si unisce alla room `chat:{conversationId}`. L’autenticazione avvien
 
 ## Schema DB Chat
 
-- `chat_conversations` - id, type (dm|tournament), tournament_id, created_at
+- `chat_conversations` - id, type (dm|tournament|broadcast), tournament_id, created_at
+- `broadcast` - messaggio visibile a tutti gli utenti (Chat con tutti)
 - `chat_participants` - conversation_id, user_id, joined_at
 - `chat_messages` - id, conversation_id, sender_id, body, created_at
 

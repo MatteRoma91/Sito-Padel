@@ -8,7 +8,7 @@ const ChatLayout = dynamic(() => import('@/components/chat/ChatLayout').then(m =
 });
 
 export default async function ChatPage() {
-  await getCurrentUser();
+  const user = await getCurrentUser();
 
   return (
     <div className="max-w-5xl w-full mx-auto space-y-4">
@@ -21,7 +21,7 @@ export default async function ChatPage() {
           Messaggi privati e chat di gruppo per i tornei
         </p>
       </div>
-      <ChatLayout />
+      <ChatLayout isAdmin={user?.role === 'admin'} />
     </div>
   );
 }

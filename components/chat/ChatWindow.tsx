@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Trash2 } from 'lucide-react';
+
+const CHAT_UNREAD_UPDATE = 'chat:unread-update';
 
 interface Message {
   id: string;
@@ -15,9 +17,11 @@ interface Message {
 interface ChatWindowProps {
   conversationId: string | null;
   onClose?: () => void;
+  isAdmin?: boolean;
+  onConversationDeleted?: (id: string) => void;
 }
 
-export function ChatWindow({ conversationId, onClose }: ChatWindowProps) {
+export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDeleted }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,6 +53,11 @@ export function ChatWindow({ conversationId, onClose }: ChatWindowProps) {
       .then(data => {
         if (cancelled) return;
         setMessages(data.messages ?? []);
+        fetch(`/api/chat/conversations/${conversationId}/read`, { method: 'POST' })
+          .then(() => {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CHAT_UNREAD_UPDATE));
+          })
+          .catch(() => {});
       })
       .catch(() => {});
 
@@ -73,6 +82,11 @@ export function ChatWindow({ conversationId, onClose }: ChatWindowProps) {
             if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
+          fetch(`/api/chat/conversations/${conversationId}/read`, { method: 'POST' })
+            .then(() => {
+              if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CHAT_UNREAD_UPDATE));
+            })
+            .catch(() => {});
         }
       });
     });
@@ -89,6 +103,20 @@ export function ChatWindow({ conversationId, onClose }: ChatWindowProps) {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  const handleDelete = async () => {
+    if (!conversationId || !isAdmin || !onConversationDeleted) return;
+    if (!confirm('Eliminare definitivamente questa conversazione e tutti i messaggi?')) return;
+    try {
+      const res = await fetch(`/api/chat/conversations/${conversationId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        onConversationDeleted(conversationId);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const send = async () => {
     const body = input.trim();
@@ -138,7 +166,16 @@ export function ChatWindow({ conversationId, onClose }: ChatWindowProps) {
             <ArrowLeft className="w-5 h-5" />
           </button>
         )}
-        <h3 className="font-semibold text-slate-800 dark:text-slate-100 truncate">{title || 'Chat'}</h3>
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 truncate flex-1">{title || 'Chat'}</h3>
+        {isAdmin && (
+          <button
+            onClick={handleDelete}
+            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+            aria-label="Elimina chat"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <div

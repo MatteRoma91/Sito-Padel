@@ -6,7 +6,7 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export interface ChatConversation {
   id: string;
-  type: 'dm' | 'tournament';
+  type: 'dm' | 'tournament' | 'broadcast';
   tournament_id: string | null;
   created_at: string;
 }
@@ -86,6 +86,25 @@ export function getOrCreateTournamentConversation(tournamentId: string): ChatCon
   return conv;
 }
 
+/** Get or create broadcast conversation (tutti gli utenti) */
+export function getOrCreateBroadcastConversation(): ChatConversation {
+  ensureDb();
+  const db = getDb();
+  const existing = db.prepare(
+    "SELECT * FROM chat_conversations WHERE type = 'broadcast' LIMIT 1"
+  ).get() as ChatConversation | undefined;
+
+  if (existing) return existing;
+
+  const id = randomUUID();
+  db.prepare(
+    "INSERT INTO chat_conversations (id, type, tournament_id) VALUES (?, 'broadcast', NULL)"
+  ).run(id);
+
+  const conv = db.prepare('SELECT * FROM chat_conversations WHERE id = ?').get(id) as ChatConversation;
+  return conv;
+}
+
 /** Ensure user is participant of tournament conversation (e.g. joined tournament after conv creation) */
 export function ensureTournamentParticipant(conversationId: string, userId: string): void {
   ensureDb();
@@ -109,6 +128,11 @@ export function getConversationById(conversationId: string): ChatConversation | 
 /** Get participant user IDs for a conversation */
 export function getParticipantIds(conversationId: string): string[] {
   ensureDb();
+  const conv = getConversationById(conversationId);
+  if (conv?.type === 'broadcast') {
+    const rows = getDb().prepare('SELECT id FROM users').all() as { id: string }[];
+    return rows.map(r => r.id);
+  }
   const rows = getDb().prepare('SELECT user_id FROM chat_participants WHERE conversation_id = ?').all(conversationId) as { user_id: string }[];
   return rows.map(r => r.user_id);
 }
@@ -116,13 +140,18 @@ export function getParticipantIds(conversationId: string): string[] {
 /** Check if user is participant of conversation */
 export function isParticipant(conversationId: string, userId: string): boolean {
   ensureDb();
+  const conv = getConversationById(conversationId);
+  if (conv?.type === 'broadcast') {
+    const row = getDb().prepare('SELECT 1 FROM users WHERE id = ?').get(userId);
+    return !!row;
+  }
   const row = getDb().prepare(
     'SELECT 1 FROM chat_participants WHERE conversation_id = ? AND user_id = ?'
   ).get(conversationId, userId);
   return !!row;
 }
 
-/** Get conversations for a user (DM + tournaments they participate in) */
+/** Get conversations for a user (DM + tournaments + broadcast) */
 export function getConversationsForUser(userId: string): Array<ChatConversation & { last_message_at?: string }> {
   ensureDb();
   const db = getDb();
@@ -132,6 +161,41 @@ export function getConversationsForUser(userId: string): Array<ChatConversation 
     JOIN chat_participants p ON p.conversation_id = c.id AND p.user_id = ?
     ORDER BY c.created_at DESC
   `).all(userId) as ChatConversation[];
+
+  const broadcast = db.prepare("SELECT * FROM chat_conversations WHERE type = 'broadcast' LIMIT 1").get() as (ChatConversation & { last_message_at?: string }) | undefined;
+  if (broadcast) {
+    const lastMsg = db.prepare(
+      'SELECT created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1'
+    ).get(broadcast.id) as { created_at: string } | undefined;
+    broadcast.last_message_at = lastMsg?.created_at;
+  }
+
+  const result: Array<ChatConversation & { last_message_at?: string }> = broadcast ? [broadcast] : [];
+  for (const c of convs) {
+    if (c.type === 'broadcast') continue;
+    const lastMsg = db.prepare(
+      'SELECT created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1'
+    ).get(c.id) as { created_at: string } | undefined;
+    result.push({
+      ...c,
+      last_message_at: lastMsg?.created_at,
+    });
+  }
+  result.sort((a, b) => {
+    const ta = a.last_message_at || a.created_at;
+    const tb = b.last_message_at || b.created_at;
+    return tb.localeCompare(ta);
+  });
+  return result;
+}
+
+/** Get all conversations for admin (no participant filter) */
+export function getAllConversationsForAdmin(): Array<ChatConversation & { last_message_at?: string }> {
+  ensureDb();
+  const db = getDb();
+  const convs = db.prepare(
+    'SELECT * FROM chat_conversations ORDER BY created_at DESC'
+  ).all() as ChatConversation[];
 
   const result: Array<ChatConversation & { last_message_at?: string }> = [];
   for (const c of convs) {
@@ -149,6 +213,45 @@ export function getConversationsForUser(userId: string): Array<ChatConversation 
     return tb.localeCompare(ta);
   });
   return result;
+}
+
+/** Get unread message count for a user across all their conversations */
+export function getUnreadCountForUser(userId: string): number {
+  ensureDb();
+  const db = getDb();
+  const convs = getConversationsForUser(userId);
+  let total = 0;
+  for (const c of convs) {
+    const lastRead = db.prepare(
+      'SELECT last_read_at FROM chat_last_read WHERE user_id = ? AND conversation_id = ?'
+    ).get(userId, c.id) as { last_read_at: string } | undefined;
+    const since = lastRead?.last_read_at ?? '1970-01-01T00:00:00.000Z';
+    const row = db.prepare(
+      'SELECT COUNT(*) as n FROM chat_messages WHERE conversation_id = ? AND created_at > ? AND sender_id != ?'
+    ).get(c.id, since, userId) as { n: number };
+    total += row.n;
+  }
+  return total;
+}
+
+/** Mark conversation as read for user (updates last_read_at to latest message) */
+export function markConversationAsRead(conversationId: string, userId: string): void {
+  ensureDb();
+  if (!isParticipant(conversationId, userId)) return;
+  const db = getDb();
+  const lastMsg = db.prepare(
+    'SELECT created_at FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1'
+  ).get(conversationId) as { created_at: string } | undefined;
+  const ts = lastMsg?.created_at ?? new Date().toISOString();
+  db.prepare(
+    'INSERT INTO chat_last_read (user_id, conversation_id, last_read_at) VALUES (?, ?, ?) ON CONFLICT(user_id, conversation_id) DO UPDATE SET last_read_at = excluded.last_read_at'
+  ).run(userId, conversationId, ts);
+}
+
+/** Delete conversation (admin only); cascade deletes participants and messages */
+export function deleteConversation(conversationId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM chat_conversations WHERE id = ?').run(conversationId);
 }
 
 /** Get messages for a conversation (paginated, newest first) */

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getConversationsForUser, getParticipantIds, getOrCreateDmConversation, getOrCreateTournamentConversation, isParticipant, ensureTournamentParticipant } from '@/lib/db/chat-queries';
+import { getConversationsForUser, getAllConversationsForAdmin, getParticipantIds, getOrCreateDmConversation, getOrCreateTournamentConversation, getOrCreateBroadcastConversation, isParticipant, ensureTournamentParticipant } from '@/lib/db/chat-queries';
 import { getTournamentById, getUsers } from '@/lib/db/queries';
 import { parseOrThrow, createDmSchema, ValidationError } from '@/lib/validations';
 
@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
   }
 
-  const convs = getConversationsForUser(user.id);
+  const convs = user.role === 'admin' ? getAllConversationsForAdmin() : getConversationsForUser(user.id);
   const allUsers = getUsers();
   const userMap = new Map(allUsers.map(u => [u.id, u]));
 
@@ -19,12 +19,18 @@ export async function GET() {
     let otherUser = null;
     let tournament = null;
 
-    if (c.type === 'dm') {
+    if (c.type === 'broadcast') {
+      title = 'Chat con tutti';
+    } else if (c.type === 'dm') {
       const ids = getParticipantIds(c.id);
       const otherId = ids.find(id => id !== user.id);
       if (otherId) {
         otherUser = userMap.get(otherId);
         title = otherUser ? (otherUser.nickname || otherUser.full_name || otherUser.username) : 'Utente';
+      } else if (ids.length === 2) {
+        const u1 = userMap.get(ids[0]);
+        const u2 = userMap.get(ids[1]);
+        title = [u1, u2].map(u => u?.nickname || u?.full_name || u?.username || '?').join(' / ');
       }
     } else if (c.tournament_id) {
       const t = getTournamentById(c.tournament_id);
@@ -73,7 +79,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, conversation: { id: conv.id, type: 'tournament', tournament_id: conv.tournament_id } });
     }
 
-    return NextResponse.json({ success: false, error: 'Fornire other_user_id o tournament_id' }, { status: 400 });
+    if (parsed.broadcast) {
+      const conv = getOrCreateBroadcastConversation();
+      return NextResponse.json({ success: true, conversation: { id: conv.id, type: 'broadcast' } });
+    }
+
+    return NextResponse.json({ success: false, error: 'Fornire other_user_id, tournament_id o broadcast' }, { status: 400 });
   } catch (e) {
     if (e instanceof ValidationError) {
       return NextResponse.json({ success: false, error: e.message }, { status: 400 });
