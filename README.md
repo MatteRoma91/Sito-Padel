@@ -2,6 +2,13 @@
 
 Sito privato per la gestione di tornei di padel.
 
+## Documentazione
+
+| File | Contenuto |
+|------|-----------|
+| **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all’avvio del server (Nginx, build, PM2) |
+| **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
+
 ## Funzionalità
 
 - **Autenticazione**: Login con username/password, ruoli Admin/Giocatore
@@ -12,6 +19,8 @@ Sito privato per la gestione di tornei di padel.
 - **Classifiche**: Classifica torneo e classifica cumulativa
 - **Calendario**: Vista calendario tornei
 - **Export PDF**: Esportazione tabellone e classifica
+- **Chat**: Chat tra utenti e per torneo (WebSocket)
+- **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
 
 ## Tecnologie
 
@@ -20,6 +29,7 @@ Sito privato per la gestione di tornei di padel.
 - TypeScript
 - Tailwind CSS
 - SQLite (better-sqlite3)
+- Serwist (PWA, Service Worker)
 - PM2 (process manager)
 - Nginx (reverse proxy)
 
@@ -27,6 +37,19 @@ Sito privato per la gestione di tornei di padel.
 
 - Node.js 20+
 - npm
+
+## Variabili d’ambiente (opzionali)
+
+Crea un file `.env` nella root (non committato). Esempi:
+
+| Variabile | Descrizione | Default |
+|-----------|-------------|---------|
+| `SESSION_SECRET` | Segreto per la sessione (produzione: usare valore lungo e casuale) | valore di fallback in codice |
+| `DATABASE_PATH` | Percorso del file SQLite | `data/padel.db` |
+| `PORT` | Porta dell’app Node | `3000` |
+| `NEXT_PUBLIC_SITE_URL` | URL pubblico del sito (per SEO e PWA) | da `VERCEL_URL` o esempio |
+
+In produzione imposta almeno `SESSION_SECRET` con una stringa sicura.
 
 ## Installazione
 
@@ -83,8 +106,13 @@ Al primo avvio viene creato l'utente admin:
 │   │   ├── pairs/          # Estrazione coppie
 │   │   ├── calendar/       # Calendario
 │   │   └── rankings/       # Classifiche
+│   ├── ~offline/           # Pagina PWA offline
+│   ├── manifest.ts         # Web App Manifest (PWA)
+│   ├── sw.ts               # Service Worker (Serwist)
 │   └── api/                # API routes
-├── components/             # Componenti React
+├── components/
+│   ├── pwa/                # Registrazione SW, notifica aggiornamento
+│   └── ...                 # Altri componenti React
 ├── lib/
 │   ├── db/                 # Database SQLite
 │   ├── auth.ts             # Autenticazione
@@ -108,6 +136,20 @@ Al primo avvio viene creato l'utente admin:
 4. Esegui: `node scripts/restore-backup.mjs /path/to/padel-full-backup-*.zip`.
 5. Riavvia l’app: `pm2 start padel-tour`.
 
+## PWA / Installazione come app
+
+Il sito è una Progressive Web App (PWA):
+
+- **Installazione**: Da browser su smartphone/tablet (Chrome: menu → “Installa app” / “Aggiungi a schermata Home”; Safari iOS: Condividi → “Aggiungi a Home”).
+- **Caching**: Le pagine ranking e tornei usano *stale-while-revalidate*; JS, CSS e immagini usano *cache-first*. In assenza di rete viene mostrata la pagina offline.
+- **Aggiornamenti**: Quando è disponibile una nuova versione del sito, compare un banner “È disponibile una nuova versione” con pulsante **Aggiorna**.
+
+Per rigenerare le icone PWA dopo aver modificato `public/logo.png`:
+
+```bash
+npm run pwa:icons
+```
+
 ## Comandi Utili
 
 ```bash
@@ -120,6 +162,9 @@ npm run build
 # Produzione
 npm run start
 
+# Icone PWA (da logo.png)
+npm run pwa:icons
+
 # PM2
 pm2 status
 pm2 logs
@@ -130,3 +175,14 @@ pm2 restart padel-tour
 
 - Sviluppo: http://localhost:3000
 - Produzione: https://bananapadeltour.duckdns.org
+
+## Risoluzione problemi
+
+- **Il sito non risponde dopo un riavvio**  
+  Segui i comandi in [AVVIO.md](AVVIO.md): avvia Nginx, poi `pm2 start ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
+
+- **Errore “Could not find a production build” o “MODULE_NOT_FOUND”**  
+  La build in `.next` è mancante o corrotta. Esegui `npm run build` nella root del progetto, poi `pm2 restart padel-tour`.
+
+- **Log e stato**  
+  `pm2 status`, `pm2 logs padel-tour`. Per dettagli operativi e cronologia interventi vedi [GUIDA-SERVER.md](GUIDA-SERVER.md).

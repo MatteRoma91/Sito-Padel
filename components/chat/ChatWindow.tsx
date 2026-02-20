@@ -123,26 +123,19 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
     if (!body || !conversationId || sending) return;
 
     setSending(true);
-    const socket = socketRef.current;
-    if (socket?.emit) {
-      socket.emit('chat:message', { conversationId, body });
-      setInput('');
-      setSending(false);
-    } else {
-      try {
-        const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body }),
-        });
-        const data = await res.json();
-        if (data.success && data.message) {
-          setMessages(prev => [...prev, data.message]);
-          setInput('');
-        }
-      } finally {
-        setSending(false);
+    try {
+      const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+      });
+      const data = await res.json();
+      if (data.success && data.message) {
+        setMessages(prev => [...prev, data.message]);
+        setInput('');
       }
+    } finally {
+      setSending(false);
     }
   };
 

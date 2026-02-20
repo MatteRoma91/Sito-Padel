@@ -339,38 +339,18 @@ export function initSchema() {
     // ignore
   }
 
-  // Chat: conversazioni e messaggi (DM + gruppi torneo + broadcast)
+  // Chat: conversazioni e messaggi (DM + gruppi torneo + broadcast + group)
+  // Schema con 'group' da subito; la migrazione da dm/tournament/broadcast -> +group
+  // avviene SOLO in server.js all'avvio, per evitare race in initSchema tra richieste concorrenti.
   db.exec(`
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK(type IN ('dm', 'tournament', 'broadcast')),
+      type TEXT NOT NULL CHECK(type IN ('dm', 'tournament', 'broadcast', 'group')),
       tournament_id TEXT REFERENCES tournaments(id) ON DELETE CASCADE,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
-
-  // Migration: add 'broadcast' to chat_conversations type
-  try {
-    const info = db.prepare("PRAGMA table_info(chat_conversations)").all() as { name: string }[];
-    if (info.length > 0) {
-      const checkResult = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='chat_conversations'").get() as { sql: string } | undefined;
-      if (checkResult?.sql && !checkResult.sql.includes("'broadcast'")) {
-        db.exec(`ALTER TABLE chat_conversations RENAME TO _chat_conv_old`);
-        db.exec(`
-          CREATE TABLE chat_conversations (
-            id TEXT PRIMARY KEY,
-            type TEXT NOT NULL CHECK(type IN ('dm', 'tournament', 'broadcast')),
-            tournament_id TEXT REFERENCES tournaments(id) ON DELETE CASCADE,
-            created_at TEXT NOT NULL DEFAULT (datetime('now'))
-          )
-        `);
-        db.exec(`INSERT INTO chat_conversations SELECT id, type, tournament_id, created_at FROM _chat_conv_old`);
-        db.exec(`DROP TABLE _chat_conv_old`);
-      }
-    }
-  } catch {
-    // ignore
-  }
+  db.exec(`DROP TABLE IF EXISTS _chat_conv_old`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_conversations_type ON chat_conversations(type)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_conversations_tournament ON chat_conversations(tournament_id)`);
 

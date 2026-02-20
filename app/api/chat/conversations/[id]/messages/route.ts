@@ -57,12 +57,14 @@ export async function POST(
     const { body: messageBody } = parseOrThrow(chatMessageSchema, body);
 
     const msg = insertMessage(conversationId, user.id, messageBody);
+    const senderName = user.nickname || user.full_name || user.username || 'Utente';
     return NextResponse.json({
       success: true,
       message: {
         id: msg.id,
         conversation_id: msg.conversation_id,
         sender_id: msg.sender_id,
+        sender_name: senderName,
         body: msg.body,
         created_at: msg.created_at,
       },

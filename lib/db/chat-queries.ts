@@ -6,7 +6,7 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export interface ChatConversation {
   id: string;
-  type: 'dm' | 'tournament' | 'broadcast';
+  type: 'dm' | 'tournament' | 'broadcast' | 'group';
   tournament_id: string | null;
   created_at: string;
 }
@@ -52,6 +52,32 @@ export function getOrCreateDmConversation(userId1: string, userId2: string): Cha
 
   const conv = db.prepare('SELECT * FROM chat_conversations WHERE id = ?').get(id) as ChatConversation;
   return conv;
+}
+
+/** Get or create group conversation (current user + selected users); exact participant match */
+export function getOrCreateGroupConversation(currentUserId: string, otherUserIds: string[]): ChatConversation {
+  ensureDb();
+  const db = getDb();
+  const allIds = [currentUserId, ...otherUserIds].filter((id, i, arr) => arr.indexOf(id) === i).sort();
+  if (allIds.length < 2) throw new Error('Almeno 2 partecipanti richiesti');
+
+  // Find existing group with same participants
+  const existingGroups = db.prepare(`
+    SELECT c.id FROM chat_conversations c
+    WHERE c.type = 'group' AND c.tournament_id IS NULL
+  `).all() as { id: string }[];
+  for (const row of existingGroups) {
+    const participants = getParticipantIds(row.id).sort();
+    if (participants.length === allIds.length && participants.every((p, i) => p === allIds[i])) {
+      return getConversationById(row.id)!;
+    }
+  }
+
+  const id = randomUUID();
+  db.prepare("INSERT INTO chat_conversations (id, type, tournament_id) VALUES (?, 'group', NULL)").run(id);
+  const insertParticipant = db.prepare('INSERT OR IGNORE INTO chat_participants (conversation_id, user_id) VALUES (?, ?)');
+  for (const uid of allIds) insertParticipant.run(id, uid);
+  return getConversationById(id)!;
 }
 
 /** Get or create tournament group conversation; participants = tournament_participants with participating=1 */

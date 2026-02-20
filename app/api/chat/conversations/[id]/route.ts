@@ -87,6 +87,21 @@ export async function GET(
       title = 'Utente';
       participants = [];
     }
+  } else if (conv.type === 'group') {
+    const names = participantIds
+      .filter(pid => !hiddenIds.includes(pid))
+      .map(pid => {
+        const u = userMap.get(pid);
+        return u?.nickname || u?.full_name || u?.username || '?';
+      });
+    title = names.join(', ');
+    participants = participantIds
+      .filter(pid => !hiddenIds.includes(pid))
+      .map(pid => {
+        const u = userMap.get(pid);
+        return u ? { id: u.id, full_name: u.full_name, nickname: u.nickname } : null;
+      })
+      .filter(Boolean) as Array<{ id: string; full_name: string | null; nickname: string | null }>;
   } else if (conv.tournament_id) {
     const t = getTournamentById(conv.tournament_id);
     tournament = t ? { id: t.id, name: t.name } : null;

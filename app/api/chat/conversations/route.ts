@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getConversationsForUser, getAllConversationsForAdmin, getParticipantIds, getOrCreateDmConversation, getOrCreateTournamentConversation, getOrCreateBroadcastConversation, isParticipant, ensureTournamentParticipant } from '@/lib/db/chat-queries';
+import { getConversationsForUser, getAllConversationsForAdmin, getParticipantIds, getOrCreateDmConversation, getOrCreateGroupConversation, getOrCreateTournamentConversation, getOrCreateBroadcastConversation, isParticipant, ensureTournamentParticipant } from '@/lib/db/chat-queries';
 import { getTournamentById, getUsers } from '@/lib/db/queries';
 import { parseOrThrow, createDmSchema, ValidationError } from '@/lib/validations';
 
@@ -21,6 +21,13 @@ export async function GET() {
 
     if (c.type === 'broadcast') {
       title = 'Chat con tutti';
+    } else if (c.type === 'group') {
+      const ids = getParticipantIds(c.id);
+      const names = ids.map(id => {
+        const u = userMap.get(id);
+        return u?.nickname || u?.full_name || u?.username || '?';
+      });
+      title = names.join(', ');
     } else if (c.type === 'dm') {
       const ids = getParticipantIds(c.id);
       const otherId = ids.find(id => id !== user.id);
@@ -62,6 +69,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = parseOrThrow(createDmSchema, body);
 
+    if (parsed.user_ids && parsed.user_ids.length > 0) {
+      const others = parsed.user_ids.filter(id => id !== user.id);
+      if (others.length === 0) {
+        return NextResponse.json({ success: false, error: 'Seleziona almeno un altro utente' }, { status: 400 });
+      }
+      if (others.length === 1 && !parsed.other_user_id) {
+        const conv = getOrCreateDmConversation(user.id, others[0]);
+        return NextResponse.json({ success: true, conversation: { id: conv.id, type: 'dm' } });
+      }
+      const conv = getOrCreateGroupConversation(user.id, others);
+      return NextResponse.json({ success: true, conversation: { id: conv.id, type: 'group' } });
+    }
+
     if (parsed.other_user_id) {
       if (parsed.other_user_id === user.id) {
         return NextResponse.json({ success: false, error: 'Non puoi creare una chat con te stesso' }, { status: 400 });
@@ -84,7 +104,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, conversation: { id: conv.id, type: 'broadcast' } });
     }
 
-    return NextResponse.json({ success: false, error: 'Fornire other_user_id, tournament_id o broadcast' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Fornire other_user_id, user_ids, tournament_id o broadcast' }, { status: 400 });
   } catch (e) {
     if (e instanceof ValidationError) {
       return NextResponse.json({ success: false, error: e.message }, { status: 400 });

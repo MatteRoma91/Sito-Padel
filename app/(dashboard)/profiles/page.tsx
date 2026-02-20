@@ -30,15 +30,6 @@ export default async function ProfilesPage() {
     .sort((a, b) => (a.nickname || a.username || '').localeCompare(b.nickname || b.username || ''));
   const usersSortedByRanking = [...usersInRankingOrder, ...usersNotInRanking];
 
-  // #region agent log
-  const sample = usersSortedByRanking.slice(0, 10).map((u) => ({
-    id: u.id,
-    name: u.nickname || u.username,
-    pts: rankingMap.get(u.id) ?? 0,
-  }));
-  fetch('http://localhost:7242/ingest/32a405fc-93a5-4f78-9f85-2878b9bc3205', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'profiles/page.tsx', message: 'profiles order same as Classifica Generale', data: { rankingMapSize: rankingMap.size, usersCount: users.length, sample }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H1,H2,H3' }) }).catch(() => {});
-  // #endregion
-
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
       <div className="flex items-center justify-between">

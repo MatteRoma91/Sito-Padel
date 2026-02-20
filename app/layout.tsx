@@ -3,17 +3,27 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { getSiteConfig } from "@/lib/db/queries";
 import { getBaseUrl, buildMetadata, SITE_NAME, DEFAULT_DESCRIPTION } from "@/lib/seo";
+import { RegisterPWA } from "@/components/pwa/RegisterPWA";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", preload: true });
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = getSiteConfig();
   const tourName = config.text_tour_name || SITE_NAME;
-  return buildMetadata({
+  const base = buildMetadata({
     title: tourName,
     description: DEFAULT_DESCRIPTION,
     tourName,
   });
+  return {
+    ...base,
+    applicationName: tourName,
+    appleWebApp: { capable: true, statusBarStyle: "default", title: tourName },
+    icons: {
+      icon: "/logo.png",
+      apple: "/logo.png",
+    },
+  };
 }
 
 export const viewport: Viewport = {
@@ -88,6 +98,7 @@ export default async function RootLayout({
           <style dangerouslySetInnerHTML={{ __html: configCss }} />
         )}
         {children}
+        <RegisterPWA />
       </body>
     </html>
   );
