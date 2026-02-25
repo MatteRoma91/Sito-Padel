@@ -5,10 +5,19 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build:analyze": "ANALYZE=true next build",
+    "start": "node server.js",
+    "start:next": "next start",
+    "dev:ws": "node server.js",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "lint": "next lint",
+    "lighthouse": "node scripts/run-lighthouse.mjs",
+    "lighthouse:extract": "node scripts/extract-lighthouse-metrics.mjs",
+    "pwa:icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.6",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
@@ -22,20 +31,29 @@
     "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^3.7.0"
+    "serwist": "^9.5.6",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.6",
+    "@playwright/test": "^1.49.0",
     "@types/archiver": "^7.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4.3.4",
     "adm-zip": "^0.5.16",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "lighthouse": "^12.8.2",
     "postcss": "^8",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.6"
   }
 }

@@ -11,6 +11,7 @@ export interface GeneralRankingEntry {
   silver_medals: number;
   bronze_medals: number;
   wooden_spoons: number;
+  mvp_count?: number;
 }
 
 export interface LevelRankingEntry {
@@ -33,10 +34,10 @@ function getMedal(position: number) {
 }
 
 function positionStyle(i: number) {
-  if (i === 0) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
-  if (i === 1) return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
-  if (i === 2) return 'bg-accent-100 text-[#629900]';
-  return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-500';
+  if (i === 0) return 'bg-yellow-400 text-yellow-900 dark:bg-yellow-500 dark:text-yellow-900';
+  if (i === 1) return 'bg-slate-300 text-slate-700 dark:bg-slate-400 dark:text-slate-900';
+  if (i === 2) return 'bg-amber-600 text-white dark:bg-amber-600 dark:text-white';
+  return 'bg-primary-300 text-white dark:bg-primary-400 dark:text-white';
 }
 
 export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRankingsCardProps) {
@@ -99,12 +100,13 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                         </span>
                         {getMedal(i + 1)}
                       </div>
-                      {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0) && (
+                      {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0 || (r.mvp_count ?? 0) > 0) && (
                         <div className="flex items-center gap-2 mt-1 text-sm">
                           {r.gold_medals > 0 && <span title="Ori">🥇{r.gold_medals}</span>}
                           {r.silver_medals > 0 && <span title="Argenti">🥈{r.silver_medals}</span>}
                           {r.bronze_medals > 0 && <span title="Bronzi">🥉{r.bronze_medals}</span>}
                           {r.wooden_spoons > 0 && <span title="Cucchiarelle">🥄{r.wooden_spoons}</span>}
+                          {(r.mvp_count ?? 0) > 0 && <span title="MVP">⭐{r.mvp_count}</span>}
                         </div>
                       )}
                     </div>

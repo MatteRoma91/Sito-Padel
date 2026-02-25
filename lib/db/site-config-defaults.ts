@@ -27,15 +27,30 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
   text_welcome_subtitle: "Ricordati che vincere non è importante... ma il Broccoburgher sì!!",
   text_regolamento_title: 'Regolamento Banana Padel Tour',
   text_regolamento_classifica_intro:
-    "I punti ATP si assegnano in base alla posizione finale di ogni torneo. Ogni torneo appartiene a una delle due categorie: Grande Slam o Master 1000.",
+    "I punti ATP si assegnano in base alla posizione finale di ogni torneo. Ogni torneo appartiene a una delle categorie disponibili (Grande Slam, Master 1000 o BroccoChallenger 500).",
   text_regolamento_classifica_punti:
     "Grande Slam: 1° = 2000 pt, 2° = 1300, 3° = 800, 4° = 400, 5° = 200, 6° = 100, 7° = 50, 8° = 10. Master 1000: 1° = 1000 pt, 2° = 650, 3° = 400, 4° = 200, 5° = 100, 6° = 50, 7° = 25, 8° = 10.",
+  text_regolamento_classifica_punti_gs:
+    "1° = 2000 pt, 2° = 1300, 3° = 800, 4° = 400, 5° = 200, 6° = 100, 7° = 50, 8° = 10.",
+  text_regolamento_classifica_punti_m1000:
+    "1° = 1000 pt, 2° = 650, 3° = 400, 4° = 200, 5° = 100, 6° = 50, 7° = 25, 8° = 10.",
+  text_regolamento_classifica_punti_brocco:
+    "1° = 500 pt, 2° = 250, 3° = 175, 4° = 80.",
+  text_regolamento_modalita_16:
+    "Torneo a 16 giocatori (8 coppie): tabellone a eliminazione diretta con quarti, semifinali e finale. A seconda della categoria (Grande Slam o Master 1000) vengono assegnati i relativi punti ATP. In base al regolamento della tappa si può prevedere anche una consolazione per definire tutte le posizioni fino all'8° posto.",
+  text_regolamento_modalita_8:
+    "Torneo a 8 giocatori (4 coppie): si disputa in girone all'italiana (round-robin). La categoria è fissa BroccoChallenger 500. Punti ATP per posizione: 1° = 500, 2° = 250, 3° = 175, 4° = 80.",
+  text_regolamento_overall_8:
+    "Per i tornei a 8 giocatori (4 coppie): partita vinta +1, partita persa -1, 1° posto +3, 4° posto (ultimo) -3.",
   text_regolamento_classifica_medaglie:
-    'I punti si sommano nel tempo: la classifica generale è cumulativa e riflette tutti i tornei disputati. Medaglie: Oro (1°), Argento (2°), Bronzo (3°), Cucchiarella (8°).',
+    'I punti si sommano nel tempo: la classifica generale è cumulativa e riflette tutti i tornei disputati. Medaglie: Oro (1°), Argento (2°), Bronzo (3°), Cucchiarella (8°), MVP (votato dai partecipanti).',
+  text_regolamento_mvp_title: 'Votazione MVP',
+  text_regolamento_mvp:
+    'Dopo la conclusione di un torneo e il calcolo della classifica, i partecipanti possono votare il Miglior Giocatore (MVP). La finestra di voto dura 48 ore oppure fino a quando tutti i partecipanti hanno votato, se prima. Ogni partecipante ha un voto; non è consentito votare sé stessi. Il vincitore riceve il distintivo MVP (⭐) visibile in profilo e in classifica.',
   text_regolamento_overall_intro:
     "Il punteggio overall è una scala da 0 a 100 che misura il livello di gioco di ogni partecipante. Si aggiorna automaticamente a fine di ogni torneo completato.",
   text_regolamento_overall_delta:
-    "Partita vinta: +1. Partita persa: -1. 1° posto: +2. 8° posto: -2.",
+    "Torneo a 16 giocatori: partita vinta +1, partita persa -1, 1° posto +2, 8° posto -2.",
   text_regolamento_overall_livelli:
     "90+ = A Gold, 80+ = A Silver, 70+ = B Gold, 60+ = B Silver, 50+ = C, 40+ = D, sotto 40 = Santiago.",
   text_regolamento_overall_baseline:

@@ -46,6 +46,21 @@ export async function POST(
     // Update match result
     updateMatchResult(matchId, score_pair1, score_pair2, winnerId);
 
+    // Emit live score via WebSocket (when custom server is running)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require for optional WS
+      const { getIo } = require('@/lib/socket');
+      const io = getIo();
+      io.to(`tournament:${tournamentId}`).emit('match:score', {
+        matchId,
+        score_pair1,
+        score_pair2,
+        winner_pair_id: winnerId,
+      });
+    } catch {
+      // Socket.io not initialized (e.g. next dev without custom server)
+    }
+
     // Propagate results to next matches
     const allMatches = getMatches(tournamentId);
     // Update the current match in our local array

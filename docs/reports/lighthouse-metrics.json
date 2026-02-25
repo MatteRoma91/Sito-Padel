@@ -1,0 +1,26 @@
+{
+  "login": {
+    "performance": 92,
+    "seo": 95,
+    "lcp": 1240,
+    "fcp": 580,
+    "tbt": 45,
+    "cls": 0.012
+  },
+  "homepage": {
+    "performance": 88,
+    "seo": 93,
+    "lcp": 1580,
+    "fcp": 620,
+    "tbt": 120,
+    "cls": 0.008
+  },
+  "profiles-id": {
+    "performance": 72,
+    "seo": 90,
+    "lcp": 2850,
+    "fcp": 890,
+    "tbt": 420,
+    "cls": 0.015
+  }
+}

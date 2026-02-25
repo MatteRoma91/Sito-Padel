@@ -1,9 +1,13 @@
+import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getSiteConfig, getUsers, getUsersWithLoginCounts, getTournaments } from '@/lib/db/queries';
 import { getServerStats } from '@/lib/server-stats';
 import { Settings } from 'lucide-react';
-import { SettingsTabs } from '@/components/settings/SettingsTabs';
+
+const SettingsTabs = dynamic(() => import('@/components/settings/SettingsTabs').then((m) => ({ default: m.SettingsTabs })), {
+  loading: () => <div className="card p-6 h-64 animate-pulse rounded-lg" />,
+});
 import type { SettingsTabId } from '@/components/settings/SettingsTabs';
 
 function canAccessSettings(_username: string, role: string): boolean {
@@ -47,7 +51,7 @@ export default async function SettingsPage({
   const completedTournamentsCount = tournaments.filter((t) => t.status === 'completed').length;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl w-full mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
         <Settings className="w-7 h-7 text-accent-500" />
         Impostazioni

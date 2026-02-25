@@ -13,6 +13,12 @@ body {
   background-attachment: fixed;
 }
 
+/* Evita CLS: dimensioni esplicite, contenuto riservato */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -21,7 +27,7 @@ body {
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 min-h-[2.75rem] rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
     @apply bg-accent-500 text-slate-900 hover:bg-accent-400 active:bg-accent-600;
@@ -36,7 +42,7 @@ body {
     @apply bg-white dark:bg-[#0c1451]/80 rounded-2xl shadow-md border border-primary-100 dark:border-[#6270F3]/50 text-slate-900 dark:text-slate-100;
   }
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-primary-100 dark:border-[#6270F3]/50 bg-white dark:bg-[#162079]/50 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition;
+    @apply w-full px-3 py-2 text-base rounded-lg border border-primary-100 dark:border-[#6270F3]/50 bg-white dark:bg-[#162079]/50 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none transition;
   }
 }
 

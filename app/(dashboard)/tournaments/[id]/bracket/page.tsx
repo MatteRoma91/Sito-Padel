@@ -6,16 +6,24 @@ import {
   getUsers, 
   getPairs, 
   getMatches,
-  getTournamentRankings
+  getTournamentRankings,
+  getMvpVotingStatus,
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
-import { BracketView } from '@/components/bracket/BracketView';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
-import { ExportPdfButton } from '@/components/tournaments/ExportPdfButton';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
+
+const BracketView = dynamic(() => import('@/components/bracket/BracketView').then((m) => ({ default: m.BracketView })), {
+  loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
+});
+const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
+  ssr: false,
+});
 import { ConsolidateResultsButton } from '@/components/tournaments/ConsolidateResultsButton';
 import { ReopenTournamentButton } from '@/components/tournaments/ReopenTournamentButton';
+import { ReopenMvpVotingButton } from '@/components/tournaments/ReopenMvpVotingButton';
 import { isTournamentComplete } from '@/lib/rankings';
 
 export default async function TournamentBracketPage({
@@ -39,8 +47,10 @@ export default async function TournamentBracketPage({
   const matches = getMatches(tournament.id);
   const rankings = getTournamentRankings(tournament.id);
 
+  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+
   // If no pairs, redirect to pairs page (admin) or tournament page (player)
-  if (pairs.length < 8) {
+  if (pairs.length < expectedPairs) {
     redirect(isAdmin ? `/tournaments/${id}/pairs` : `/tournaments/${id}`);
   }
 
@@ -52,6 +62,11 @@ export default async function TournamentBracketPage({
     ? [] 
     : allUsers.filter(u => u.is_hidden).map(u => u.id);
   
+  const mvpStatus = tournament.status === 'completed' && tournament.completed_at
+    ? getMvpVotingStatus(id, currentUser?.id ?? null)
+    : null;
+  const mvpVotingClosed = !!mvpStatus && !mvpStatus.isOpen;
+
   // Filter rankings for display
   const visibleRankings = rankings.filter(r => {
     if (canSeeHidden) return true;
@@ -61,7 +76,7 @@ export default async function TournamentBracketPage({
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl w-full mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <Link 
           href={`/tournaments/${tournament.id}`} 
@@ -96,13 +111,18 @@ export default async function TournamentBracketPage({
       </div>
 
       {/* Generate bracket if no matches yet */}
-      {matches.length === 0 && pairs.length === 8 && isAdmin && (
+      {matches.length === 0 && pairs.length === expectedPairs && isAdmin && (
         <GenerateBracketButton tournamentId={tournament.id} />
       )}
 
       {/* Reopen tournament button (admin only, completed tournaments) */}
       {isAdmin && tournament.status === 'completed' && (
         <ReopenTournamentButton tournamentId={tournament.id} />
+      )}
+
+      {/* Riapri votazione MVP (admin only, when MVP voting was closed) */}
+      {isAdmin && tournament.status === 'completed' && tournament.completed_at && mvpVotingClosed && (
+        <ReopenMvpVotingButton tournamentId={tournament.id} tournamentName={tournament.name} />
       )}
 
       {/* Consolidate results button (admin only, when all matches have results but not yet completed) */}
@@ -114,6 +134,7 @@ export default async function TournamentBracketPage({
       {matches.length > 0 && (
         <BracketView
           tournamentId={tournament.id}
+          maxPlayers={tournament.max_players}
           pairs={pairs}
           matches={matches}
           userMap={userMap}

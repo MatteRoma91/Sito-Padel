@@ -99,18 +99,18 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
           <button
             type="button"
             onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
+            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
             aria-label="Mese precedente"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 min-w-[160px] text-center">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 min-w-[10rem] text-center">
             {capitalizeFirst(monthLabel)}
           </h2>
           <button
             type="button"
             onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
+            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
             aria-label="Mese successivo"
           >
             <ChevronRight className="w-5 h-5" />

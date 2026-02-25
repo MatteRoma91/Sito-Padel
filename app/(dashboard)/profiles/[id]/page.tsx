@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
+import { buildMetadata } from '@/lib/seo';
+import { getSiteConfig } from '@/lib/db/queries';
 
 export const dynamic = 'force-dynamic';
 import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats, getOverallScoreHistory, getPointsHistory } from '@/lib/db/queries';
@@ -8,10 +10,40 @@ import { isUserVisible } from '@/lib/visibility';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
 import { ArrowLeft, Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
-import { EditProfileForm } from '@/components/profiles/EditProfileForm';
-import { DeleteUserButton } from '@/components/profiles/DeleteUserButton';
-import { ProfileCharts } from '@/components/profiles/ProfileCharts';
+import nextDynamic from 'next/dynamic';
 import { Avatar } from '@/components/ui/Avatar';
+import { LazyWhenVisible } from '@/components/ui/LazyWhenVisible';
+
+const ProfileCharts = nextDynamic(
+  () => import('@/components/profiles/ProfileCharts').then((m) => ({ default: m.ProfileCharts })),
+  { ssr: false, loading: () => <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" /> }
+);
+
+const EditProfileForm = nextDynamic(
+  () => import('@/components/profiles/EditProfileForm').then((m) => ({ default: m.EditProfileForm })),
+  { ssr: false }
+);
+
+const DeleteUserButton = nextDynamic(
+  () => import('@/components/profiles/DeleteUserButton').then((m) => ({ default: m.DeleteUserButton })),
+  { ssr: false }
+);
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = getUserById(id);
+  const config = getSiteConfig();
+  const tourName = config.text_tour_name || 'Banana Padel Tour';
+  if (!user) return { title: 'Profilo non trovato' };
+  const displayName = user.nickname || user.full_name || user.username;
+  return buildMetadata({
+    title: `Profilo di ${displayName}`,
+    description: `Profilo del giocatore ${displayName} - ${tourName}`,
+    path: `/profiles/${id}`,
+    tourName,
+    noIndex: true,
+  });
+}
 
 export default async function ProfileDetailPage({
   params,
@@ -54,7 +86,7 @@ export default async function ProfileDetailPage({
   const pointsHistory = getPointsHistory(user.id);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl w-full mx-auto space-y-6">
       <Link href="/profiles" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai giocatori
@@ -127,7 +159,11 @@ export default async function ProfileDetailPage({
           </div>
         </div>
 
-        <ProfileCharts overallHistory={overallHistory} pointsHistory={pointsHistory} />
+        <LazyWhenVisible
+          fallback={<div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" />}
+        >
+          <ProfileCharts overallHistory={overallHistory} pointsHistory={pointsHistory} />
+        </LazyWhenVisible>
 
         {/* Statistiche di gioco - solo se ha partite */}
         {matchHistory.length > 0 && (
@@ -180,7 +216,7 @@ export default async function ProfileDetailPage({
         )}
 
         {/* Medals section */}
-        {userRanking && (userRanking.gold_medals > 0 || userRanking.silver_medals > 0 || userRanking.bronze_medals > 0 || userRanking.wooden_spoons > 0) && (
+        {userRanking && (userRanking.gold_medals > 0 || userRanking.silver_medals > 0 || userRanking.bronze_medals > 0 || userRanking.wooden_spoons > 0 || (userRanking.mvp_count ?? 0) > 0) && (
           <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-primary-100 dark:border-primary-300/50">
             {userRanking.gold_medals > 0 && (
               <div className="flex items-center gap-1" title="Medaglie d'Oro">
@@ -204,6 +240,12 @@ export default async function ProfileDetailPage({
               <div className="flex items-center gap-1" title="Cucchiarelle di Legno">
                 <span className="text-2xl">🥄</span>
                 <span className="font-bold text-amber-900">{userRanking.wooden_spoons}</span>
+              </div>
+            )}
+            {(userRanking.mvp_count ?? 0) > 0 && (
+              <div className="flex items-center gap-1" title="MVP">
+                <span className="text-2xl">⭐</span>
+                <span className="font-bold text-amber-600">{userRanking.mvp_count}</span>
               </div>
             )}
           </div>

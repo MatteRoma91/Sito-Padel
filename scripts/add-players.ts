@@ -8,6 +8,7 @@ import { getDb } from '../lib/db/db';
 import { initSchema } from '../lib/db/schema';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { BCRYPT_ROUNDS } from '../lib/constants';
 
 const DEFAULT_PASSWORD = 'Padel123';
 
@@ -36,7 +37,7 @@ async function main() {
   initSchema();
 
   const db = getDb();
-  const passwordHash = bcrypt.hashSync(DEFAULT_PASSWORD, 10);
+  const passwordHash = bcrypt.hashSync(DEFAULT_PASSWORD, BCRYPT_ROUNDS);
 
   console.log(`\nAggiunta di ${players.length} giocatori...`);
   console.log(`Password predefinita: ${DEFAULT_PASSWORD}`);

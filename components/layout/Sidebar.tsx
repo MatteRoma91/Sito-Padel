@@ -10,6 +10,7 @@ import {
   Calendar,
   BarChart3,
   BookOpen,
+  MessageCircle,
   Settings,
   LogOut,
   Menu,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
+import { ChatLinkWithBadge } from '@/components/ui/ChatLinkWithBadge';
 
 interface SidebarProps {
   user: {
@@ -33,6 +35,7 @@ const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/tournaments', label: 'Tornei', icon: Trophy },
   { href: '/profiles', label: 'Giocatori', icon: Users },
+  { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
@@ -61,7 +64,8 @@ export function Sidebar({ user }: SidebarProps) {
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-lg hover:bg-primary-300 text-white"
+          className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-300 text-white"
+          aria-label={mobileOpen ? 'Chiudi menu' : 'Apri menu'}
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -98,18 +102,32 @@ export function Sidebar({ user }: SidebarProps) {
             const Icon = item.icon;
             const isActive = pathname === item.href || 
               (item.href !== '/' && pathname.startsWith(item.href));
+            const linkClass = `
+              flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+              ${isActive 
+                ? 'bg-accent-500 text-slate-900' 
+                : 'text-white hover:bg-primary-300'
+              }
+            `;
+            if (item.href === '/chat') {
+              return (
+                <ChatLinkWithBadge
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={linkClass}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </ChatLinkWithBadge>
+              );
+            }
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                  ${isActive 
-                    ? 'bg-accent-500 text-slate-900' 
-                    : 'text-white hover:bg-primary-300'
-                  }
-                `}
+                className={linkClass}
               >
                 <Icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>

@@ -1,12 +1,18 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getCurrentUser } from '@/lib/auth';
-import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig } from '@/lib/db/queries';
+import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig, getTournamentsWithOpenMvpVoting } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
-import { Trophy, Users, Calendar, BarChart3, Plus } from 'lucide-react';
-import { CountdownBroccoburgher } from '@/components/home/CountdownBroccoburgher';
-import { HomeCalendar } from '@/components/home/HomeCalendar';
+import { Trophy, Users, Calendar, BarChart3, Plus, MessageCircle } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { ChatLinkWithBadge } from '@/components/ui/ChatLinkWithBadge';
+
+const CountdownBroccoburgher = dynamic(() => import('@/components/home/CountdownBroccoburgher').then((m) => ({ default: m.CountdownBroccoburgher })));
+const MvpVoteCard = dynamic(() => import('@/components/home/MvpVoteCard').then((m) => ({ default: m.MvpVoteCard })));
+const HomeCalendar = dynamic(() => import('@/components/home/HomeCalendar').then((m) => ({ default: m.HomeCalendar })), {
+  loading: () => <div className="card p-4 h-64 animate-pulse rounded-lg" />,
+});
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -41,6 +47,8 @@ export default async function HomePage() {
   const tourName = config.text_tour_name || 'Banana Padel Tour';
   const welcomeSubtitle = config.text_welcome_subtitle || "Ricordati che vincere non è importante... ma il Broccoburgher sì!!";
 
+  const mvpVotingTournaments = user ? getTournamentsWithOpenMvpVoting(user.id, isAdmin) : [];
+
   // Top 5 players (excluding admins)
   const topPlayers = rankings.map(r => {
     const player = players.find(p => p.id === r.user_id);
@@ -48,16 +56,16 @@ export default async function HomePage() {
   }).filter(r => r.player).slice(0, 5);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl w-full mx-auto space-y-8 px-2 sm:px-0">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 via-primary-300 to-primary-100 p-6 shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 via-primary-300 to-primary-100 p-4 sm:p-6 shadow-lg">
         <div className="absolute -right-4 -bottom-4 opacity-30">
-          <Image src="/logo.png" alt="" width={150} height={150} className="rotate-12" />
+          <Image src="/logo.png" alt="" width={150} height={150} className="rotate-12 max-w-full h-auto" loading="lazy" />
         </div>
-        <div className="relative z-10 flex items-center gap-4">
-          <Image src="/logo.png" alt="Banana Padel Tour" width={80} height={80} className="rounded-2xl shadow-md hidden sm:block" />
-          <div>
-            <h1 className="text-3xl font-bold text-white drop-shadow-sm">
+        <div className="relative z-10 flex flex-wrap items-center gap-4">
+          <Image src="/logo.png" alt="Banana Padel Tour" width={80} height={80} className="rounded-2xl shadow-md hidden sm:block w-16 h-16 sm:w-20 sm:h-20" priority />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-sm">
               Ciao, {user?.nickname || user?.full_name || user?.username}! 👋
             </h1>
             <p className="text-white/95 mt-2 text-lg font-medium">
@@ -70,7 +78,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* My Profile quick action - visible to everyone */}
+      {/* My Profile e Chat - visible to everyone */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href={`/profiles/${user?.id}`} className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
           <Avatar
@@ -80,6 +88,12 @@ export default async function HomePage() {
           />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Il Mio Profilo</span>
         </Link>
+        <ChatLinkWithBadge href="/chat" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+            <MessageCircle className="w-6 h-6 text-slate-900" />
+          </div>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Chat</span>
+        </ChatLinkWithBadge>
       </div>
 
       {/* Countdown al prossimo Broccoburgher - solo se esiste un torneo futuro */}
@@ -121,6 +135,21 @@ export default async function HomePage() {
         </div>
       )}
 
+      {/* MVP Voting - subito sotto le quick action, sopra calendario (striscia gialla) */}
+      {mvpVotingTournaments.map(({ tournament, status }) => (
+        <MvpVoteCard
+          key={tournament.id}
+          tournamentId={tournament.id}
+          tournamentName={tournament.name}
+          closesAt={status.closesAt}
+          allVoted={status.allVoted}
+          candidates={status.candidates}
+          canVote={status.voterCanVote && !status.userHasVoted}
+          isAdmin={isAdmin}
+          needsAdminAssignment={status.needsAdminAssignment}
+        />
+      ))}
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Calendario unificato: tornei e compleanni per mese */}
         <HomeCalendar tournaments={calendarTournaments} birthdays={calendarBirthdays} />
@@ -147,8 +176,8 @@ export default async function HomePage() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
                     ${i === 0 ? 'bg-yellow-400 text-yellow-900' : 
                       i === 1 ? 'bg-slate-300 text-slate-700' :
-                      i === 2 ? 'bg-primary-300 text-white' :
-                      'bg-slate-100 text-slate-700'}
+                      i === 2 ? 'bg-amber-600 text-white' :
+                      'bg-primary-300 text-white'}
                   `}>
                     {i + 1}
                   </div>

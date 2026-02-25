@@ -50,10 +50,11 @@ export default async function TournamentPairsPage({
   // Participating users
   const participatingUserIds = participants.filter(p => p.participating).map(p => p.user_id);
 
-  const isComplete = pairs.length === 8;
+  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+  const isComplete = pairs.length === expectedPairs;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl w-full mx-auto space-y-6">
       <Link 
         href={`/tournaments/${tournament.id}`} 
         className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
@@ -78,6 +79,7 @@ export default async function TournamentPairsPage({
       {/* Pairs Manager */}
       <PairsManager
         tournamentId={tournament.id}
+        maxPlayers={tournament.max_players}
         pairs={pairs}
         participatingUserIds={participatingUserIds}
         userMap={userMap}

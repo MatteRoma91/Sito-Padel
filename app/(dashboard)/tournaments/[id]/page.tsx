@@ -8,15 +8,36 @@ import {
   getPairs, 
   getMatches,
   getTournamentRankings,
-  getCumulativeRankings
+  getCumulativeRankings,
+  getSiteConfig
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
+import { buildMetadata } from '@/lib/seo';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
 import { TournamentStatusChanger } from '@/components/tournaments/TournamentStatusChanger';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
-import { ExportPdfButton } from '@/components/tournaments/ExportPdfButton';
+
+const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
+  ssr: false,
+});
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const tournament = getTournamentById(id);
+  const config = getSiteConfig();
+  const tourName = config.text_tour_name || 'Banana Padel Tour';
+  if (!tournament) return { title: 'Torneo non trovato' };
+  return buildMetadata({
+    title: tournament.name,
+    description: `Torneo ${tournament.name} - ${new Date(tournament.date).toLocaleDateString('it-IT')} - ${tourName}`,
+    path: `/tournaments/${id}`,
+    tourName,
+    noIndex: true,
+  });
+}
 
 export default async function TournamentDetailPage({
   params,
@@ -29,7 +50,6 @@ export default async function TournamentDetailPage({
   if (!tournament) {
     notFound();
   }
-
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
   const canSeeHidden = canSeeHiddenUsers(currentUser);
@@ -63,6 +83,9 @@ export default async function TournamentDetailPage({
   // Participating users
   const participatingUserIds = participants.filter(p => p.participating).map(p => p.user_id);
 
+  const expectedPlayers = tournament.max_players === 8 ? 8 : 16;
+  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+
   const statusLabels: Record<string, { label: string; color: string }> = {
     draft: { label: 'Bozza', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
     open: { label: 'Iscrizioni aperte', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
@@ -73,7 +96,7 @@ export default async function TournamentDetailPage({
   const status = statusLabels[tournament.status] || statusLabels.draft;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl w-full mx-auto space-y-6">
       <Link href="/tournaments" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
         <ArrowLeft className="w-4 h-4" />
         Torna ai tornei
@@ -177,11 +200,12 @@ export default async function TournamentDetailPage({
           participants={participants}
           allUsers={allUsers}
           userMap={userMap}
+          maxPlayers={tournament.max_players ?? 16}
         />
       )}
 
-      {/* Navigation: Go to pairs page when 16 participants and no pairs yet */}
-      {isAdmin && participatingUserIds.length === 16 && pairs.length === 0 && tournament.status !== 'completed' && (
+      {/* Navigation: Go to pairs page when enough participants and no pairs yet */}
+      {isAdmin && participatingUserIds.length === expectedPlayers && pairs.length === 0 && tournament.status !== 'completed' && (
         <div className="card p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
           <div className="flex items-center justify-between">
             <div>
@@ -190,7 +214,7 @@ export default async function TournamentDetailPage({
                 Pronto per l&apos;estrazione!
               </p>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Hai 16 partecipanti. Procedi con l&apos;estrazione o l&apos;assegnazione delle coppie.
+                Hai {expectedPlayers} partecipanti. Procedi con l&apos;estrazione o l&apos;assegnazione delle coppie.
               </p>
             </div>
             <Link
@@ -204,8 +228,8 @@ export default async function TournamentDetailPage({
         </div>
       )}
 
-      {/* Navigation: Go to bracket page when 8 pairs */}
-      {pairs.length === 8 && matches.length === 0 && (
+      {/* Navigation: Go to bracket page when expected pairs formed */}
+      {pairs.length === expectedPairs && matches.length === 0 && (
         <div className="card p-6 bg-primary-50 border-primary-100">
           <div className="flex items-center justify-between">
             <div>
@@ -214,7 +238,7 @@ export default async function TournamentDetailPage({
                 Coppie pronte!
               </p>
               <p className="text-sm text-[#9ee600] dark:text-[#c4ff33]">
-                Le 8 coppie sono state formate. {isAdmin ? 'Procedi al tabellone.' : 'In attesa della generazione del tabellone.'}
+                Le {expectedPairs} coppie sono state formate. {isAdmin ? 'Procedi al tabellone.' : 'In attesa della generazione del tabellone.'}
               </p>
             </div>
             <Link
@@ -253,12 +277,12 @@ export default async function TournamentDetailPage({
       )}
 
       {/* Pairs summary (visible when pairs exist but before matches) */}
-      {visiblePairs.length > 0 && pairs.length < 8 && (
+      {visiblePairs.length > 0 && pairs.length < expectedPairs && (
         <div className="card">
           <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Shuffle className="w-5 h-5 text-accent-500" />
-              Coppie ({visiblePairs.length}/8)
+              Coppie ({visiblePairs.length}/{expectedPairs})
             </h3>
             {isAdmin && (
               <Link href={`/tournaments/${tournament.id}/pairs`} className="text-sm text-accent-500 hover:underline">
