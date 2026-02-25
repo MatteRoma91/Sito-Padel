@@ -6,7 +6,7 @@
 **Server**: VPS (OVH), IP pubblico 57.131.40.170  
 **Utente**: ubuntu (con sudo)
 
-**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all’avvio del server)
+**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all’avvio del server) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push)
 
 ---
 
@@ -252,5 +252,43 @@ cd /home/ubuntu/Sito-Padel && ./scripts/deploy.sh
 ---
 
 ## Prossimi aggiornamenti
+
+### 7. Chat interna, Live Score e WebSocket/Socket.io (20 febbraio 2026)
+
+**Obiettivo**: Aggiungere una chat interna (DM, chat di torneo, broadcast) e Live Score in tempo reale usando Socket.io, mantenendo semplice la gestione operativa.
+
+**Architettura aggiornata**:
+```
+Utente → DuckDNS → Nginx (:443/:80) → server Node custom (server.js + Socket.io, porta 3000) → Next.js / API → SQLite
+```
+
+**Note operative**:
+
+- L’app in produzione viene avviata tramite `server.js` (custom server), non con `next start`.
+- PM2 usa un’unica istanza (`instances: 1`) per evitare problemi con le room WebSocket.
+- La configurazione Nginx (`scripts/nginx-padel.conf`) inoltra correttamente gli header WebSocket (`Upgrade`, `Connection`, `Host`) verso `http://localhost:3000` (vedi dettagli in [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)).
+- In caso di problemi alla chat o al Live Score controllare:
+  - `pm2 logs padel-tour` (errori server/socket)
+  - `/var/log/nginx/error.log` (eventuali errori di proxy WebSocket)
+
+Per i dettagli completi di eventi Socket.io, schema DB e API REST consultare [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md).
+
+---
+
+### 8. Ottimizzazioni frontend e PWA avanzata (20 febbraio 2026)
+
+**Obiettivo**: Migliorare performance, bundle e UX (PWA installabile, caching offline, banner di aggiornamento).
+
+**Interventi principali** (sintesi, dettagli in [docs/optimization-report.md](docs/optimization-report.md) e [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)):
+
+- Dynamic import e code splitting per componenti pesanti (grafici, tabelloni, export PDF, card homepage/impostazioni).
+- Configurazione Serwist/Service Worker (`app/sw.ts`, `next.config.mjs`) con caching differenziato (stale-while-revalidate per dati, cache-first per asset).
+- PWA completa: `app/manifest.ts`, icone generate (`npm run pwa:icons`), pagina offline `app/~offline/page.tsx`, componente `RegisterPWA` per banner “È disponibile una nuova versione”.
+- Script di supporto per Lighthouse e analisi bundle (`npm run build:analyze`, `npm run lighthouse`, `npm run lighthouse:extract`).
+
+Impatto operativo:
+
+- Nessuna modifica aggiuntiva a Nginx oltre all’HTTPS già configurato.
+- Dopo un deploy (`npm run build` + restart PM2) gli utenti vedono un banner di aggiornamento quando è disponibile una nuova versione del Service Worker.
 
 > Aggiungere qui le modifiche successive con data e descrizione.

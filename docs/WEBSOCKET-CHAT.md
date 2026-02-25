@@ -2,17 +2,22 @@
 
 ## Panoramica
 
-Il progetto utilizza un **custom server** (Node.js + Socket.io) insieme a Next.js per abilitare:
+Il progetto utilizza un **custom server** (Node.js + Socket.io, vedi `server.js`) insieme a Next.js per abilitare:
 
 1. **Live Score** - aggiornamento in tempo reale dei punteggi match
-2. **Chat** - messaggi privati (DM) e chat di gruppo per tornei
+2. **Chat interna**:
+   - DM tra giocatori
+   - chat di gruppo per tornei
+   - chat broadcast “con tutti”
+   - badge messaggi non letti e marcatura letti
+   - possibilità di eliminare messaggi (per admin)
 
 ## Avvio
 
 ### Sviluppo
 
-- `npm run dev` - Next.js standard (senza WebSocket)
-- `npm run dev:ws` - Custom server con WebSocket (richiede `npm run build` in precedenza, oppure avvia in dev mode)
+- `npm run dev` - Next.js standard (solo HTTP/API, senza WebSocket)
+- `npm run dev:ws` - Custom server con WebSocket (`server.js`): chat + Live Score in tempo reale
 
 ### Produzione
 
@@ -26,6 +31,8 @@ Oppure con PM2:
 ```bash
 pm2 start ecosystem.config.js
 ```
+
+> In produzione PM2 è configurato con **`instances: 1`** per mantenere tutte le room Socket.io nello stesso processo (vedi `ecosystem.config.js`). Per scalare a più istanze è necessario usare il Redis adapter (vedi sezione “PM2 e scalabilità”).
 
 ## Eventi Socket.io
 
@@ -50,6 +57,12 @@ Il client si unisce alla room `tournament:{tournamentId}`. Quando un admin salva
 
 Il client si unisce alla room `chat:{conversationId}`. L’autenticazione avviene tramite cookie `padel-session` (Iron Session).
 
+Quando l’utente legge una conversazione:
+
+- il client chiama `POST /api/chat/conversations/[id]/read`;
+- il server aggiorna le righe di lettura in DB e ricalcola i conteggi di non letti;
+- viene emesso un evento `chat:unread` che fa aggiornare il badge in sidebar.
+
 ## API REST Chat
 
 | Metodo | Endpoint | Descrizione |
@@ -59,8 +72,10 @@ Il client si unisce alla room `chat:{conversationId}`. L’autenticazione avvien
 | GET | `/api/chat/conversations/[id]` | Dettagli conversazione |
 | GET | `/api/chat/conversations/[id]/messages` | Messaggi (parametri: `limit`, `before`) |
 | POST | `/api/chat/conversations/[id]/messages` | Invia messaggio |
+| POST | `/api/chat/conversations/[id]/read` | Segna la conversazione come letta per l’utente corrente |
 | GET | `/api/chat/users` | Utenti per avviare DM |
 | GET | `/api/chat/tournaments` | Tornei per chat gruppo |
+| GET | `/api/chat/unread-count` | Conteggio totale messaggi non letti (per badge in sidebar) |
 
 ## Schema DB Chat
 

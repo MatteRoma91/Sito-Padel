@@ -8,6 +8,16 @@ Sito privato per la gestione di tornei di padel.
 |------|-----------|
 | **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all’avvio del server (Nginx, build, PM2) |
 | **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
+| **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
+| **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
+| **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
+| **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Indici DB, rate limit, validazione input, sicurezza sessioni e password |
+| **[docs/baseline-report.md](docs/baseline-report.md)** | Misure iniziali di bundle, tempi risposta e dimensione `.next` |
+| **[docs/optimization-report.md](docs/optimization-report.md)** | Dettaglio delle ottimizzazioni frontend e impatto sui bundle |
+| **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
+| **[docs/LIGHTHOUSE.md](docs/LIGHTHOUSE.md)** | Come eseguire Lighthouse e aggiornare i report in `docs/reports/` |
+| **[docs/reports/README.md](docs/reports/README.md)** | Formato dei report Lighthouse JSON di esempio |
+| **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Contesto e piano per future notifiche push Web Push |
 
 ## Funzionalità
 
@@ -16,10 +26,11 @@ Sito privato per la gestione di tornei di padel.
 - **Tornei**: Creazione e gestione tornei
 - **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
 - **Tabellone**: Quarti, semifinali, finale + tabellone consolazione
+- **Live Score**: Aggiornamento in tempo reale dei punteggi match tramite WebSocket
 - **Classifiche**: Classifica torneo e classifica cumulativa
 - **Calendario**: Vista calendario tornei
 - **Export PDF**: Esportazione tabellone e classifica
-- **Chat**: Chat tra utenti e per torneo (WebSocket)
+- **Chat interna**: DM tra giocatori, chat di gruppo per torneo e chat broadcast; badge messaggi non letti e possibilità di eliminare messaggi (per admin)
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
 
 ## Tecnologie
@@ -32,6 +43,9 @@ Sito privato per la gestione di tornei di padel.
 - Serwist (PWA, Service Worker)
 - PM2 (process manager)
 - Nginx (reverse proxy)
+- Playwright (test end-to-end)
+- Vitest (test unitari / integrazione)
+- Lighthouse (analisi performance e SEO)
 
 ## Requisiti
 
@@ -169,6 +183,16 @@ npm run pwa:icons
 pm2 status
 pm2 logs
 pm2 restart padel-tour
+
+# Test unitari / integrazione (Vitest)
+npm run test
+
+# Test end-to-end (Playwright)
+npm run test:e2e
+
+# Lighthouse (performance/SEO, richiede Chrome/Chromium)
+npm run lighthouse
+npm run lighthouse:extract
 ```
 
 ## URL
