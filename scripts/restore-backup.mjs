@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ripristina un backup completo (ZIP con padel.db + avatars/) generato da
+ * Ripristina un backup completo (ZIP con padel.db + avatars/ + gallery/) generato da
  * GET /api/settings/backup/full.
  *
  * Uso: node scripts/restore-backup.mjs /path/to/padel-full-backup-YYYY-MM-DD.zip
@@ -32,6 +32,7 @@ const projectRoot = path.resolve(path.join(__dirname, '..'));
 const dbDest = process.env.DATABASE_PATH || path.join(projectRoot, 'data', 'padel.db');
 const dataDir = path.dirname(dbDest);
 const avatarsDest = path.join(projectRoot, 'public', 'avatars');
+const galleryDest = path.join(projectRoot, 'public', 'gallery');
 
 const tempDir = path.join(os.tmpdir(), `padel-restore-${Date.now()}`);
 
@@ -68,6 +69,24 @@ try {
       }
     }
     console.log('Avatar ripristinati in:', avatarsDest);
+  }
+
+  const extractedGallery = path.join(tempDir, 'gallery');
+  if (fs.existsSync(extractedGallery)) {
+    if (!fs.existsSync(galleryDest)) {
+      fs.mkdirSync(galleryDest, { recursive: true });
+    }
+    const entries = fs.readdirSync(extractedGallery, { withFileTypes: true });
+    for (const e of entries) {
+      const src = path.join(extractedGallery, e.name);
+      const dest = path.join(galleryDest, e.name);
+      if (e.isDirectory()) {
+        copyDirSync(src, dest);
+      } else {
+        fs.copyFileSync(src, dest);
+      }
+    }
+    console.log('Galleria ripristinata in:', galleryDest);
   }
 
   console.log('\nRipristino completato. Riavvia l\'applicazione (es. pm2 restart padel-tour).');

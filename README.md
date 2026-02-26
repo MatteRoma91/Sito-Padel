@@ -31,6 +31,7 @@ Sito privato per la gestione di tornei di padel.
 - **Calendario**: Vista calendario tornei
 - **Export PDF**: Esportazione tabellone e classifica
 - **Chat interna**: DM tra giocatori, chat di gruppo per torneo e chat broadcast; badge messaggi non letti e possibilità di eliminare messaggi (per admin)
+- **Galleria**: Caricamento e visualizzazione di immagini e video (tutti possono caricare, solo admin può eliminare); limite totale 20 GB; gestione e spazio in Impostazioni
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
 
 ## Tecnologie
@@ -119,6 +120,7 @@ Al primo avvio viene creato l'utente admin:
 │   │   ├── profiles/       # Profili giocatori
 │   │   ├── pairs/          # Estrazione coppie
 │   │   ├── calendar/       # Calendario
+│   │   ├── gallery/        # Galleria immagini e video
 │   │   └── rankings/       # Classifiche
 │   ├── ~offline/           # Pagina PWA offline
 │   ├── manifest.ts         # Web App Manifest (PWA)
@@ -139,7 +141,7 @@ Al primo avvio viene creato l'utente admin:
 
 ## Backup e ripristino
 
-- **Backup completo** (database + avatar): da Impostazioni → Strumenti, usa **Scarica backup completo**. Si scarica un file ZIP (`padel-full-backup-YYYY-MM-DD.zip`) da conservare fuori dal server (PC, cloud).
+- **Backup completo** (database + avatar + galleria): da Impostazioni → Strumenti, usa **Scarica backup completo**. Si scarica un file ZIP (`padel-full-backup-YYYY-MM-DD.zip`) da conservare fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** per un singolo file `.db` (utile per backup rapidi).
 
 **Ripristino su un nuovo server** (dopo crash o migrazione):

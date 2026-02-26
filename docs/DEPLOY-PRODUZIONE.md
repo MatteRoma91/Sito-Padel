@@ -44,6 +44,7 @@ sudo systemctl reload nginx
 
 Il file `scripts/nginx-padel.conf` è già configurato per:
 
+- per la **Galleria** (video fino a 500MB), aggiungere `client_max_body_size 550M;` in Nginx se non già presente;
 - inoltrare il traffico HTTP/HTTPS verso `http://localhost:3000` (server Node custom);
 - gestire correttamente le connessioni **WebSocket** (chat interna e Live Score) con gli header:
 

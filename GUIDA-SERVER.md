@@ -97,7 +97,22 @@ sudo sed -i '/server_name bananapadeltour.duckdns.org;/a\    client_max_body_siz
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**Nota**: L’app Next.js limita gli avatar a 5MB (`MAX_SIZE` in `app/api/users/[id]/avatar/route.ts`). Nginx ora accetta fino a 25MB; sopra 5MB la richiesta arriva ma viene rifiutata dall’API.
+**Nota**: L’app Next.js limita gli avatar a 5MB (`MAX_SIZE` in `app/api/users/[id]/avatar/route.ts`). Nginx ora accetta fino a 25MB; sopra 5MB la richiesta arriva ma viene rifiutata dall'API. Per la **Galleria** (video fino a 500MB), se necessario: `client_max_body_size 550M;`.
+
+---
+
+### 9. Galleria immagini e video (26 febbraio 2026)
+
+**Obiettivo**: Caricamento e visualizzazione di immagini e video nella galleria.
+
+**Implementazione**:
+- Voce di menu **Galleria** (`/gallery`): tutti possono caricare immagini (JPEG, PNG, WebP, GIF, HEIC) e video (MP4, WebM); solo admin può eliminare.
+- Tab **Galleria** in Impostazioni: spazio utilizzato (X / 20 GB), gestione file.
+- Limite totale galleria: 20 GB; immagini max 10 MB, video max 500 MB.
+- Storage: `public/gallery/`; servizio tramite API (`/api/serve-gallery/`) con rewrite in `next.config.mjs` (analogo agli avatar).
+- Backup completo include `public/gallery` nello ZIP; script `restore-backup.mjs` estrae anche la cartella `gallery`.
+
+**File rilevanti**: `app/api/gallery/`, `app/api/serve-gallery/`, `components/gallery/`, tab Galleria in Impostazioni. Per video > 25MB: aumentare Nginx `client_max_body_size` a 550M.
 
 ---
 
@@ -129,7 +144,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Backup e ripristino
 
-- **Backup completo**: Impostazioni → Strumenti → **Scarica backup completo**. Scarica un ZIP con database e avatar. Conservare il file fuori dal server (PC, cloud).
+- **Backup completo**: Impostazioni → Strumenti → **Scarica backup completo**. Scarica un ZIP con database, avatar e galleria. Conservare il file fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** (file `.db`).
 
 **Ripristino su nuovo server** (dopo crash o migrazione):

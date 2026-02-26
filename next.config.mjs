@@ -21,6 +21,7 @@ const nextConfig = {
   async rewrites() {
     return [
       { source: '/avatars/:path*', destination: '/api/serve-avatar/:path*' },
+      { source: '/gallery/:path*', destination: '/api/serve-gallery/:path*' },
     ];
   },
   async headers() {

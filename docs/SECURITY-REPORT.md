@@ -22,10 +22,12 @@
 | users | `idx_users_full_name` | ORDER BY full_name |
 | mvp_votes | `idx_mvp_votes_tournament` | Voti MVP per torneo |
 | login_attempts | `idx_login_attempts_locked` | Query IP bloccati |
+| gallery_media | `idx_gallery_media_user`, `idx_gallery_media_created` | Lista galleria per utente, ordinamento per data |
+| gallery_media | `idx_gallery_media_user`, `idx_gallery_media_created` | Lista galleria per utente, ordinamento per data |
 
 ### Query ottimizzate
 
-Le query più frequenti (`getUserById`, `getUserByUsername`, `getTournamentById`, `getPairs`, `getMatches`, `getTournamentRankings`, `getMatchHistoryForUser`, `getPlayerStats`, `recalculateCumulativeRankings`) beneficiano degli indici sopra.
+Le query più frequenti (`getUserById`, `getUserByUsername`, `getTournamentById`, `getPairs`, `getMatches`, `getTournamentRankings`, `getMatchHistoryForUser`, `getPlayerStats`, `recalculateCumulativeRankings`, `getGalleryMedia`, `getGalleryTotalSize`) beneficiano degli indici sopra.
 
 ---
 
@@ -125,6 +127,7 @@ cookieOptions: {
 2. **Headers di sicurezza:** Implementati in `next.config.mjs`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`.
 3. **SQL injection:** Le query usano prepared statements (`?` placeholders). Nessuna concatenazione diretta di input utente.
 4. **Backup:** Verificare che i backup (`/api/settings/backup`) siano accessibili solo agli admin.
+5. **Galleria:** Upload solo per utenti autenticati; eliminazione solo admin. Validazione tipi MIME (JPEG, PNG, WebP, GIF, HEIC, MP4, WebM) e limiti dimensione (10 MB immagini, 500 MB video); limite totale 20 GB.
 
 ---
 
