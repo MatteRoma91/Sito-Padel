@@ -78,7 +78,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* My Profile e Chat - visible to everyone */}
+      {/* Griglia unica: Il Mio Profilo, Chat, Giocatori, Calendario, Classifiche per tutti + Nuovo Torneo solo admin */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href={`/profiles/${user?.id}`} className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
           <Avatar
@@ -94,6 +94,32 @@ export default async function HomePage() {
           </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Chat</span>
         </ChatLinkWithBadge>
+        {isAdmin && (
+          <Link href="/tournaments/new" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+              <Plus className="w-6 h-6 text-slate-900" />
+            </div>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuovo Torneo</span>
+          </Link>
+        )}
+        <Link href="/profiles" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+            <Users className="w-6 h-6 text-slate-900" />
+          </div>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Giocatori</span>
+        </Link>
+        <Link href="/calendar" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+            <Calendar className="w-6 h-6 text-slate-900" />
+          </div>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Calendario</span>
+        </Link>
+        <Link href="/rankings" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-slate-900" />
+          </div>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Classifiche</span>
+        </Link>
       </div>
 
       {/* Countdown al prossimo Broccoburgher - solo se esiste un torneo futuro */}
@@ -103,36 +129,6 @@ export default async function HomePage() {
           tournamentId={nextBroccoburgher.id}
           date={nextBroccoburgher.date}
         />
-      )}
-
-      {/* Admin quick actions */}
-      {isAdmin && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link href="/tournaments/new" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuovo Torneo</span>
-          </Link>
-          <Link href="/profiles" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-              <Users className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Giocatori</span>
-          </Link>
-          <Link href="/calendar" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Calendario</span>
-          </Link>
-          <Link href="/rankings" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Classifiche</span>
-          </Link>
-        </div>
       )}
 
       {/* MVP Voting - subito sotto le quick action, sopra calendario (striscia gialla) */}
