@@ -606,17 +606,19 @@ export interface MatchHistoryEntry {
   scoreUs: number;
   scoreThem: number;
   isWin: boolean;
+  orderInRound: number;
 }
 
-/** Ordine cronologia partite (per torneo): 1) 7°/8° o 5°/6° o Finale o 3°/4° → 2) Semi Cons. o Semifinali → 3) Quarti. */
+/** Ordine per sort cronologico: round_robin/girone giocato per primo, poi quarti, semi, finale. Valori alti = giocati prima. */
 const ROUND_DISPLAY_ORDER: Record<string, number> = {
-  consolation_seventh: 0,  // 7° e 8° posto
-  consolation_final: 1,     // 5° e 6° posto
-  final: 2,                 // Finale
-  third_place: 3,           // 3° e 4° posto
-  consolation_semi: 4,      // Semi Consolazione
-  semifinal: 5,             // Semifinali
+  round_robin: 7,           // Girone - giocato per primo
   quarterfinal: 6,          // Quarti di Finale
+  semifinal: 5,             // Semifinali
+  consolation_semi: 4,      // Semi Consolazione
+  third_place: 3,           // 3° e 4° posto
+  final: 2,                 // Finale
+  consolation_final: 1,     // 5° e 6° posto
+  consolation_seventh: 0,   // 7° e 8° posto - giocato per ultimo
 };
 const DEFAULT_ROUND_ORDER = 99;
 
@@ -695,15 +697,18 @@ export function getMatchHistoryForUser(userId: string): MatchHistoryEntry[] {
       scoreUs,
       scoreThem,
       isWin,
+      orderInRound: r.order_in_round,
     });
   }
 
-  // Ordine: per torneo (data DESC), poi round: (7°/8° o 5°/6° o Finale o 3°/4°) → (Semi Cons. o Semifinali) → Quarti
+  // Ordine cronologico: torneo (data DESC), poi round dalla prima partita all'ultima (girone→quarti→semi→finale), poi order_in_round
   const roundOrder = (round: string) => ROUND_DISPLAY_ORDER[round] ?? DEFAULT_ROUND_ORDER;
   result.sort((a, b) => {
     const dateCmp = b.date.localeCompare(a.date);
     if (dateCmp !== 0) return dateCmp;
-    return roundOrder(a.round) - roundOrder(b.round);
+    const roundCmp = roundOrder(b.round) - roundOrder(a.round);
+    if (roundCmp !== 0) return roundCmp;
+    return a.orderInRound - b.orderInRound;
   });
 
   return result;
