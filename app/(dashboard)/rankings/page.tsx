@@ -50,12 +50,16 @@ export default async function RankingsPage() {
     mvp_count: r.mvp_count ?? 0,
   }));
 
-  const levelRanking = levelRankedUsers.map(u => ({
-    id: u.id,
-    userName: u.nickname || u.full_name || u.username || '?',
-    overall_score: u.overall_score,
-    levelLabel: u.overall_score != null ? OVERALL_LEVEL_LABELS[overallScoreToLevel(u.overall_score)] : '-',
-  }));
+  const levelRanking = levelRankedUsers.map(u => {
+    const level = u.overall_score != null ? overallScoreToLevel(u.overall_score) : 'D';
+    return {
+      id: u.id,
+      userName: u.nickname || u.full_name || u.username || '?',
+      overall_score: u.overall_score,
+      levelLabel: u.overall_score != null ? OVERALL_LEVEL_LABELS[level] : '-',
+      level,
+    };
+  });
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">

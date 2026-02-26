@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Trophy, Medal, Award, BarChart2 } from 'lucide-react';
+import type { OverallLevel } from '@/lib/types';
 
 export interface GeneralRankingEntry {
   user_id: string;
@@ -19,6 +20,7 @@ export interface LevelRankingEntry {
   userName: string;
   overall_score: number | null;
   levelLabel: string;
+  level: OverallLevel;
 }
 
 interface UnifiedRankingsCardProps {
@@ -37,6 +39,14 @@ function positionStyle(i: number) {
   if (i === 0) return 'bg-yellow-400 text-yellow-900 dark:bg-yellow-500 dark:text-yellow-900';
   if (i === 1) return 'bg-slate-300 text-slate-700 dark:bg-slate-400 dark:text-slate-900';
   if (i === 2) return 'bg-amber-600 text-white dark:bg-amber-600 dark:text-white';
+  return 'bg-primary-300 text-white dark:bg-primary-400 dark:text-white';
+}
+
+/** Colore del cerchio posizione in base al livello (Classifica per livello) */
+function levelPositionStyle(level: OverallLevel) {
+  if (level === 'A_GOLD' || level === 'A_SILVER') return 'bg-yellow-400 text-yellow-900 dark:bg-yellow-500 dark:text-yellow-900';
+  if (level === 'B_GOLD' || level === 'B_SILVER') return 'bg-slate-300 text-slate-700 dark:bg-slate-400 dark:text-slate-900';
+  if (level === 'C') return 'bg-amber-600 text-white dark:bg-amber-600 dark:text-white';
   return 'bg-primary-300 text-white dark:bg-primary-400 dark:text-white';
 }
 
@@ -135,7 +145,7 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${positionStyle(i)}`}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${levelPositionStyle(r.level)}`}
                     >
                       {i + 1}
                     </div>
