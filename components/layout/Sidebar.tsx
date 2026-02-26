@@ -11,6 +11,7 @@ import {
   BarChart3,
   BookOpen,
   MessageCircle,
+  Images,
   Settings,
   LogOut,
   Menu,
@@ -38,6 +39,7 @@ const navItems = [
   { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
+  { href: '/gallery', label: 'Galleria', icon: Images },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
 ];
 

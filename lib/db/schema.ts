@@ -385,4 +385,20 @@ export function initSchema() {
     )
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_chat_last_read_user ON chat_last_read(user_id)`);
+
+  // Galleria immagini e video
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS gallery_media (
+      id TEXT PRIMARY KEY,
+      filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('image', 'video')),
+      mime_type TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_gallery_media_user ON gallery_media(user_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_gallery_media_created ON gallery_media(created_at DESC)`);
 }

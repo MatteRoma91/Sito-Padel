@@ -50,6 +50,10 @@ next-env.d.ts
 /public/avatars/*
 !/public/avatars/.gitkeep
 
+# galleria immagini e video
+/public/gallery/*
+!/public/gallery/.gitkeep
+
 # PM2 / process manager
 .pm2/
 *.pm2.log

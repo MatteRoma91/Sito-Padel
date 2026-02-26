@@ -26,6 +26,7 @@ export async function GET() {
   }
 
   const avatarsDir = path.join(process.cwd(), 'public', 'avatars');
+  const galleryDir = path.join(process.cwd(), 'public', 'gallery');
   const tempDbPath = path.join(os.tmpdir(), `padel-backup-${Date.now()}.db`);
 
   try {
@@ -60,6 +61,9 @@ export async function GET() {
   archive.file(tempDbPath, { name: 'padel.db' });
   if (fs.existsSync(avatarsDir)) {
     archive.directory(avatarsDir, 'avatars');
+  }
+  if (fs.existsSync(galleryDir)) {
+    archive.directory(galleryDir, 'gallery');
   }
   // Do NOT await finalize(): the client must read the response body for the stream to flow.
   // Awaiting here would deadlock (archiver blocks until someone reads from pass).
