@@ -6,7 +6,7 @@ Esegui questi comandi **in ordine** dopo l’avvio del server (o dopo un riavvio
 
 ---
 
-## 1. Verifica servizi di sistema
+## 1. Verifica Nginx
 
 ```bash
 # Nginx (reverse proxy e SSL) deve essere attivo
@@ -25,13 +25,13 @@ cd /home/ubuntu/Sito-Padel
 
 ---
 
-## 3. Build (solo se hai modificato il codice o è la prima volta)
+## 3. Build (solo se necessario)
 
 ```bash
 npm run build
 ```
 
-Se non hai toccato il codice e la cartella `.next` esiste già, puoi saltare questo step.
+Salta questo passaggio se non hai modificato il codice e la cartella `.next` esiste già.
 
 ---
 
@@ -77,7 +77,7 @@ Risposta attesa: **200**, **302** o **307** (redirect verso login è normale). S
 
 ---
 
-## Riepilogo – copia e incolla
+## Riepilogo rapido
 
 Da eseguire **una volta** dopo l’avvio del server:
 
@@ -90,8 +90,7 @@ pm2 save
 pm2 status
 ```
 
-Se il build è già stato fatto in precedenza:
-
+**Build già presente:**
 ```bash
 sudo systemctl start nginx
 cd /home/ubuntu/Sito-Padel
@@ -102,20 +101,19 @@ pm2 status
 
 ---
 
-## Primo setup completo (solo la prima volta sul server)
+## Primo setup (una tantum)
 
-Se è la **prima** installazione sul server:
+Solo per la **prima** installazione sul server:
 
 1. `cd /home/ubuntu/Sito-Padel`
 2. `npm install`
-3. Configurare `.env` (e `DATABASE_PATH` se necessario)
+3. Configurare `.env` (`SESSION_SECRET`, `DATABASE_PATH` se necessario)
 4. `npm run build`
 5. `pm2 start ecosystem.config.js`
 6. `pm2 save`
-7. `sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu`  
-   (avvio automatico di PM2 al boot)
+7. `sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu`
 
-Dopo questo, ai successivi avvii del server bastano i comandi della sezione **Riepilogo** (senza `pm2 startup`, già fatto).
+Dopo questo, ai successivi reboot basteranno i comandi della sezione **Riepilogo rapido**.
 
 ---
 

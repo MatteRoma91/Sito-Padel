@@ -18,6 +18,11 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: false,
+  experimental: {
+    preloadEntriesOnStart: false,
+    serverSourceMaps: false,
+  },
   async rewrites() {
     return [
       { source: '/avatars/:path*', destination: '/api/serve-avatar/:path*' },

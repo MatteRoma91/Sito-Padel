@@ -1,4 +1,16 @@
-# WebSocket e Chat - Banana Padel Tour
+# WebSocket e Chat – Banana Padel Tour
+
+## Indice
+
+- [Panoramica](#panoramica)
+- [Avvio](#avvio)
+- [Eventi Socket.io](#eventi-socketio)
+- [API REST Chat](#api-rest-chat)
+- [Schema DB](#schema-db-chat)
+- [Scalabilità](#pm2-e-scalabilità)
+- [Nginx e TLS](#nginx-e-websocket)
+
+---
 
 ## Panoramica
 

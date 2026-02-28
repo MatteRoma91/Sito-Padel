@@ -1,4 +1,12 @@
-# Guida SEO - Banana Padel Tour
+# Guida SEO – Banana Padel Tour
+
+## Indice
+
+- [Implementato](#implementato)
+- [Variabili d'ambiente](#variabili-dambiente-per-produzione)
+- [Verifica Lighthouse](#verifica-lighthouse-seo)
+
+---
 
 ## Implementato
 

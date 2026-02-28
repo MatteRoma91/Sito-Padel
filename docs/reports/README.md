@@ -1,5 +1,12 @@
 # Report Lighthouse
 
-I file `lighthouse-*.report.json` in questa cartella sono **esempi** per testare `npm run lighthouse:extract`.
+I file `lighthouse-*.report.json` in questa cartella sono generati da Lighthouse.
 
-**Per dati reali:** eseguire `npm run lighthouse` su un sistema con Chrome (vedi [LIGHTHOUSE.md](../LIGHTHOUSE.md)), poi `npm run lighthouse:extract`.
+| File | Descrizione |
+|------|-------------|
+| `lighthouse-login.report.json` | Punteggio pagina `/login` |
+| `lighthouse-homepage.report.json` | Pagine homepage (richiede login) |
+| `lighthouse-profiles-id.report.json` | Pagina profilo (richiede login) |
+| `lighthouse-metrics.json` | Metriche estratte da `npm run lighthouse:extract` |
+
+**Come generare:** eseguire `npm run lighthouse` (richiede Chrome) e poi `npm run lighthouse:extract`. Dettagli in [LIGHTHOUSE.md](../LIGHTHOUSE.md).

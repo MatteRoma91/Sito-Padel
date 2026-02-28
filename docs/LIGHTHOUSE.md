@@ -1,6 +1,10 @@
-# Guida all'esecuzione di Lighthouse
+# Guida Lighthouse
 
-Per generare i dati Lighthouse per il [REPORT-COMPARATIVO](REPORT-COMPARATIVO.md) è necessario eseguire Lighthouse su un sistema con **Chrome** o **Chromium** installato.
+Come eseguire Lighthouse per generare i dati del [REPORT-COMPARATIVO](REPORT-COMPARATIVO.md).
+
+**Requisiti:** Chrome/Chromium, Node.js, server attivo (produzione o `npm run start`).
+
+---
 
 ## Requisiti
 

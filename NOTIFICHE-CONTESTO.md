@@ -1,7 +1,7 @@
 # Contesto: sistema notifiche Web Push
 
-**Data conversazione**: 11 febbraio 2025  
-**Stato**: Piano definito, implementazione non iniziata
+**Data:** 11 febbraio 2026  
+**Stato:** Piano definito, implementazione non iniziata
 
 ---
 

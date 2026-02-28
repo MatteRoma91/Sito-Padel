@@ -19,7 +19,7 @@ module.exports = {
       // Restart automatico
       autorestart: true,
       watch: false,
-      max_memory_restart: '500M',
+      max_memory_restart: '400M',
       min_uptime: '10s',
       max_restarts: 10,
       restart_delay: 4000,
@@ -33,6 +33,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        NODE_OPTIONS: '--max-old-space-size=384',
       },
     },
   ],

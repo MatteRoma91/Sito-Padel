@@ -1,8 +1,17 @@
-# Report Comparativo - Ottimizzazione Banana Padel Tour
+# Report Comparativo – Ottimizzazione Banana Padel Tour
 
 **Data:** 20 Febbraio 2026  
-**Branch:** optimization-refactor  
 **Riferimenti:** [baseline-report](baseline-report.md) | [optimization-report](optimization-report.md) | [SECURITY-REPORT](SECURITY-REPORT.md)
+
+---
+
+## Indice
+
+1. [Lighthouse](#1-lighthouse--dati-misurati)
+2. [Bundle Size](#2-bundle-size--prima--dopo)
+3. [Tempo di caricamento](#3-tempo-di-caricamento--prima--dopo)
+4. [Vulnerabilità](#4-vulnerabilità--risolte-e-aperte)
+5. [Suggerimenti scalabilità](#5-suggerimenti-per-scalabilità-futura)
 
 ---
 

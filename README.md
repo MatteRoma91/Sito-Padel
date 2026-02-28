@@ -1,6 +1,21 @@
-# Padel Tour
+# Banana Padel Tour
 
-Sito privato per la gestione di tornei di padel.
+Sito privato per la gestione di tornei di padel con chat, live score, galleria e PWA.
+
+---
+
+## Indice
+
+- [Documentazione](#documentazione)
+- [Funzionalità](#funzionalità)
+- [Tecnologie](#tecnologie)
+- [Installazione](#installazione)
+- [Deploy](#deploy-su-ubuntu)
+- [Backup](#backup-e-ripristino)
+- [PWA](#pwa--installazione-come-app)
+- [Risoluzione problemi](#risoluzione-problemi)
+
+---
 
 ## Documentazione
 
@@ -16,8 +31,10 @@ Sito privato per la gestione di tornei di padel.
 | **[docs/optimization-report.md](docs/optimization-report.md)** | Dettaglio delle ottimizzazioni frontend e impatto sui bundle |
 | **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
 | **[docs/LIGHTHOUSE.md](docs/LIGHTHOUSE.md)** | Come eseguire Lighthouse e aggiornare i report in `docs/reports/` |
-| **[docs/reports/README.md](docs/reports/README.md)** | Formato dei report Lighthouse JSON di esempio |
-| **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Contesto e piano per future notifiche push Web Push |
+| **[docs/reports/README.md](docs/reports/README.md)** | Formato dei report Lighthouse JSON |
+| **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Piano notifiche push Web Push (futuro) |
+
+---
 
 ## Funzionalità
 
@@ -101,14 +118,16 @@ chmod +x scripts/setup-https.sh
 sudo ./scripts/setup-https.sh
 ```
 
-## Credenziali Iniziali
+## Credenziali iniziali
 
 Al primo avvio viene creato l'utente admin:
 
-- **Username**: admin
-- **Password**: admin123
+| Campo | Valore |
+|-------|--------|
+| **Username** | `admin` |
+| **Password** | `admin123` |
 
-⚠️ Cambia la password dopo il primo login!
+> ⚠️ **Importante:** cambia la password dopo il primo login.
 
 ## Struttura Progetto
 
@@ -199,8 +218,10 @@ npm run lighthouse:extract
 
 ## URL
 
-- Sviluppo: http://localhost:3000
-- Produzione: https://bananapadeltour.duckdns.org
+| Ambiente | URL |
+|----------|-----|
+| Sviluppo | http://localhost:3000 |
+| Produzione | https://bananapadeltour.duckdns.org |
 
 ## Risoluzione problemi
 

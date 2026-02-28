@@ -116,6 +116,19 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+### 10. Ottimizzazione RAM (28 febbraio 2026)
+
+**Obiettivo**: Ridurre l'uso di memoria del server per evitare picchi al 100%.
+
+**Modifiche applicate** (vedi piano ottimizzazione RAM):
+- **PM2** (`ecosystem.config.js`): `max_memory_restart` 400M, `NODE_OPTIONS: --max-old-space-size=384`
+- **Next.js** (`next.config.mjs`): `preloadEntriesOnStart: false`, `productionBrowserSourceMaps: false`, `serverSourceMaps: false`
+- **Nginx**: `keepalive 16` (era 64) nei file `scripts/nginx-padel.conf` e `scripts/nginx-ibuche.conf` (Roma-Buche)
+
+Dopo le modifiche: `npm run build` in entrambi i progetti, aggiornare Nginx in sites-available, `pm2 restart padel-tour roma-buche`.
+
+---
+
 ## Pacchetti/servizi installati (ordine indicativo)
 
 > Basato sulla configurazione esistente. L’ordine rispecchia le dipendenze logiche.

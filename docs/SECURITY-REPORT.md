@@ -1,6 +1,6 @@
 # Report di Sicurezza - Banana Padel Tour
 
-**Data:** 20 Febbraio 2025  
+**Data:** 20 Febbraio 2026  
 **Versione:** Post-ottimizzazione backend
 
 ---
@@ -22,7 +22,6 @@
 | users | `idx_users_full_name` | ORDER BY full_name |
 | mvp_votes | `idx_mvp_votes_tournament` | Voti MVP per torneo |
 | login_attempts | `idx_login_attempts_locked` | Query IP bloccati |
-| gallery_media | `idx_gallery_media_user`, `idx_gallery_media_created` | Lista galleria per utente, ordinamento per data |
 | gallery_media | `idx_gallery_media_user`, `idx_gallery_media_created` | Lista galleria per utente, ordinamento per data |
 
 ### Query ottimizzate

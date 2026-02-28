@@ -111,8 +111,6 @@ Da estrarre da `audits['largest-contentful-paint']`, `audits['first-contentful-p
 
 ---
 
----
-
 ## Report Ottimizzazione (Post-Frontend)
 
 **Data ottimizzazione:** 2026-02-20

@@ -16,12 +16,12 @@ pm2 save
 pm2 startup  # esegui il comando suggerito per avvio al boot
 ```
 
-### Log rotation (una tantum)
+### Log rotation (consigliato)
 ```bash
 pm2 install pm2-logrotate
-# Configurazione: pm2 set pm2-logrotate:max_size 10M
-# pm2 set pm2-logrotate:retain 7
-# pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 7
+pm2 set pm2-logrotate:compress true
 ```
 
 ### Comandi utili
@@ -42,9 +42,9 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Il file `scripts/nginx-padel.conf` è già configurato per:
+Il file `scripts/nginx-padel.conf` è configurato per:
 
-- per la **Galleria** (video fino a 500MB), aggiungere `client_max_body_size 550M;` in Nginx se non già presente;
+- **Galleria** (video fino a 500MB): se necessario, aggiungere `client_max_body_size 550M;` nel blocco server;
 - inoltrare il traffico HTTP/HTTPS verso `http://localhost:3000` (server Node custom);
 - gestire correttamente le connessioni **WebSocket** (chat interna e Live Score) con gli header:
 
@@ -70,12 +70,13 @@ Con SSL attivo:
 - la PWA (Service Worker, manifest) funziona correttamente;
 - le connessioni WebSocket passano in **wss://** tramite Nginx.
 
-## 3. Riepilogo attivato
+## 3. Riepilogo configurazione
 
 | Componente        | Dettaglio                                              |
-|------------------|--------------------------------------------------------|
-| PM2 cluster      | `instances: 'max'` (un processo per core CPU)          |
-| PM2 restart      | `autorestart: true`, `max_memory_restart: 500M`        |
+|-------------------|--------------------------------------------------------|
+| PM2               | `instances: 1` (WebSocket richiede processo singolo)   |
+| PM2 restart       | `autorestart: true`, `max_memory_restart: 400M`        |
+| PM2 heap limit    | `NODE_OPTIONS: --max-old-space-size=384`               |
 | PM2 log rotation | Via modulo `pm2-logrotate`                              |
 | Nginx gzip       | Tipi: json, js, css, fonts, svg, xml                    |
 | Nginx HTTP/2     | Con SSL (dopo certbot)                                 |

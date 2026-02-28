@@ -60,7 +60,7 @@
 2. **Lazy loading**: Home, Rankings, Settings, Bracket caricano componenti pesanti in modo differito
 3. **Caricamento progressivo**: Skeleton/placeholder durante il caricamento dei componenti dinamici
 
-### Perche First Load resta simile
+### Perché il First Load resta simile
 - First Load JS per route include i chunk necessari al primo render di quella pagina
 - Su /profiles/[id] Recharts e ancora richiesto: il chunk viene caricato alla visita del profilo
 - Le route con dynamic import hanno piccolo overhead (loading component)
