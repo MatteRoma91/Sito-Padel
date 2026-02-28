@@ -1,15 +1,20 @@
-# Comandi per l’avvio del server – Banana Padel Tour
+# Comandi per l'avvio del server – Banana Padel Tour + Ibuche
 
-Esegui questi comandi **in ordine** dopo l’avvio del server (o dopo un riavvio) per far funzionare il sito.
+Esegui questi comandi **in ordine** dopo l'avvio del server (o dopo un riavvio) per far funzionare **entrambi** i siti.
 
-**Altre guide**: [README.md](README.md) (installazione, funzionalità, backup) · [GUIDA-SERVER.md](GUIDA-SERVER.md) (architettura, cronologia, variabili d’ambiente, troubleshooting)
+**Siti sul server**:
+| Sito | URL | Porta | PM2 name |
+|------|-----|-------|-----------|
+| Banana Padel Tour | https://bananapadeltour.duckdns.org | 3000 | padel-tour |
+| Roma-Buche (Ibuche) | https://ibuche.duckdns.org | 3001 | roma-buche |
+
+**Altre guide**: [README.md](README.md) · [GUIDA-SERVER.md](GUIDA-SERVER.md) (architettura, troubleshooting)
 
 ---
 
 ## 1. Verifica Nginx
 
 ```bash
-# Nginx (reverse proxy e SSL) deve essere attivo
 sudo systemctl status nginx
 # Se non è attivo:
 sudo systemctl start nginx
@@ -17,111 +22,94 @@ sudo systemctl start nginx
 
 ---
 
-## 2. Entra nella cartella del progetto
+## 2. Avvia entrambe le applicazioni
 
 ```bash
+# Banana Padel Tour (porta 3000)
 cd /home/ubuntu/Sito-Padel
-```
+pm2 start ecosystem.config.js
 
----
-
-## 3. Build (solo se necessario)
-
-```bash
-npm run build
-```
-
-Salta questo passaggio se non hai modificato il codice e la cartella `.next` esiste già.
-
----
-
-## 4. Avvia l’applicazione con PM2
-
-```bash
+# Roma-Buche (porta 3001)
+cd /home/ubuntu/Roma-Buche
 pm2 start ecosystem.config.js
 ```
 
-Oppure, se l’app è già in lista PM2 ma ferma:
+Oppure, se le app sono già in lista PM2 ma ferme:
 
 ```bash
 pm2 start padel-tour
-# oppure
-pm2 restart padel-tour
+pm2 start roma-buche
+# oppure riavvio di entrambe:
+pm2 restart padel-tour roma-buche
 ```
 
 ---
 
-## 5. Salva la lista PM2 (per riavvii futuri)
+## 3. Salva la lista PM2
 
 ```bash
 pm2 save
 ```
 
-Così al prossimo reboot del server PM2 riavvierà da solo `padel-tour`.
+Così al prossimo reboot PM2 riavvierà **entrambe** le app automaticamente.
 
 ---
 
-## 6. Controllo rapido
+## 4. Build (solo se necessario)
+
+Se hai modificato il codice di uno dei progetti:
 
 ```bash
-# Stato dell’app
-pm2 status
+# Per Banana Padel Tour
+cd /home/ubuntu/Sito-Padel && npm run build && pm2 restart padel-tour
 
-# L’app deve essere in ascolto sulla porta 3000
-ss -tlnp | grep 3000
-# oppure
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+# Per Roma-Buche
+cd /home/ubuntu/Roma-Buche && npm run build && pm2 restart roma-buche
 ```
-
-Risposta attesa: **200**, **302** o **307** (redirect verso login è normale). Se ottieni **000** o connessione rifiutata, vedi sotto “Se il sito non risponde”.
 
 ---
 
-## Riepilogo rapido
-
-Da eseguire **una volta** dopo l’avvio del server:
+## Riepilogo rapido (avvio dopo reboot)
 
 ```bash
 sudo systemctl start nginx
-cd /home/ubuntu/Sito-Padel
-npm run build
-pm2 start ecosystem.config.js
+cd /home/ubuntu/Sito-Padel && pm2 start ecosystem.config.js
+cd /home/ubuntu/Roma-Buche && pm2 start ecosystem.config.js
 pm2 save
 pm2 status
 ```
 
-**Build già presente:**
+---
+
+## Aggiornamento configurazione Nginx
+
+Se modifichi `scripts/nginx-padel.conf` o `scripts/nginx-ibuche.conf`, usa lo script unificato:
+
 ```bash
-sudo systemctl start nginx
 cd /home/ubuntu/Sito-Padel
-pm2 start ecosystem.config.js
-pm2 save
+sudo ./scripts/update-nginx.sh
+```
+
+Lo script copia **entrambe** le config e ricarica Nginx, evitando conflitti tra i due siti.
+
+---
+
+## Controllo rapido
+
+```bash
 pm2 status
+ss -tlnp | grep -E '3000|3001'
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000   # atteso: 200/302/307
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3001   # atteso: 200/302/307
 ```
 
 ---
 
-## Primo setup (una tantum)
+## Se un sito non risponde
 
-Solo per la **prima** installazione sul server:
+1. **Log PM2**: `pm2 logs padel-tour` oppure `pm2 logs roma-buche`
+2. **Build corrotta**: rifare `npm run build` nel progetto, poi `pm2 restart <nome>`
+3. **Nginx**: `sudo systemctl status nginx`
+4. **Porte**: `ss -tlnp | grep -E '3000|3001'` – devono essere in ascolto
 
-1. `cd /home/ubuntu/Sito-Padel`
-2. `npm install`
-3. Configurare `.env` (`SESSION_SECRET`, `DATABASE_PATH` se necessario)
-4. `npm run build`
-5. `pm2 start ecosystem.config.js`
-6. `pm2 save`
-7. `sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu`
-
-Dopo questo, ai successivi reboot basteranno i comandi della sezione **Riepilogo rapido**.
-
----
-
-## Se il sito non risponde
-
-1. **Controlla i log**: `pm2 logs padel-tour` (ultime righe). Se compaiono errori tipo “Could not find a production build” o “MODULE_NOT_FOUND”, la build è mancante o corrotta.
-2. **Rifai la build**: `cd /home/ubuntu/Sito-Padel` → `npm run build` → `pm2 restart padel-tour`.
-3. **Verifica Nginx**: `sudo systemctl status nginx`; se non è attivo, `sudo systemctl start nginx`.
-4. **Verifica porta 3000**: `ss -tlnp | grep 3000` deve mostrare un processo in ascolto. Se non c’è, l’app non è partita: controlla di nuovo i log PM2.
-
-Per variabili d’ambiente, backup e ripristino vedi [GUIDA-SERVER.md](GUIDA-SERVER.md) e [README.md](README.md).
+Per variabili d'ambiente, backup e ripristino vedi [GUIDA-SERVER.md](GUIDA-SERVER.md).

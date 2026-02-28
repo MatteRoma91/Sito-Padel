@@ -2,11 +2,22 @@
 
 > **Nota**: Questo file non è servito dal sito (non è in `/public`). È una guida operativa da aggiornare man mano che si effettuano modifiche.
 
-**Sito**: https://bananapadeltour.duckdns.org  
+**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001)  
 **Server**: VPS (OVH), IP pubblico 57.131.40.170  
 **Utente**: ubuntu (con sudo)
 
 **Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all’avvio del server) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push)
+
+---
+
+## Architettura (entrambi i siti)
+
+```
+Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → Next.js :3000 → SQLite
+                                     └→ ibuche           → Next.js :3001
+```
+
+**Conflitti evitati**: ogni sito ha `server_name` e porta univoci. Per aggiornare Nginx: `sudo ./scripts/update-nginx.sh` (copia entrambe le config).
 
 ---
 
@@ -15,10 +26,9 @@
 Dopo un reboot (o se i servizi sono stati fermati), esegui in ordine:
 
 1. **Nginx**: `sudo systemctl start nginx` (o `restart`)
-2. **App**: `cd /home/ubuntu/Sito-Padel` → `pm2 start ecosystem.config.js` oppure `pm2 restart padel-tour`
+2. **Entrambe le app**: vedi **[AVVIO.md](AVVIO.md)** per i comandi completi
 3. **Salva PM2**: `pm2 save`
 
-Se hai modificato il codice o la build è corrotta, prima esegui `npm run build`.  
 Elenco completo e blocchi copia-incolla: **[AVVIO.md](AVVIO.md)**.
 
 ---
