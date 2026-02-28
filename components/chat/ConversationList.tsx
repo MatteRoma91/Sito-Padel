@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MessageCircle, Users, Trophy, Megaphone } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 
 interface Conversation {
   id: string;
@@ -33,6 +34,7 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ activeId, onSelect, deletedConversationId }: ConversationListProps) {
+  const { showToast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [tournaments, setTournaments] = useState<TournamentItem[]>([]);
@@ -66,12 +68,12 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
       });
       const data = await res.json();
       if (!data.success) {
-        alert(data.error || 'Impossibile avviare la chat');
+        showToast(data.error || 'Impossibile avviare la chat', 'error');
         return;
       }
       const convId = data.conversation?.id;
       if (!convId) {
-        alert('Risposta non valida dal server');
+        showToast('Risposta non valida dal server', 'error');
         return;
       }
       setConversations(prev => {
@@ -89,7 +91,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
       setShowNew(false);
     } catch (err) {
       console.error('openOrCreateDm error', err);
-      alert('Errore di connessione. Riprova.');
+      showToast('Errore di connessione. Riprova.', 'error');
     }
   };
 
@@ -107,7 +109,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
     setCreatingChat(true);
     if (ids.length === 0) {
       setCreatingChat(false);
-      alert('Seleziona almeno un utente');
+      showToast('Seleziona almeno un utente', 'error');
       return;
     }
     try {
@@ -119,13 +121,13 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
       const data = await res.json();
       if (!data.success) {
         setCreatingChat(false);
-        alert(data.error || 'Impossibile avviare la chat');
+        showToast(data.error || 'Impossibile avviare la chat', 'error');
         return;
       }
       const convId = data.conversation?.id;
       if (!convId) {
         setCreatingChat(false);
-        alert('Risposta non valida dal server');
+        showToast('Risposta non valida dal server', 'error');
         return;
       }
       const title = ids.length === 1
@@ -140,7 +142,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
       setShowNew(false);
     } catch (err) {
       console.error('openOrCreateFromSelection error', err);
-      alert('Errore di connessione. Riprova.');
+      showToast('Errore di connessione. Riprova.', 'error');
     } finally {
       setCreatingChat(false);
     }

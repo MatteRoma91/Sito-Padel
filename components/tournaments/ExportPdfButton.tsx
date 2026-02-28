@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FileDown } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 import { jsPDF } from 'jspdf';
 import type { Pair, Match, TournamentRanking, User } from '@/lib/types';
 import { ROUND_LABELS } from '@/lib/bracket';
@@ -26,6 +27,7 @@ export function ExportPdfButton({
   rankings,
   userMap 
 }: ExportPdfButtonProps) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const pairMap = new Map(pairs.map(p => [p.id, p]));
@@ -171,7 +173,7 @@ export function ExportPdfButton({
       doc.save(`${tournament.name.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
       console.error('PDF generation error:', error);
-      alert('Errore durante la generazione del PDF');
+      showToast('Errore durante la generazione del PDF', 'error');
     } finally {
       setLoading(false);
     }

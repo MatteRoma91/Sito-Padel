@@ -6,6 +6,7 @@ import type { Pair, Match, User } from '@/lib/types';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { Play, Check, Trophy, RefreshCw, Users, X } from 'lucide-react';
 import { useLiveMatchScores } from '@/hooks/useLiveMatchScores';
+import { useToast } from '@/components/ui/Toast';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -29,6 +30,7 @@ export function BracketView({
   hiddenUserIds = []
 }: BracketViewProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [activeMatch, setActiveMatch] = useState<string | null>(null);
   const [scores, setScores] = useState<{ pair1: string; pair2: string }>({ pair1: '', pair2: '' });
@@ -73,7 +75,7 @@ export function BracketView({
     const s2 = parseInt(scores.pair2);
     
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0 || s1 === s2) {
-      alert('Inserisci punteggi validi (numeri diversi)');
+      showToast('Inserisci punteggi validi (numeri diversi)', 'error');
       return;
     }
 
@@ -130,11 +132,11 @@ export function BracketView({
     for (const match of qfMatches) {
       const sel = quarterfinalSelections[match.id];
       if (!sel?.pair1 || !sel?.pair2) {
-        alert('Seleziona entrambe le coppie per tutti i quarti di finale');
+        showToast('Seleziona entrambe le coppie per tutti i quarti di finale', 'error');
         return;
       }
       if (sel.pair1 === sel.pair2) {
-        alert('Le due coppie in ogni match devono essere diverse');
+        showToast('Le due coppie in ogni match devono essere diverse', 'error');
         return;
       }
     }
@@ -144,7 +146,7 @@ export function BracketView({
     for (const match of qfMatches) {
       const sel = quarterfinalSelections[match.id];
       if (allSelected.has(sel.pair1) || allSelected.has(sel.pair2)) {
-        alert('Ogni coppia può essere assegnata ad un solo match');
+        showToast('Ogni coppia può essere assegnata ad un solo match', 'error');
         return;
       }
       allSelected.add(sel.pair1);
@@ -172,7 +174,7 @@ export function BracketView({
         });
         const data = await res.json();
         if (!data.success) {
-          alert(data.error || 'Errore durante l\'assegnazione');
+          showToast(data.error || 'Errore durante l\'assegnazione', 'error');
           setLoading(false);
           return;
         }
@@ -182,7 +184,7 @@ export function BracketView({
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert('Errore di connessione');
+      showToast('Errore di connessione', 'error');
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,8 @@ import "./globals.css";
 import { getSiteConfig } from "@/lib/db/queries";
 import { getBaseUrl, buildMetadata, SITE_NAME, DEFAULT_DESCRIPTION } from "@/lib/seo";
 import { RegisterPWA } from "@/components/pwa/RegisterPWA";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ClientProviders } from "@/components/layout/ClientProviders";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", preload: true });
 
@@ -97,8 +99,11 @@ export default async function RootLayout({
         {configCss && (
           <style dangerouslySetInnerHTML={{ __html: configCss }} />
         )}
-        {children}
-        <RegisterPWA />
+        <ClientProviders>
+          {children}
+          <RegisterPWA />
+          <InstallPrompt />
+        </ClientProviders>
       </body>
     </html>
   );

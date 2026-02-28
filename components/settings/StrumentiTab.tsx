@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Database, KeyRound, Download, Archive } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 
 export function StrumentiTab() {
+  const { showToast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [downloadingFull, setDownloadingFull] = useState(false);
 
@@ -14,7 +16,7 @@ export function StrumentiTab() {
       const res = await fetch('/api/settings/backup/full');
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Errore durante il download del backup completo');
+        showToast(data.error || 'Errore durante il download del backup completo', 'error');
         return;
       }
       const blob = await res.blob();
@@ -28,7 +30,7 @@ export function StrumentiTab() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Errore di connessione');
+      showToast('Errore di connessione', 'error');
     } finally {
       setDownloadingFull(false);
     }
@@ -40,7 +42,7 @@ export function StrumentiTab() {
       const res = await fetch('/api/settings/backup');
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Errore durante il download del backup');
+        showToast(data.error || 'Errore durante il download del backup', 'error');
         return;
       }
       const blob = await res.blob();
@@ -54,7 +56,7 @@ export function StrumentiTab() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Errore di connessione');
+      showToast('Errore di connessione', 'error');
     } finally {
       setDownloading(false);
     }
