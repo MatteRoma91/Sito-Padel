@@ -1,5 +1,7 @@
 # Guida SEO – Banana Padel Tour
 
+**Stack:** Next.js 15 · React 19
+
 ## Indice
 
 - [Implementato](#implementato)
@@ -43,15 +45,27 @@
 - **CLS**: dimensioni esplicite su immagini, font `display: swap`
 - **INP**: componenti leggeri, loading states con altezza riservata
 
+### Ottimizzazione immagini
+- Next.js `<Image>` con formati AVIF e WebP (configurati in `next.config.mjs`)
+- `sharp` installato per ottimizzazione server-side
+
+### Security Headers
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+Configurati in `next.config.mjs` → `headers()`.
+
 ## Variabili d'ambiente per produzione
 
 Per URL corretti in sitemap, Open Graph e canonical:
 
 ```env
-NEXT_PUBLIC_SITE_URL=https://tuodominio.it
+NEXT_PUBLIC_SITE_URL=https://bananapadeltour.duckdns.org
 ```
 
-Su Vercel viene usato automaticamente `VERCEL_URL`.
+Configurato nel file `.env` in produzione.
 
 ## Verifica Lighthouse SEO
 
@@ -68,3 +82,11 @@ Punti controllati da Lighthouse SEO:
 - Sitemap
 - Structured data
 - Core Web Vitals (Performance)
+
+Oppure da terminale:
+```bash
+npm run lighthouse
+npm run lighthouse:extract
+```
+
+Vedi [LIGHTHOUSE.md](LIGHTHOUSE.md) per istruzioni dettagliate.

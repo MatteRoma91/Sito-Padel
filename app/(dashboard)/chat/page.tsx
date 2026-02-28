@@ -1,11 +1,6 @@
 import { getCurrentUser } from '@/lib/auth';
-import dynamic from 'next/dynamic';
 import { MessageCircle } from 'lucide-react';
-
-const ChatLayout = dynamic(() => import('@/components/chat/ChatLayout').then(m => ({ default: m.ChatLayout })), {
-  ssr: false,
-  loading: () => <div className="card p-6 animate-pulse h-96 rounded-lg" />,
-});
+import { ChatLayoutLazy as ChatLayout } from '@/components/chat/ChatLayoutLazy';
 
 export default async function ChatPage() {
   const user = await getCurrentUser();

@@ -16,18 +16,11 @@ import { LazyWhenVisible } from '@/components/ui/LazyWhenVisible';
 
 const ProfileCharts = nextDynamic(
   () => import('@/components/profiles/ProfileCharts').then((m) => ({ default: m.ProfileCharts })),
-  { ssr: false, loading: () => <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" /> }
+  { loading: () => <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" /> }
 );
 
-const EditProfileForm = nextDynamic(
-  () => import('@/components/profiles/EditProfileForm').then((m) => ({ default: m.EditProfileForm })),
-  { ssr: false }
-);
-
-const DeleteUserButton = nextDynamic(
-  () => import('@/components/profiles/DeleteUserButton').then((m) => ({ default: m.DeleteUserButton })),
-  { ssr: false }
-);
+import { EditProfileForm } from '@/components/profiles/EditProfileForm';
+import { DeleteUserButton } from '@/components/profiles/DeleteUserButton';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

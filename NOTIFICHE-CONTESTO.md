@@ -1,13 +1,16 @@
 # Contesto: sistema notifiche Web Push
 
-**Data:** 11 febbraio 2026  
+**Data:** 11 febbraio 2026
 **Stato:** Piano definito, implementazione non iniziata
+**Stack attuale:** Next.js 15 · React 19 · Node.js 22 LTS
 
 ---
 
 ## Obiettivo
 
 Implementare notifiche push sul cellulare degli utenti tramite **solo Web Push** (no Telegram, Email, WhatsApp).
+
+> Il Service Worker (Serwist) è già presente e funzionante per il caching PWA. Le notifiche push si integrano con il SW esistente.
 
 ---
 
@@ -26,7 +29,7 @@ Implementare notifiche push sul cellulare degli utenti tramite **solo Web Push**
 
 Il piano dettagliato (architettura, file da modificare, API, crontab, variabili env) è in:
 
-- **Cursor Plans**: `.cursor/plans/sistema_notifiche_mobile_e6f06629.plan.md`  
+- **Cursor Plans**: `.cursor/plans/sistema_notifiche_mobile_e6f06629.plan.md`
   (oppure nella sidebar Plans di Cursor)
 
 ---

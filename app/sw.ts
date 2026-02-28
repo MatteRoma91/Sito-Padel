@@ -39,7 +39,11 @@ const serwist = new Serwist({
       handler: new CacheFirst({ cacheName: 'styles' }),
     },
     {
-      matcher: ({ request }) => request.destination === 'image',
+      matcher: ({ request, url }) => {
+        if (request.destination !== 'image') return false;
+        const p = url.pathname;
+        return !/^\/(logo\.png|favicon\.ico|icons\/.*)$/.test(p);
+      },
       handler: new CacheFirst({ cacheName: 'images' }),
     },
     ...defaultCache,

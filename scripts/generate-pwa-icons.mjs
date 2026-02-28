@@ -21,6 +21,11 @@ if (!existsSync(iconsDir)) {
 }
 
 await sharp(logoPath)
+  .resize(180, 180)
+  .png()
+  .toFile(join(iconsDir, 'icon-180.png'));
+
+await sharp(logoPath)
   .resize(192, 192)
   .png()
   .toFile(join(iconsDir, 'icon-192.png'));
@@ -30,4 +35,4 @@ await sharp(logoPath)
   .png()
   .toFile(join(iconsDir, 'icon-512.png'));
 
-console.log('PWA icons generated: public/icons/icon-192.png, public/icons/icon-512.png');
+console.log('PWA icons generated: public/icons/icon-180.png, icon-192.png, icon-512.png');

@@ -2,20 +2,36 @@
 
 > **Nota**: Questo file non è servito dal sito (non è in `/public`). È una guida operativa da aggiornare man mano che si effettuano modifiche.
 
-**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001)  
-**Server**: VPS (OVH), IP pubblico 57.131.40.170  
+**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001)
+**Server**: VPS (OVH), IP pubblico 57.131.40.170
 **Utente**: ubuntu (con sudo)
+**SO**: Ubuntu 24.04 LTS
 
-**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all’avvio del server) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push)
+**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all'avvio del server) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push)
 
 ---
 
 ## Architettura (entrambi i siti)
 
 ```
-Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → Next.js :3000 → SQLite
-                                     └→ ibuche           → Next.js :3001
+Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → server.js (Next.js + Socket.io) :3000 → SQLite
+                                     └→ ibuche           → Next.js :3001 → SQLite
 ```
+
+**Stack server attuale** (aggiornato 28 febbraio 2026):
+
+| Componente | Versione | Note |
+|-----------|----------|------|
+| Ubuntu | 24.04 LTS | kernel 6.8.0-101 |
+| Node.js | 22.22.0 LTS | via nvm, EOL aprile 2027 |
+| npm | 10.9.4 | |
+| Next.js | 15.5.12 | entrambe le app |
+| React | 19 | entrambe le app |
+| PM2 | 6.0.14 | con modulo pm2-logrotate |
+| Nginx | 1.24.0 | reverse proxy + gzip + SSL |
+| Certbot | Let's Encrypt | rinnovo automatico con hook Nginx reload |
+| UFW | attivo | porte aperte: 22/tcp (SSH), 80/tcp (HTTP), 443/tcp (HTTPS) |
+| Swap | 2 GB | `/swapfile`, attivo permanente in `/etc/fstab` |
 
 **Conflitti evitati**: ogni sito ha `server_name` e porta univoci. Per aggiornare Nginx: `sudo ./scripts/update-nginx.sh` (copia entrambe le config).
 
@@ -23,7 +39,9 @@ Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → Next.js :3
 
 ## Avvio dopo un riavvio del server
 
-Dopo un reboot (o se i servizi sono stati fermati), esegui in ordine:
+PM2 è configurato con `pm2 startup` (servizio systemd `pm2-ubuntu.service`): al boot riavvia automaticamente le app salvate con `pm2 save`. Normalmente non serve intervento manuale.
+
+Se il riavvio automatico non funziona:
 
 1. **Nginx**: `sudo systemctl start nginx` (o `restart`)
 2. **Entrambe le app**: vedi **[AVVIO.md](AVVIO.md)** per i comandi completi
@@ -33,18 +51,94 @@ Elenco completo e blocchi copia-incolla: **[AVVIO.md](AVVIO.md)**.
 
 ---
 
-## Variabili d’ambiente (produzione)
+## Variabili d'ambiente (produzione)
 
-In `/home/ubuntu/Sito-Padel` puoi usare un file `.env` (non in git). Utili in produzione:
+In `/home/ubuntu/Sito-Padel` è presente un file `.env` (non in git) con:
 
 | Variabile | Uso |
 |-----------|-----|
-| `SESSION_SECRET` | Segreto per cookie di sessione; usare stringa lunga e casuale |
+| `SESSION_SECRET` | Segreto per cookie di sessione (64 caratteri, casuale) |
 | `DATABASE_PATH` | Percorso del database SQLite (default: `data/padel.db`) |
-| `PORT` | Porta su cui ascolta l’app (default: 3000) |
+| `PORT` | Porta su cui ascolta l'app (default: 3000) |
+| `NEXT_PUBLIC_SITE_URL` | URL pubblico (SEO, PWA) |
 | `NODE_ENV` | PM2 imposta `production` in `ecosystem.config.js` |
 
-Dopo aver modificato `.env`, riavviare l’app: `pm2 restart padel-tour`.
+Dopo aver modificato `.env`, riavviare l'app: `pm2 restart padel-tour`.
+
+---
+
+## Gestione Node.js con nvm
+
+Node.js è gestito tramite **nvm** (Node Version Manager), installato il 28 febbraio 2026.
+
+```bash
+# Versione attuale
+node -v   # v22.22.0
+nvm current
+
+# Installare una nuova versione LTS
+nvm install --lts
+nvm alias default <versione>
+
+# Dopo cambio versione, reinstallare i pacchetti globali
+npm install -g pm2
+pm2 update
+
+# Rebuild e restart delle app
+cd /home/ubuntu/Sito-Padel && npm rebuild && npm run build && pm2 restart padel-tour
+cd /home/ubuntu/Roma-Buche && npm rebuild && npm run build && pm2 restart roma-buche
+pm2 save
+```
+
+---
+
+## Firewall (UFW)
+
+Il firewall UFW è attivo dal 28 febbraio 2026.
+
+```bash
+sudo ufw status          # Mostra stato e regole
+# Porte aperte: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+```
+
+Non aprire porte aggiuntive a meno che non sia strettamente necessario. Le app Node ascoltano su `localhost:3000` e `localhost:3001`, raggiungibili solo tramite Nginx.
+
+---
+
+## Swap
+
+Il server ha un file swap di 2 GB per evitare OOM (Out of Memory) su VPS con RAM limitata.
+
+```bash
+swapon --show   # Verifica swap attivo
+free -h         # Mostra RAM e swap
+```
+
+Lo swap è configurato permanentemente in `/etc/fstab`.
+
+---
+
+## Certificati SSL (Let's Encrypt)
+
+I certificati sono gestiti da Certbot con rinnovo automatico. Alla scadenza e rinnovo, un hook in `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` esegue `systemctl reload nginx` per caricare il nuovo certificato senza downtime.
+
+```bash
+sudo certbot certificates      # Stato e scadenza certificati
+sudo certbot renew --dry-run   # Test rinnovo
+```
+
+---
+
+## Log rotation (PM2)
+
+Il modulo `pm2-logrotate` è installato e configurato:
+
+```bash
+pm2 get pm2-logrotate          # Mostra configurazione attuale
+# max_size: 10M, retain: 7 file, compress: true
+```
+
+I log PM2 non cresceranno oltre 70 MB totali (7 file × 10 MB).
 
 ---
 
@@ -54,31 +148,21 @@ Dopo aver modificato `.env`, riavviare l’app: `pm2 restart padel-tour`.
 
 **Obiettivo**: Verificare che tutti i processi necessari al funzionamento del sito fossero attivi.
 
-**Architettura**:
-```
-Utente → DuckDNS → Nginx (:443/:80) → Next.js (:3000) → SQLite (padel.db)
-```
-
 **Componenti verificati**:
 
 | Componente     | Stato iniziale    | Azione eseguita                          |
 |----------------|-------------------|------------------------------------------|
-| Nginx          | ✅ Attivo         | Nessuna                                  |
-| PM2/padel-tour | ❌ Non avviato    | `pm2 start ecosystem.config.js`          |
-| Porta 3000     | ❌ Non in ascolto | Avviata con PM2                          |
-| DNS DuckDNS    | ✅ OK             | Risolve a 57.131.40.170                  |
-| Certificato SSL| ✅ Valido         | Let's Encrypt, scadenza 1 maggio 2026    |
-| Database       | ✅ Presente       | `/home/ubuntu/Sito-Padel/data/padel.db`  |
+| Nginx          | Attivo            | Nessuna                                  |
+| PM2/padel-tour | Non avviato       | `pm2 start ecosystem.config.js`          |
+| Porta 3000     | Non in ascolto    | Avviata con PM2                          |
+| DNS DuckDNS    | OK                | Risolve a 57.131.40.170                  |
+| Certificato SSL| Valido            | Let's Encrypt, scadenza 1 maggio 2026    |
+| Database       | Presente          | `/home/ubuntu/Sito-Padel/data/padel.db`  |
 
 **Comandi eseguiti**:
 ```bash
-# Avvio applicazione
 cd /home/ubuntu/Sito-Padel && pm2 start ecosystem.config.js
-
-# Salvataggio lista PM2
 pm2 save
-
-# Configurazione avvio automatico al boot
 sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
 ```
 
@@ -90,65 +174,128 @@ sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
 
 **Soluzione**: Impostato `client_max_body_size 25M` nella configurazione Nginx.
 
-**File modificato**: `/etc/nginx/sites-available/padel-tour`
+**Nota**: L'app Next.js limita gli avatar a 5MB. Per la **Galleria** (video fino a 500MB), se necessario: `client_max_body_size 550M;`.
 
-**Modifica**:
-```nginx
-server {
-    server_name bananapadeltour.duckdns.org;
-    client_max_body_size 25M;   # <-- aggiunto
-    # ...
-}
-```
+---
 
-**Comandi**:
-```bash
-sudo sed -i '/server_name bananapadeltour.duckdns.org;/a\    client_max_body_size 25M;' /etc/nginx/sites-available/padel-tour
-sudo nginx -t && sudo systemctl reload nginx
-```
+### 3. Miglioramento contrasto testo (1 febbraio 2026)
 
-**Nota**: L’app Next.js limita gli avatar a 5MB (`MAX_SIZE` in `app/api/users/[id]/avatar/route.ts`). Nginx ora accetta fino a 25MB; sopra 5MB la richiesta arriva ma viene rifiutata dall'API. Per la **Galleria** (video fino a 500MB), se necessario: `client_max_body_size 550M;`.
+**Problema**: Testo secondario poco leggibile (troppo chiaro) nelle pagine Tornei, Giocatori, Classifiche.
+
+**Soluzione**: Sostituzione di `text-slate-600` con `text-slate-700` e `dark:text-slate-600` con `dark:text-slate-400` per migliorare il contrasto (WCAG).
+
+---
+
+### 4. Ricalcolo colori per leggibilità globale (1 febbraio 2026)
+
+**Problema**: Testo illeggibile in dark mode (es. valori bianchi su card bianche).
+
+**Soluzione**: Sfondo dark card `dark:bg-primary-900/80`, input `dark:bg-primary-800/50`, testo `dark:text-slate-100/300`.
+
+---
+
+### 5. Palette Blu-Lime esplicita (1 febbraio 2026)
+
+**Obiettivo**: Applicare la palette (blu reale #3445F1, lime neon #B2FF00, bianco #FFFFFF, blu secondari #6270F3 e #9AB0F8).
+
+---
+
+### 6. PWA / Offline Mode (20 febbraio 2026)
+
+**Implementazione**: Serwist (Service Worker), manifest.ts, caching differenziato (stale-while-revalidate per dati, cache-first per asset), pagina offline, banner aggiornamento.
+
+---
+
+### 7. Chat interna, Live Score e WebSocket/Socket.io (20 febbraio 2026)
+
+**Architettura**: Custom server (`server.js` + Socket.io) su porta 3000. PM2 con `instances: 1` per room WebSocket.
+
+Dettagli: [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md).
+
+---
+
+### 8. Ottimizzazioni frontend e PWA avanzata (20 febbraio 2026)
+
+Dynamic import, code splitting, bundle analyzer, immagini AVIF/WebP.
+
+Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 
 ---
 
 ### 9. Galleria immagini e video (26 febbraio 2026)
 
-**Obiettivo**: Caricamento e visualizzazione di immagini e video nella galleria.
-
-**Implementazione**:
-- Voce di menu **Galleria** (`/gallery`): tutti possono caricare immagini (JPEG, PNG, WebP, GIF, HEIC) e video (MP4, WebM); solo admin può eliminare.
-- Tab **Galleria** in Impostazioni: spazio utilizzato (X / 20 GB), gestione file.
-- Limite totale galleria: 20 GB; immagini max 10 MB, video max 500 MB.
-- Storage: `public/gallery/`; servizio tramite API (`/api/serve-gallery/`) con rewrite in `next.config.mjs` (analogo agli avatar).
-- Backup completo include `public/gallery` nello ZIP; script `restore-backup.mjs` estrae anche la cartella `gallery`.
-
-**File rilevanti**: `app/api/gallery/`, `app/api/serve-gallery/`, `components/gallery/`, tab Galleria in Impostazioni. Per video > 25MB: aumentare Nginx `client_max_body_size` a 550M.
+- Voce di menu **Galleria** (`/gallery`): tutti possono caricare immagini e video; solo admin può eliminare.
+- Limite totale: 20 GB; immagini max 10 MB, video max 500 MB.
+- Storage: `public/gallery/`; backup completo include la cartella nello ZIP.
 
 ---
 
 ### 10. Ottimizzazione RAM (28 febbraio 2026)
 
-**Obiettivo**: Ridurre l'uso di memoria del server per evitare picchi al 100%.
+- PM2: `max_memory_restart` 400M, `NODE_OPTIONS: --max-old-space-size=384`
+- Next.js: `preloadEntriesOnStart: false`, `productionBrowserSourceMaps: false`
+- Nginx: `keepalive 16` (era 64)
 
-**Modifiche applicate** (vedi piano ottimizzazione RAM):
-- **PM2** (`ecosystem.config.js`): `max_memory_restart` 400M, `NODE_OPTIONS: --max-old-space-size=384`
-- **Next.js** (`next.config.mjs`): `preloadEntriesOnStart: false`, `productionBrowserSourceMaps: false`, `serverSourceMaps: false`
-- **Nginx**: `keepalive 16` (era 64) nei file `scripts/nginx-padel.conf` e `scripts/nginx-ibuche.conf` (Roma-Buche)
+---
 
-Dopo le modifiche: `npm run build` in entrambi i progetti, aggiornare Nginx in sites-available, `pm2 restart padel-tour roma-buche`.
+### 11. Review e hardening completo (28 febbraio 2026)
+
+**Interventi critici**:
+
+- **Roma-Buche – crash loop (23 restart)**: La pagina `/logout` era un Server Component che chiamava `session.destroy()` (modifica cookie non consentita). Convertita a Client Component con fetch a `/api/auth/logout`.
+- **Roma-Buche – errore SQLite**: Query `getBlockedAttempts()` usava double quotes `""` per stringa vuota (SQLite le interpreta come identificatori). Corretto con single quotes `''`.
+- **Sito-Padel – refactoring `server.js`**: Rimossa dipendenza da `url.parse()` (deprecato). Estratta migrazione chat in `lib/db/chat-migration.js`. Creato `lib/db/chat-queries-server.js` (modulo CommonJS per server.js, che non può fare require di TypeScript).
+- **Health check endpoints**: Creati `/api/health` su entrambe le app (verifica DB, risposta JSON).
+- **Rate limit cleanup**: Aggiunto `setInterval` per pulizia periodica delle entry scadute nella Map del rate limiter (previene memory leak).
+
+**Hardening server**:
+
+- Firewall UFW attivato (22, 80, 443)
+- Swap 2 GB creato (`/swapfile`)
+- `pm2-logrotate` installato (10M, 7 file, compressione)
+- Hook Certbot per reload Nginx dopo rinnovo certificato
+
+**Nginx ottimizzato**:
+
+- `proxy_set_header Connection "";` nei blocchi non-WebSocket (abilita upstream keepalive)
+- Security headers aggiunti su Roma-Buche (`next.config.mjs`)
+
+---
+
+### 12. Aggiornamento stack (28 febbraio 2026)
+
+**Aggiornamenti effettuati**:
+
+| Componente | Prima | Dopo |
+|-----------|-------|------|
+| Pacchetti Ubuntu | ~40 arretrati | Tutti aggiornati |
+| Kernel | 6.8.0-100 | 6.8.0-101 (attivato con reboot) |
+| Node.js | 20.20.0 | 22.22.0 LTS (via nvm) |
+| npm | 10.8.2 | 10.9.4 |
+| Next.js | 14.2.35 | 15.5.12 |
+| React | 18 | 19 |
+| react-leaflet (Roma-Buche) | 4.2.1 | 5.0.0 |
+| framer-motion | 11 | 12 |
+| eslint-config-next | 14.x | 15.x |
+
+**Adattamenti per Next.js 15**:
+
+- `ssr: false` con `next/dynamic` non è più consentito nei Server Components. Creati wrapper Client Component: `ExportPdfButtonLazy.tsx`, `ChatLayoutLazy.tsx`, `MapWithSearchLazy.tsx`.
+- Risolto naming conflict `dynamic` (export const vs import) in `profiles/[id]/page.tsx`.
+- Risolto errore "bind" in Sito-Padel (causato da bug in Next.js 14, risolto in 15).
 
 ---
 
 ## Pacchetti/servizi installati (ordine indicativo)
 
-> Basato sulla configurazione esistente. L’ordine rispecchia le dipendenze logiche.
-
-1. **Node.js** (v20) – runtime per l’app Next.js
-2. **npm** – gestione dipendenze
-3. **Nginx** – reverse proxy e SSL
-4. **Certbot** – certificati Let's Encrypt
-5. **PM2** (globale) – process manager per Node.js
-6. **DNS DuckDNS** – dominio bananapadeltour.duckdns.org → IP del server (configurato su duckdns.org)
+1. **nvm** – gestione versioni Node.js
+2. **Node.js 22 LTS** (via nvm) – runtime per le app Next.js
+3. **npm 10** – gestione dipendenze
+4. **Nginx 1.24** – reverse proxy, gzip, SSL, HTTP/2
+5. **Certbot** – certificati Let's Encrypt (rinnovo automatico + hook reload Nginx)
+6. **PM2 6** (globale) – process manager con `pm2-logrotate`
+7. **UFW** – firewall (porte 22, 80, 443)
+8. **DNS DuckDNS** – domini bananapadeltour/ibuche.duckdns.org → IP del server
 
 ---
 
@@ -156,12 +303,17 @@ Dopo le modifiche: `npm run build` in entrambi i progetti, aggiornare Nginx in s
 
 | File                         | Ruolo                                   |
 |-----------------------------|-----------------------------------------|
-| `/etc/nginx/sites-available/padel-tour` | Config Nginx per il dominio       |
-| `/etc/nginx/sites-enabled/padel-tour`   | Symlink per abilitare il sito     |
-| `ecosystem.config.js`       | Config PM2 (nome app, porta, path)      |
-| `scripts/deploy.sh`         | Script di deploy                       |
-| `scripts/setup-nginx.sh`    | Setup Nginx                            |
-| `scripts/setup-https.sh`    | Setup SSL con Certbot                  |
+| `/etc/nginx/sites-available/padel-tour` | Config Nginx per bananapadeltour |
+| `/etc/nginx/sites-available/ibuche` | Config Nginx per ibuche |
+| `ecosystem.config.js`       | Config PM2 (nome app, porta, path, limiti memoria) |
+| `server.js`                 | Custom server Node (Next.js + Socket.io) |
+| `.env`                      | Variabili d'ambiente (non in git) |
+| `.env.example`              | Template variabili d'ambiente |
+| `lib/db/chat-migration.js`  | Migrazione tabelle chat |
+| `lib/db/chat-queries-server.js` | Query chat per server.js (CommonJS) |
+| `scripts/deploy.sh`         | Script di deploy |
+| `scripts/update-nginx.sh`   | Aggiornamento config Nginx entrambi i siti |
+| `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` | Hook rinnovo certificati |
 
 ---
 
@@ -172,13 +324,13 @@ Dopo le modifiche: `npm run build` in entrambi i progetti, aggiornare Nginx in s
 
 **Ripristino su nuovo server** (dopo crash o migrazione):
 
-1. Clonare/copiare l’applicazione, `npm install`, configurare `.env` (e `DATABASE_PATH` se diverso da `data/padel.db`).
+1. Clonare/copiare l'applicazione, `npm install`, configurare `.env` (e `DATABASE_PATH` se diverso da `data/padel.db`).
 2. Copiare il file `padel-full-backup-*.zip` sul server.
-3. Fermare l’app: `pm2 stop padel-tour`.
+3. Fermare l'app: `pm2 stop padel-tour`.
 4. Eseguire: `node scripts/restore-backup.mjs /path/to/padel-full-backup-*.zip`.
-5. Riavviare l’app: `pm2 start padel-tour`.
+5. Riavviare l'app: `pm2 start padel-tour`.
 
-Eseguire lo script di ripristino preferibilmente con l’app ferma per evitare corruzione del database.
+Eseguire lo script di ripristino preferibilmente con l'app ferma per evitare corruzione del database.
 
 ---
 
@@ -191,142 +343,53 @@ pm2 status
 
 # Log
 pm2 logs padel-tour
+pm2 logs roma-buche
 sudo tail -f /var/log/nginx/error.log
 
 # Riavvio
 pm2 restart padel-tour
+pm2 restart roma-buche
 sudo systemctl reload nginx
 
 # Deploy (build + restart PM2)
 cd /home/ubuntu/Sito-Padel && ./scripts/deploy.sh
+
+# Health check
+curl http://localhost:3000/api/health
+curl http://localhost:3001/api/health
+
+# Node.js (nvm)
+node -v
+nvm current
+nvm ls
+
+# Firewall
+sudo ufw status
+
+# Swap e RAM
+free -h
+swapon --show
+
+# Certificati SSL
+sudo certbot certificates
 ```
 
 ---
 
 ## Risoluzione problemi
 
-- **Sito non risponde dopo riavvio**  
-  Segui [AVVIO.md](AVVIO.md): `sudo systemctl start nginx`, poi `pm2 start ecosystem.config.js` o `pm2 restart padel-tour`, infine `pm2 save`.
+- **Sito non risponde dopo riavvio**
+  PM2 dovrebbe riavviare le app automaticamente (servizio `pm2-ubuntu.service`). Se non funziona, seguire [AVVIO.md](AVVIO.md): `sudo systemctl start nginx`, poi `pm2 start ecosystem.config.js` o `pm2 restart padel-tour`, infine `pm2 save`.
 
-- **Errore “Could not find a production build” o “MODULE_NOT_FOUND” nei log PM2**  
+- **Errore "Could not find a production build" o "MODULE_NOT_FOUND" nei log PM2**
   Build mancante o corrotta. In `/home/ubuntu/Sito-Padel` eseguire `npm run build`, poi `pm2 restart padel-tour`.
 
-- **Verifica che l’app risponda**  
-  `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000` → atteso 200, 302 o 307.  
+- **Verifica che l'app risponda**
+  `curl http://localhost:3000/api/health` → atteso `{"status":"ok"}`.
   `ss -tlnp | grep 3000` → deve mostrare il processo in ascolto sulla porta 3000.
 
-- **PWA / Service Worker**  
-  HTTPS obbligatorio. Dopo deploy, il nuovo `sw.js` è generato da `next build`; nessuna modifica Nginx necessaria. Verifica: Chrome DevTools → Application → Service Workers (vedi intervento n. 6 in cronologia).
+- **PWA / Service Worker**
+  HTTPS obbligatorio. Dopo deploy, il nuovo `sw.js` è generato da `next build`; nessuna modifica Nginx necessaria. Verifica: Chrome DevTools → Application → Service Workers.
 
----
-
-### 3. Miglioramento contrasto testo (1 febbraio 2026)
-
-**Problema**: Testo secondario poco leggibile (troppo chiaro) nelle pagine Tornei, Giocatori, Classifiche e nelle tabelle/righe.
-
-**Soluzione**: Sostituzione di `text-slate-600` con `text-slate-700` e `dark:text-slate-600` con `dark:text-slate-400` per migliorare il contrasto (WCAG).
-
-**File modificati**: Pagine dashboard (tournaments, profiles, rankings, archive, calendar, pairs), componenti (TournamentRankingView, BracketView, ParticipantsManager, PairsManager, EditTournamentForm, GenerateBracketButton, PairsDisplay, PairsExtractor, DeleteUserButton).
-
----
-
-### 4. Ricalcolo colori per leggibilità globale (1 febbraio 2026)
-
-**Problema**: Testo illeggibile in dark mode (es. Dashboard Server: valori bianchi su card bianche). Sottotitoli su gradient poco visibili.
-
-**Soluzione**:
-- **Card in dark mode**: sfondo `dark:bg-primary-900/80` invece di `dark:bg-white/95` (allineato al tema blu)
-- **Input in dark mode**: `dark:bg-primary-800/50 dark:text-slate-100`
-- **Testo card**: `text-slate-900 dark:text-slate-100` come default
-- **Colori secondari**: `dark:text-slate-400` → `dark:text-slate-300` per contrasto su card scure
-- **Link "Torna a..."**: aggiunto `dark:text-slate-300 dark:hover:text-accent-400`
-- **Bordi/divisori**: `dark:border-primary-600/50`, `dark:divide-primary-600/50`
-- **Hover sulle righe**: `dark:hover:bg-primary-800/50`
-
-**File modificati**: `globals.css`, `stats/server/page.tsx`, `ServerDashboardAutoRefresh.tsx`, `stats/accessi/page.tsx`, `stats/reset-password/page.tsx`, `ResetPasswordClient.tsx`, tutte le pagine dashboard e componenti con card/table.
-
----
-
-### 5. Palette Blu-Lime esplicita (1 febbraio 2026)
-
-**Obiettivo**: Applicare la palette dell'immagine (blu reale #3445F1, lime neon #B2FF00, bianco #FFFFFF, blu secondari #6270F3 e #9AB0F8) a tutto il sito con valori hex espliciti.
-
-**Modifiche**:
-- **globals.css**: `.btn-primary` bg-[#B2FF00], `.btn-secondary` bg-[#9AB0F8], `.card` border-[#9AB0F8], `.input` border e focus ring lime
-- **Sidebar**: bg-[#3445F1], hover bg-[#6270F3], link attivi bg-[#B2FF00], bordi white/20 o #6270F3
-- **Auth e Home**: gradiente `from-[#3445F1] via-[#6270F3] to-[#9AB0F8]`, CTA lime
-- **Componenti**: sostituzione di primary-* e accent-* con hex (#3445F1, #6270F3, #9AB0F8, #B2FF00, #f8ffeb, #f2ffcc, #e5ff99, #629900, #76b300)
-
----
-
-### 6. PWA / Offline Mode (20 febbraio 2026)
-
-**Obiettivo**: Rendere il sito installabile come app su smartphone/tablet, con caching differenziato e notifica aggiornamenti.
-
-**Implementazione**:
-- **Serwist** (successore di next-pwa): Service Worker generato a build (`public/sw.js`), non committato (in `.gitignore`).
-- **Manifest**: `app/manifest.ts` → `/manifest.webmanifest` (nome app, icone 192×192 e 512×512, theme/background).
-- **Caching**: *Stale-while-revalidate* per pagine `/`, `/rankings`, `/tournaments`; *cache-first* per script, stili e immagini; fallback offline su `/~offline`.
-- **Notifica nuova versione**: componente `RegisterPWA` registra il SW e mostra un banner “È disponibile una nuova versione” con pulsante **Aggiorna** quando un nuovo Service Worker è in attesa.
-
-**Requisiti server**:
-- **HTTPS** obbligatorio per PWA e Service Worker (già in uso con Nginx + Let's Encrypt).
-- Nginx deve servire `/sw.js` e `/manifest.webmanifest` come il resto del sito (nessuna modifica necessaria se il proxy passa tutto a Next.js).
-- Dopo un deploy (`./scripts/deploy.sh`), il nuovo `sw.js` viene generato da `next build`; gli utenti con la app aperta vedranno il banner di aggiornamento.
-
-**File/script rilevanti**:
-| Elemento | Ruolo |
-|----------|--------|
-| `next.config.mjs` | withSerwistInit, header Cache-Control per `/sw.js` |
-| `app/sw.ts` | Definizione Service Worker e strategie di cache |
-| `app/manifest.ts` | Web App Manifest |
-| `app/~offline/page.tsx` | Pagina mostrata offline |
-| `components/pwa/RegisterPWA.tsx` | Registrazione SW e banner aggiornamento |
-| `public/icons/icon-192.png`, `icon-512.png` | Icone PWA (generate da `logo.png`) |
-| `npm run pwa:icons` | Rigenera icone da `public/logo.png` |
-
-**Verifica**: Dopo il deploy, da Chrome (desktop o mobile) aprire il sito → DevTools → Application → Service Workers; verificare che lo SW sia attivo e che in “Cache Storage” compaiano i cache (pages-swr, scripts, styles, images). Test offline: Application → Service Workers → “Offline” e ricaricare una pagina già visitata.
-
----
-
-## Prossimi aggiornamenti
-
-### 7. Chat interna, Live Score e WebSocket/Socket.io (20 febbraio 2026)
-
-**Obiettivo**: Aggiungere una chat interna (DM, chat di torneo, broadcast) e Live Score in tempo reale usando Socket.io, mantenendo semplice la gestione operativa.
-
-**Architettura aggiornata**:
-```
-Utente → DuckDNS → Nginx (:443/:80) → server Node custom (server.js + Socket.io, porta 3000) → Next.js / API → SQLite
-```
-
-**Note operative**:
-
-- L’app in produzione viene avviata tramite `server.js` (custom server), non con `next start`.
-- PM2 usa un’unica istanza (`instances: 1`) per evitare problemi con le room WebSocket.
-- La configurazione Nginx (`scripts/nginx-padel.conf`) inoltra correttamente gli header WebSocket (`Upgrade`, `Connection`, `Host`) verso `http://localhost:3000` (vedi dettagli in [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)).
-- In caso di problemi alla chat o al Live Score controllare:
-  - `pm2 logs padel-tour` (errori server/socket)
-  - `/var/log/nginx/error.log` (eventuali errori di proxy WebSocket)
-
-Per i dettagli completi di eventi Socket.io, schema DB e API REST consultare [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md).
-
----
-
-### 8. Ottimizzazioni frontend e PWA avanzata (20 febbraio 2026)
-
-**Obiettivo**: Migliorare performance, bundle e UX (PWA installabile, caching offline, banner di aggiornamento).
-
-**Interventi principali** (sintesi, dettagli in [docs/optimization-report.md](docs/optimization-report.md) e [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)):
-
-- Dynamic import e code splitting per componenti pesanti (grafici, tabelloni, export PDF, card homepage/impostazioni).
-- Configurazione Serwist/Service Worker (`app/sw.ts`, `next.config.mjs`) con caching differenziato (stale-while-revalidate per dati, cache-first per asset).
-- PWA completa: `app/manifest.ts`, icone generate (`npm run pwa:icons`), pagina offline `app/~offline/page.tsx`, componente `RegisterPWA` per banner “È disponibile una nuova versione”.
-- Script di supporto per Lighthouse e analisi bundle (`npm run build:analyze`, `npm run lighthouse`, `npm run lighthouse:extract`).
-
-Impatto operativo:
-
-- Nessuna modifica aggiuntiva a Nginx oltre all’HTTPS già configurato.
-- Dopo un deploy (`npm run build` + restart PM2) gli utenti vedono un banner di aggiornamento quando è disponibile una nuova versione del Service Worker.
-
-> Aggiungere qui le modifiche successive con data e descrizione.
+- **Node.js non trovato dopo login SSH**
+  Verificare che nvm sia caricato: `source ~/.bashrc` oppure `nvm use default`.

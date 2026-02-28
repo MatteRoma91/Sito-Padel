@@ -14,15 +14,11 @@ import {
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { buildMetadata } from '@/lib/seo';
-import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
 import { TournamentStatusChanger } from '@/components/tournaments/TournamentStatusChanger';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
-
-const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
-  ssr: false,
-});
+import { ExportPdfButtonLazy as ExportPdfButton } from '@/components/tournaments/ExportPdfButtonLazy';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

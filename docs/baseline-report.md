@@ -1,14 +1,17 @@
 # Baseline Report - Ottimizzazione
 
-**Data:** 2026-02-20 08:32:36  
-**Branch:** optimization-refactor  
+**Data:** 2026-02-20 08:32:36
+**Branch:** optimization-refactor
 **Commit:** d0493a22580c2d8f538a09e0dddf6f756fcaff39
+**Stack al momento della rilevazione:** Next.js 14 · React 18 · Node.js 20
+
+> Questo report registra le misure iniziali **prima** delle ottimizzazioni. Le misure fanno riferimento al codebase con Next.js 14. Dopo l'upgrade a Next.js 15 (28 febbraio 2026), i valori di bundle e performance possono variare.
 
 ---
 
 ## Lighthouse Scores (0-100)
 
-> **Nota:** Lighthouse richiede Chrome/Chromium installato. In questo ambiente non era disponibile. Per generare i punteggi Lighthouse, eseguire manualmente con il server avviato (`npm run start`):
+> **Nota:** Lighthouse richiede Chrome/Chromium installato. Per generare i punteggi Lighthouse, eseguire manualmente con il server avviato (`npm run start`):
 >
 > ```bash
 > npx lighthouse http://localhost:3000/login --output=json --output=html --output-path=./reports/baseline-login
@@ -27,10 +30,10 @@
 
 ### Riepilogo
 
-- **First Load JS shared:** 87.6 kB  
-  - chunks/117: 31.9 kB  
-  - chunks/fd9d1056: 53.6 kB  
-  - other shared chunks: 2.09 kB  
+- **First Load JS shared:** 87.6 kB
+  - chunks/117: 31.9 kB
+  - chunks/fd9d1056: 53.6 kB
+  - other shared chunks: 2.09 kB
 - **Middleware:** 26.6 kB
 
 ### Route principali (First Load JS)
@@ -106,7 +109,7 @@ Route (app)                                         Size     First Load JS
 
 ### Metriche Lighthouse (LCP, FCP, TBT)
 
-*Richiedono esecuzione manuale di Lighthouse con Chrome.*  
+*Richiedono esecuzione manuale di Lighthouse con Chrome.*
 Da estrarre da `audits['largest-contentful-paint']`, `audits['first-contentful-paint']`, `audits['total-blocking-time']` nel report JSON.
 
 ---

@@ -2,6 +2,8 @@
 
 Come eseguire Lighthouse per generare i dati del [REPORT-COMPARATIVO](REPORT-COMPARATIVO.md).
 
+**Stack attuale:** Next.js 15 · Node.js 22 LTS
+
 **Requisiti:** Chrome/Chromium, Node.js, server attivo (produzione o `npm run start`).
 
 ---
@@ -9,7 +11,7 @@ Come eseguire Lighthouse per generare i dati del [REPORT-COMPARATIVO](REPORT-COM
 ## Requisiti
 
 - **Chrome/Chromium** (versione recente)
-- **Node.js** e `npm install` eseguito
+- **Node.js 22+** e `npm install` eseguito
 - **Server attivo** su `http://localhost:3000` (o URL configurabile)
 
 ## Passi
@@ -92,7 +94,6 @@ Incollare l'output del blocco Markdown nella sezione "1. Lighthouse" del REPORT-
 Se Docker è disponibile ma non Chrome:
 
 ```bash
-# Con --network=host, localhost:3000 è raggiungibile dal container
 docker run --rm --cap-add=SYS_ADMIN --network=host \
   -v "$(pwd)/docs/reports:/home/lighthouse/reports" \
   genv/lighthouse:latest http://localhost:3000/login

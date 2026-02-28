@@ -1,7 +1,7 @@
 # Report di Sicurezza - Banana Padel Tour
 
-**Data:** 20 Febbraio 2026  
-**Versione:** Post-ottimizzazione backend
+**Data:** 28 Febbraio 2026
+**Versione:** Post-aggiornamento Next.js 15 / Node.js 22
 
 ---
 
@@ -57,14 +57,12 @@ Gli errori di validazione ritornano **400** con messaggio chiaro.
 
 ## 3. Protezione XSS
 
-### Analisi
-
 | Componente | Stato | Note |
 |------------|-------|------|
-| React rendering | ✅ | React escape automatico su `{variable}` |
-| dangerouslySetInnerHTML | ⚠️ Controllato | Solo in `app/layout.tsx` per CSS temi. Valori limitati a hex `#RRGGBB` da whitelist (`buildConfigCss`). Nessun HTML/JS iniettabile |
-| User-generated content | ✅ | Bio, nickname, full_name renderizzati come testo (React escape) |
-| site_config (testi) | ⚠️ | I testi del regolamento sono configurabili. Se esposti con dangerouslySetInnerHTML sarebbe rischio. Attualmente mostrati come testo normale |
+| React rendering | Sicuro | React escape automatico su `{variable}` |
+| dangerouslySetInnerHTML | Controllato | Solo in `app/layout.tsx` per CSS temi. Valori limitati a hex `#RRGGBB` da whitelist (`buildConfigCss`). Nessun HTML/JS iniettabile |
+| User-generated content | Sicuro | Bio, nickname, full_name renderizzati come testo (React escape) |
+| site_config (testi) | Controllato | I testi del regolamento sono configurabili. Attualmente mostrati come testo normale |
 
 **Raccomandazione:** Evitare `dangerouslySetInnerHTML` per contenuti utente. Il solo uso attuale (CSS colori) è sicuro.
 
@@ -74,9 +72,10 @@ Gli errori di validazione ritornano **400** con messaggio chiaro.
 
 ### Configurazione
 
-- ** middleware:** 100 richieste per IP per finestra di 1 minuto su tutte le route `/api/*`
-- **Eccezione:** `/api/auth/*` (login, logout, change-password) non contate nel rate limit globale
-- **Login:** Rate limit specifico via tabella `login_attempts` – 5 tentativi falliti → blocco 1 ora (per IP+username)
+- **Middleware**: 100 richieste per IP per finestra di 1 minuto su tutte le route `/api/*`
+- **Eccezione**: `/api/auth/*` (login, logout, change-password) non contate nel rate limit globale
+- **Login**: Rate limit specifico via tabella `login_attempts` – 5 tentativi falliti → blocco 1 ora (per IP+username)
+- **Cleanup automatico**: `setInterval` ogni 60 secondi rimuove le entry scadute dalla Map del rate limiter, prevenendo memory leak su processi long-running
 
 ### Risposta
 
@@ -99,9 +98,9 @@ cookieOptions: {
 
 | Opzione | Valore | Stato |
 |---------|--------|-------|
-| httpOnly | `true` | ✅ Cookie non accessibile da JavaScript |
-| secure | `true` in production | ✅ Solo HTTPS |
-| sameSite | `strict` | ✅ Protezione CSRF rafforzata |
+| httpOnly | `true` | Cookie non accessibile da JavaScript |
+| secure | `true` in production | Solo HTTPS |
+| sameSite | `strict` | Protezione CSRF rafforzata |
 
 **Nota:** `sameSite: 'strict'` può bloccare il cookie su redirect da domini esterni. Se serve supportare login da link esterni (es. email), considerare `lax` come compromesso.
 
@@ -109,24 +108,78 @@ cookieOptions: {
 
 ## 6. Bcrypt
 
-### Configurazione
-
 - **Salt rounds:** 12 (file `lib/constants.ts`: `BCRYPT_ROUNDS`)
 - **Uso:** `createUser`, `updateUserPassword`, `resetUserPassword`, seed, script add-players
 
 | Requisito | Stato |
 |-----------|-------|
-| Minimo 10-12 rounds | ✅ 12 rounds |
+| Minimo 10-12 rounds | 12 rounds |
 
 ---
 
-## 7. Raccomandazioni aggiuntive
+## 7. SESSION_SECRET
 
-1. **SESSION_SECRET:** Configurare `SESSION_SECRET` in produzione (min 32 caratteri). Il fallback attuale è solo per sviluppo.
-2. **Headers di sicurezza:** Implementati in `next.config.mjs`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`.
-3. **SQL injection:** Le query usano prepared statements (`?` placeholders). Nessuna concatenazione diretta di input utente.
-4. **Backup:** Verificare che i backup (`/api/settings/backup`) siano accessibili solo agli admin.
-5. **Galleria:** Upload solo per utenti autenticati; eliminazione solo admin. Validazione tipi MIME (JPEG, PNG, WebP, GIF, HEIC, MP4, WebM) e limiti dimensione (10 MB immagini, 500 MB video); limite totale 20 GB.
+In produzione il file `.env` contiene una `SESSION_SECRET` di 64 caratteri generata casualmente. Il fallback nel codice è usato **solo** in sviluppo. Il file `.env.example` documenta il requisito.
+
+---
+
+## 8. Firewall (UFW)
+
+Il firewall UFW è attivo sul server. Porte aperte:
+
+| Porta | Servizio |
+|-------|----------|
+| 22/tcp | SSH |
+| 80/tcp | HTTP (Nginx) |
+| 443/tcp | HTTPS (Nginx + Let's Encrypt) |
+
+Le app Node ascoltano su `localhost:3000` e `localhost:3001`, non sono direttamente raggiungibili dall'esterno.
+
+---
+
+## 9. Security Headers
+
+### Configurati in `next.config.mjs` (Sito-Padel)
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+### Configurati in `next.config.mjs` (Roma-Buche)
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+
+---
+
+## 10. Health Check
+
+Endpoint `/api/health` su entrambe le app. Verifica la connessione al database e ritorna:
+
+- `200 OK` con `{"status":"ok","timestamp":"..."}` se tutto funziona
+- `503 Service Unavailable` con `{"status":"error","error":"..."}` se il DB non risponde
+
+---
+
+## 11. SSL e certificati
+
+- **Let's Encrypt** gestito tramite Certbot
+- Rinnovo automatico con timer systemd
+- Hook in `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` per ricaricare Nginx dopo il rinnovo (nessun downtime)
+
+---
+
+## 12. Raccomandazioni aggiuntive
+
+1. **SQL injection:** Le query usano prepared statements (`?` placeholders). Nessuna concatenazione diretta di input utente.
+2. **Backup:** I backup (`/api/settings/backup`) sono accessibili solo agli admin.
+3. **Galleria:** Upload solo per utenti autenticati; eliminazione solo admin. Validazione tipi MIME (JPEG, PNG, WebP, GIF, HEIC, MP4, WebM) e limiti dimensione (10 MB immagini, 500 MB video); limite totale 20 GB.
+4. **Nginx upstream keepalive:** `proxy_set_header Connection "";` nei blocchi non-WebSocket evita rinegoziazioni TCP.
+5. **Swap 2 GB:** Previene OOM su VPS con RAM limitata.
+6. **pm2-logrotate:** Log PM2 limitati a 10M per file, 7 file, compressione attiva.
 
 ---
 
@@ -134,9 +187,15 @@ cookieOptions: {
 
 | Area | Stato |
 |------|-------|
-| Indici DB | ✅ Implementati |
-| Validazione Zod | ✅ Implementata |
-| XSS | ✅ Gestita |
-| Rate limit | ✅ Implementato |
-| Iron Session | ✅ Configurata |
-| Bcrypt | ✅ 12 rounds |
+| Indici DB | Implementati |
+| Validazione Zod | Implementata |
+| XSS | Gestita |
+| Rate limit | Implementato (con cleanup automatico) |
+| Iron Session | Configurata (httpOnly, secure, strict) |
+| Bcrypt | 12 rounds |
+| SESSION_SECRET | Configurato in produzione (64 caratteri) |
+| Firewall UFW | Attivo (22, 80, 443) |
+| Security Headers | Implementati su entrambe le app |
+| Health Check | `/api/health` su entrambe le app |
+| SSL | Let's Encrypt, rinnovo automatico + hook |
+| Log rotation | pm2-logrotate attivo |

@@ -21,12 +21,12 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 | File | Contenuto |
 |------|-----------|
-| **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all’avvio del server (Nginx, build, PM2) |
+| **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all'avvio del server (Nginx, build, PM2) |
 | **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
 | **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
 | **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
 | **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
-| **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Indici DB, rate limit, validazione input, sicurezza sessioni e password |
+| **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Sicurezza: indici DB, rate limit, validazione Zod, sessioni, firewall, password hashing |
 | **[docs/baseline-report.md](docs/baseline-report.md)** | Misure iniziali di bundle, tempi risposta e dimensione `.next` |
 | **[docs/optimization-report.md](docs/optimization-report.md)** | Dettaglio delle ottimizzazioni frontend e impatto sui bundle |
 | **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
@@ -50,55 +50,64 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 - **Chat interna**: DM tra giocatori, chat di gruppo per torneo e chat broadcast; badge messaggi non letti e possibilità di eliminare messaggi (per admin)
 - **Galleria**: Caricamento e visualizzazione di immagini e video (tutti possono caricare, solo admin può eliminare); limite totale 20 GB; gestione e spazio in Impostazioni
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
+- **Health Check**: Endpoint `/api/health` per monitoraggio esterno (verifica DB e risposta JSON)
 
 ## Tecnologie
 
-- Next.js 14
-- React
-- TypeScript
-- Tailwind CSS
-- SQLite (better-sqlite3)
+- Next.js 15 (App Router, Turbopack)
+- React 19
+- TypeScript 5
+- Tailwind CSS 3
+- SQLite (better-sqlite3, WAL mode)
+- Socket.io (WebSocket per chat e live score)
 - Serwist (PWA, Service Worker)
+- iron-session (autenticazione cookie)
+- Zod (validazione input)
+- bcrypt (hashing password, 12 rounds)
+- framer-motion 12 (animazioni)
+- jsPDF (export PDF)
+- sharp (ottimizzazione immagini)
 - PM2 (process manager)
-- Nginx (reverse proxy)
+- Nginx (reverse proxy, gzip, HTTP/2, SSL)
+- nvm (gestione versioni Node.js)
 - Playwright (test end-to-end)
 - Vitest (test unitari / integrazione)
 - Lighthouse (analisi performance e SEO)
 
 ## Requisiti
 
-- Node.js 20+
-- npm
+- Node.js 22+ LTS (gestito tramite nvm)
+- npm 10+
 
-## Variabili d’ambiente (opzionali)
+## Variabili d'ambiente
 
-Crea un file `.env` nella root (non committato). Esempi:
+Copia `.env.example` in `.env` nella root (non committato).
 
 | Variabile | Descrizione | Default |
 |-----------|-------------|---------|
-| `SESSION_SECRET` | Segreto per la sessione (produzione: usare valore lungo e casuale) | valore di fallback in codice |
+| `SESSION_SECRET` | Segreto per la sessione (**obbligatorio** in produzione, min 32 caratteri) | fallback solo per sviluppo |
 | `DATABASE_PATH` | Percorso del file SQLite | `data/padel.db` |
-| `PORT` | Porta dell’app Node | `3000` |
-| `NEXT_PUBLIC_SITE_URL` | URL pubblico del sito (per SEO e PWA) | da `VERCEL_URL` o esempio |
+| `PORT` | Porta dell'app Node | `3000` |
+| `NEXT_PUBLIC_SITE_URL` | URL pubblico del sito (per SEO e PWA) | `https://bananapadeltour.duckdns.org` |
 
-In produzione imposta almeno `SESSION_SECRET` con una stringa sicura.
+In produzione `SESSION_SECRET` deve essere una stringa casuale lunga (64+ caratteri). Il file `.env.example` documenta tutte le variabili.
 
 ## Installazione
 
 ```bash
-# Clona il repository
 cd /home/ubuntu/Sito-Padel
 
-# Installa dipendenze
 npm install
 
-# Build
 npm run build
 
-# Avvia in sviluppo
+# Sviluppo (senza WebSocket)
 npm run dev
 
-# Avvia in produzione
+# Sviluppo con WebSocket (chat + live score)
+npm run dev:ws
+
+# Produzione (avviato tramite PM2, vedi Deploy)
 npm run start
 ```
 
@@ -127,7 +136,7 @@ Al primo avvio viene creato l'utente admin:
 | **Username** | `admin` |
 | **Password** | `admin123` |
 
-> ⚠️ **Importante:** cambia la password dopo il primo login.
+> **Importante:** cambia la password dopo il primo login.
 
 ## Struttura Progetto
 
@@ -140,22 +149,37 @@ Al primo avvio viene creato l'utente admin:
 │   │   ├── pairs/          # Estrazione coppie
 │   │   ├── calendar/       # Calendario
 │   │   ├── gallery/        # Galleria immagini e video
+│   │   ├── chat/           # Chat interna
 │   │   └── rankings/       # Classifiche
 │   ├── ~offline/           # Pagina PWA offline
 │   ├── manifest.ts         # Web App Manifest (PWA)
 │   ├── sw.ts               # Service Worker (Serwist)
 │   └── api/                # API routes
+│       ├── auth/           # Login, logout, change-password
+│       ├── health/         # Health check endpoint
+│       ├── gallery/        # Upload e gestione galleria
+│       └── ...             # Altre API
 ├── components/
 │   ├── pwa/                # Registrazione SW, notifica aggiornamento
+│   ├── chat/               # ChatLayout, ChatLayoutLazy
+│   ├── tournaments/        # ExportPdfButton, ExportPdfButtonLazy
 │   └── ...                 # Altri componenti React
 ├── lib/
 │   ├── db/                 # Database SQLite
+│   │   ├── db.ts           # Connessione e init DB
+│   │   ├── queries.ts      # Query principali
+│   │   ├── chat-queries.ts # Query chat (TypeScript)
+│   │   ├── chat-queries-server.js  # Query chat per server.js (CommonJS)
+│   │   └── chat-migration.js       # Migrazione tabelle chat
 │   ├── auth.ts             # Autenticazione
 │   ├── bracket.ts          # Logica tabellone
 │   ├── pairs.ts            # Estrazione coppie
 │   └── rankings.ts         # Calcolo classifiche
+├── server.js               # Custom server (Next.js + Socket.io)
 ├── data/                   # Database SQLite (generato)
-└── scripts/                # Script deploy
+├── .env                    # Variabili d'ambiente (non in git)
+├── .env.example            # Template variabili d'ambiente
+└── scripts/                # Script deploy, Nginx, icone PWA
 ```
 
 ## Backup e ripristino
@@ -167,17 +191,17 @@ Al primo avvio viene creato l'utente admin:
 
 1. Clona il repo e installa: `npm install`, configura `.env` (e `DATABASE_PATH` se diverso da `data/padel.db`).
 2. Copia il file `padel-full-backup-*.zip` sul server.
-3. Ferma l’app: `pm2 stop padel-tour` (se usi PM2).
+3. Ferma l'app: `pm2 stop padel-tour` (se usi PM2).
 4. Esegui: `node scripts/restore-backup.mjs /path/to/padel-full-backup-*.zip`.
-5. Riavvia l’app: `pm2 start padel-tour`.
+5. Riavvia l'app: `pm2 start padel-tour`.
 
 ## PWA / Installazione come app
 
 Il sito è una Progressive Web App (PWA):
 
-- **Installazione**: Da browser su smartphone/tablet (Chrome: menu → “Installa app” / “Aggiungi a schermata Home”; Safari iOS: Condividi → “Aggiungi a Home”).
+- **Installazione**: Da browser su smartphone/tablet (Chrome: menu → "Installa app" / "Aggiungi a schermata Home"; Safari iOS: Condividi → "Aggiungi a Home").
 - **Caching**: Le pagine ranking e tornei usano *stale-while-revalidate*; JS, CSS e immagini usano *cache-first*. In assenza di rete viene mostrata la pagina offline.
-- **Aggiornamenti**: Quando è disponibile una nuova versione del sito, compare un banner “È disponibile una nuova versione” con pulsante **Aggiorna**.
+- **Aggiornamenti**: Quando è disponibile una nuova versione del sito, compare un banner "È disponibile una nuova versione" con pulsante **Aggiorna**.
 
 Per rigenerare le icone PWA dopo aver modificato `public/logo.png`:
 
@@ -189,7 +213,8 @@ npm run pwa:icons
 
 ```bash
 # Sviluppo
-npm run dev
+npm run dev          # Next.js standard (senza WebSocket)
+npm run dev:ws       # Custom server con WebSocket (chat + live score)
 
 # Build
 npm run build
@@ -200,9 +225,12 @@ npm run start
 # Icone PWA (da logo.png)
 npm run pwa:icons
 
+# Bundle analyzer
+npm run build:analyze
+
 # PM2
 pm2 status
-pm2 logs
+pm2 logs padel-tour
 pm2 restart padel-tour
 
 # Test unitari / integrazione (Vitest)
@@ -214,6 +242,9 @@ npm run test:e2e
 # Lighthouse (performance/SEO, richiede Chrome/Chromium)
 npm run lighthouse
 npm run lighthouse:extract
+
+# Health check
+curl http://localhost:3000/api/health
 ```
 
 ## URL
@@ -225,11 +256,14 @@ npm run lighthouse:extract
 
 ## Risoluzione problemi
 
-- **Il sito non risponde dopo un riavvio**  
+- **Il sito non risponde dopo un riavvio**
   Segui i comandi in [AVVIO.md](AVVIO.md): avvia Nginx, poi `pm2 start ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
 
-- **Errore “Could not find a production build” o “MODULE_NOT_FOUND”**  
+- **Errore "Could not find a production build" o "MODULE_NOT_FOUND"**
   La build in `.next` è mancante o corrotta. Esegui `npm run build` nella root del progetto, poi `pm2 restart padel-tour`.
 
-- **Log e stato**  
+- **Log e stato**
   `pm2 status`, `pm2 logs padel-tour`. Per dettagli operativi e cronologia interventi vedi [GUIDA-SERVER.md](GUIDA-SERVER.md).
+
+- **Health check**
+  `curl http://localhost:3000/api/health` → atteso `{"status":"ok","timestamp":"..."}`. Se ritorna `503`, il database non è raggiungibile.

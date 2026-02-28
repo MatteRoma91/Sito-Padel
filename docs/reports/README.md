@@ -2,6 +2,8 @@
 
 I file `lighthouse-*.report.json` in questa cartella sono generati da Lighthouse.
 
+**Stack attuale:** Next.js 15 · Node.js 22 LTS
+
 | File | Descrizione |
 |------|-------------|
 | `lighthouse-login.report.json` | Punteggio pagina `/login` |

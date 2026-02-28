@@ -3,7 +3,15 @@ import type { NextRequest } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 100;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 const store = new Map<string, { count: number; resetAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  store.forEach((entry, key) => {
+    if (now >= entry.resetAt) store.delete(key);
+  });
+}, CLEANUP_INTERVAL_MS);
 
 function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');

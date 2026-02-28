@@ -1,6 +1,7 @@
 # Report Comparativo – Ottimizzazione Banana Padel Tour
 
-**Data:** 20 Febbraio 2026  
+**Data:** 20 Febbraio 2026 (iniziale), aggiornato 28 Febbraio 2026
+**Stack attuale:** Next.js 15 · React 19 · Node.js 22 LTS
 **Riferimenti:** [baseline-report](baseline-report.md) | [optimization-report](optimization-report.md) | [SECURITY-REPORT](SECURITY-REPORT.md)
 
 ---
@@ -11,7 +12,8 @@
 2. [Bundle Size](#2-bundle-size--prima--dopo)
 3. [Tempo di caricamento](#3-tempo-di-caricamento--prima--dopo)
 4. [Vulnerabilità](#4-vulnerabilità--risolte-e-aperte)
-5. [Suggerimenti scalabilità](#5-suggerimenti-per-scalabilità-futura)
+5. [Aggiornamento stack](#5-aggiornamento-stack-28-febbraio-2026)
+6. [Suggerimenti scalabilità](#6-suggerimenti-per-scalabilità-futura)
 
 ---
 
@@ -64,17 +66,18 @@
 | /settings | 9.26 kB | 9.72 kB | 106 kB | 106 kB | 0 |
 | /rankings | 2.51 kB | 2.93 kB | 90.1 kB | 90.6 kB | +0.5 kB |
 
+> **Nota**: Misure rilevate con Next.js 14. Dopo l'upgrade a Next.js 15 il bundle potrebbe variare.
+
 ### Sintesi
 
 - **First Load invariato** sulle route principali: il bundle shared resta 87.6 kB.
-- **Code splitting attivo**: 8 componenti ora in chunk separati:
-  - ProfileCharts (SVG puro, 0 kB librerie; lazy con Intersection Observer)
-  - BracketView, ExportPdfButton
+- **Code splitting attivo**: 8+ componenti ora in chunk separati:
+  - ProfileCharts (SVG puro, lazy con Intersection Observer)
+  - BracketView, ExportPdfButton (via `ExportPdfButtonLazy.tsx`)
   - HomeCalendar, MvpVoteCard, CountdownBroccoburgher
-  - UnifiedRankingsCard
-  - SettingsTabs
+  - UnifiedRankingsCard, SettingsTabs
+  - ChatLayout (via `ChatLayoutLazy.tsx`)
 - **Lazy loading**: i componenti pesanti si caricano solo sulle pagine che li usano.
-- **Piccolo overhead**: +1 kB circa su alcune route per loading/skeleton component.
 
 ---
 
@@ -87,11 +90,6 @@
 | **TTFB (/)** | ~4.3 ms | *Non misurato* | Stabile su ambiente locale |
 | **TTFB (/login)** | ~8.5 ms | *Non misurato* | |
 | **Time Total** | ~4.9 ms | *Non misurato* | |
-
-### Metriche client-side (LCP, FCP, TBT, CLS)
-
-- **Prima**: non disponibili (Lighthouse non eseguito).
-- **Dopo**: vedi tabella Lighthouse sopra (Performance, LCP, FCP, TBT, CLS).
 
 ### Effetti attesi
 
@@ -110,55 +108,77 @@
 
 | Area | Stato | Dettaglio |
 |------|-------|-----------|
-| **SQL Injection** | ✅ | Prepared statements, nessuna concatenazione |
-| **XSS** | ✅ | Escaping React, `dangerouslySetInnerHTML` limitato a CSS temi |
-| **Rate limit** | ✅ | 100 req/min su API, 5 tentativi login → blocco 1h |
-| **Session** | ✅ | Iron Session: httpOnly, secure, sameSite strict |
-| **Password** | ✅ | bcrypt 12 rounds |
-| **Headers** | ✅ | X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy |
-| **Validazione input** | ✅ | Zod su login, change-password, users, tournaments |
-| **Indici DB** | ✅ | Indici ottimizzati per query principali |
+| **SQL Injection** | Risolto | Prepared statements, nessuna concatenazione |
+| **XSS** | Risolto | Escaping React, `dangerouslySetInnerHTML` limitato a CSS temi |
+| **Rate limit** | Risolto | 100 req/min su API, 5 tentativi login → blocco 1h, cleanup automatico |
+| **Session** | Risolto | Iron Session: httpOnly, secure, sameSite strict |
+| **Password** | Risolto | bcrypt 12 rounds |
+| **Headers** | Risolto | X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy |
+| **Validazione input** | Risolto | Zod su login, change-password, users, tournaments |
+| **Indici DB** | Risolto | Indici ottimizzati per query principali |
+| **SESSION_SECRET** | Risolto | 64 caratteri casuali in `.env` |
+| **Firewall** | Risolto | UFW attivo (22, 80, 443) |
+| **Health check** | Risolto | `/api/health` su entrambe le app |
 
-### Vulnerabilità npm (23 totali – 1 moderate, 22 high)
+### Vulnerabilità npm
 
-| Pacchetto | Gravità | Fix disponibile | Note |
-|-----------|---------|-----------------|------|
-| **jspdf** | High | `npm audit fix` | Fix senza breaking change |
-| **next** | High | `npm audit fix --force` | Upgrade a 16.x (breaking) |
-| **ajv** (eslint) | Moderate | `--force` | Cambio maggiore ESLint |
-| **glob** | High | `--force` | Via eslint-config-next |
-| **minimatch** | High | `--force` | Catena di dipendenze |
-
-**Consiglio:** eseguire `npm audit fix` per risolvere jsPDF; per Next.js e ESLint valutare upgrade in un rilascio dedicato.
+Dopo l'upgrade a Next.js 15, eseguire `npm audit` per verificare lo stato attuale. Le vulnerabilità legate a Next.js 14 sono state risolte con l'upgrade.
 
 ---
 
-## 5. Suggerimenti per scalabilità futura
+## 5. Aggiornamento stack (28 febbraio 2026)
 
-### Infrastruttura (già prevista)
+| Componente | Prima | Dopo |
+|-----------|-------|------|
+| Ubuntu packages | ~40 arretrati | Tutti aggiornati |
+| Kernel | 6.8.0-100 | 6.8.0-101 |
+| Node.js | 20.20.0 | 22.22.0 LTS (via nvm) |
+| npm | 10.8.2 | 10.9.4 |
+| Next.js | 14.2.35 | 15.5.12 |
+| React | 18 | 19 |
+| react-leaflet (Roma-Buche) | 4.2.1 | 5.0.0 |
+| framer-motion | 11 | 12 |
 
-- **PM2 cluster**: `instances: 'max'` per sfruttare più core
-- **Nginx**: gzip, HTTP/2, cache static
-- **Security headers**: già configurati
-- **Log rotation**: pm2-logrotate
+### Bug risolti con l'upgrade
+
+- **Errore "bind"** in Sito-Padel: causato da un bug noto in Next.js 14 con custom server, risolto in 15.
+- **Roma-Buche crash loop (23 restart)**: La pagina `/logout` era un Server Component che tentava di modificare cookie. Convertita a Client Component.
+- **SQLite query error**: Double quotes per stringa vuota in `getBlockedAttempts()` corrette con single quotes.
+
+### Adattamenti per Next.js 15
+
+- `ssr: false` nei Server Components → wrapper Client Component (`ExportPdfButtonLazy.tsx`, `ChatLayoutLazy.tsx`, `MapWithSearchLazy.tsx`)
+- Naming conflict `dynamic` (export const vs import) risolto in `profiles/[id]/page.tsx`
+
+---
+
+## 6. Suggerimenti per scalabilità futura
+
+### Infrastruttura
+
+- **PM2 cluster**: `instances: 'max'` per sfruttare più core (richiede Redis adapter per Socket.io)
+- **Nginx**: gzip, HTTP/2, cache static, keepalive upstream
+- **Security headers**: configurati su entrambe le app
+- **Log rotation**: pm2-logrotate attivo
+- **Firewall**: UFW attivo
+- **Swap**: 2 GB per evitare OOM
 
 ### Raccomandazioni applicative
 
 | Area | Suggerimento |
 |------|--------------|
-| **Cache** | Pulire `.next/cache` in CI (≈96% di 301 MB) o limitare retention |
-| **jsPDF** | Valutare `@react-pdf/renderer` o servizio server-side per esporti PDF |
-| **Recharts** | Sostituito con grafico SVG puro; ProfileCharts carica solo quando visibile (IO). /profiles/[id] da 553 a 446 kB |
+| **Cache** | Pulire `.next/cache` in CI o limitare retention |
+| **jsPDF** | Valutare `@react-pdf/renderer` o servizio server-side per export PDF |
 | **heic-convert** | `libheif-js` non estraibile staticamente; valutare conversione lato server |
-| **Database** | SQLite adatto per uso corrente; per più utenti considerare PostgreSQL con connection pooling |
-| **SESSION_SECRET** | Configurare in produzione (≥32 caratteri) |
+| **Database** | SQLite adatto per uso corrente; per più utenti considerare PostgreSQL |
 | **Lighthouse** | Inserire Lighthouse in CI per tracciare Performance/SEO nel tempo |
-| **Bundle analyzer** | Usare `npm run build:analyze` periodicamente per verificare crescita del bundle |
+| **Bundle analyzer** | Usare `npm run build:analyze` periodicamente |
+| **Notifiche push** | Piano definito in [NOTIFICHE-CONTESTO.md](../NOTIFICHE-CONTESTO.md), implementazione non iniziata |
 
 ### Scalabilità orizzontale
 
 - Deploy su più istanze dietro load balancer
-- Session store condiviso (es. Redis) se si abbandona `iron-session` in-memory
+- Session store condiviso (es. Redis)
 - CDN per asset statici e immagini
 
 ---
@@ -168,8 +188,9 @@
 | Metrica | Prima | Dopo | Note |
 |---------|-------|------|------|
 | First Load shared | 87.6 kB | 87.6 kB | Invariato |
-| Componenti dynamic | 0 | 8 | Code splitting attivo |
+| Componenti dynamic | 0 | 8+ | Code splitting attivo |
 | Ottimizzazione immagini | - | AVIF/WebP | next.config |
-| Vulnerabilità applicative | Parziali | Risolte | Rate limit, validazione, sicurezza sessione |
-| Vulnerabilità npm | 23 | 23 | Da gestire con `npm audit fix` |
+| Vulnerabilità applicative | Parziali | Risolte | Rate limit, validazione, firewall, session secret |
+| Next.js | 14.2.35 | 15.5.12 | Bug "bind" risolto |
+| Node.js | 20.20.0 | 22.22.0 LTS | EOL aprile 2027 |
 | Lighthouse | Non misurato | Non misurato | Da eseguire manualmente |

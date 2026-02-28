@@ -14,12 +14,10 @@ import dynamic from 'next/dynamic';
 import { ArrowLeft, Grid3X3 } from 'lucide-react';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
+import { ExportPdfButtonLazy as ExportPdfButton } from '@/components/tournaments/ExportPdfButtonLazy';
 
 const BracketView = dynamic(() => import('@/components/bracket/BracketView').then((m) => ({ default: m.BracketView })), {
   loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
-});
-const ExportPdfButton = dynamic(() => import('@/components/tournaments/ExportPdfButton').then((m) => ({ default: m.ExportPdfButton })), {
-  ssr: false,
 });
 import { ConsolidateResultsButton } from '@/components/tournaments/ConsolidateResultsButton';
 import { ReopenTournamentButton } from '@/components/tournaments/ReopenTournamentButton';
