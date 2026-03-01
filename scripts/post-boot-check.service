@@ -1,0 +1,18 @@
+[Unit]
+Description=Post-boot health check e auto-recovery per padel-tour e roma-buche
+Documentation=file:///home/ubuntu/Sito-Padel/AVVIO.md
+After=pm2-ubuntu.service nginx.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.22.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WorkingDirectory=/home/ubuntu/Sito-Padel
+ExecStart=/home/ubuntu/Sito-Padel/scripts/post-boot-check.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

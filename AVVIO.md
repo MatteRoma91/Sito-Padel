@@ -97,6 +97,23 @@ pm2 status
 
 ---
 
+## Auto-recovery dopo reboot (opzionale)
+
+Per evitare che roma-buche (o padel-tour) resti offline dopo un reboot con build corrotta, è disponibile uno script che verifica lo stato e ripristina automaticamente:
+
+```bash
+# Installazione (una tantum)
+sudo cp /home/ubuntu/Sito-Padel/scripts/post-boot-check.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable post-boot-check.service
+```
+
+Al boot, il servizio `post-boot-check` esegue un health check su entrambe le app. Se una non risponde, rifà `npm run build` e `pm2 restart`, poi salva la configurazione. Esegue dopo PM2 e Nginx.
+
+Per eseguire manualmente: `./scripts/post-boot-check.sh`
+
+---
+
 ## Aggiornamento configurazione Nginx
 
 Se modifichi `scripts/nginx-padel.conf` o `scripts/nginx-ibuche.conf`, usa lo script unificato:
@@ -123,9 +140,9 @@ curl http://localhost:3001/api/health
 
 ## Se un sito non risponde
 
-1. **Health check**: `curl http://localhost:3000/api/health` → se `503`, problema DB
-2. **Log PM2**: `pm2 logs padel-tour` oppure `pm2 logs roma-buche`
-3. **Build corrotta**: rifare `npm run build` nel progetto, poi `pm2 restart <nome>`
+1. **Health check**: `curl http://localhost:3000/api/health` → se `503`, problema DB; se `500` o timeout, spesso build corrotta
+2. **Log PM2**: `pm2 logs padel-tour` oppure `pm2 logs roma-buche` – se vedi `MODULE_NOT_FOUND` o `_error.js`, la build è corrotta
+3. **Build corrotta** (comune dopo reboot): `cd /home/ubuntu/Roma-Buche && npm run build && pm2 restart roma-buche` (analogo per Sito-Padel/padel-tour)
 4. **Nginx**: `sudo systemctl status nginx`
 5. **Porte**: `ss -tlnp | grep -E '3000|3001'` – devono essere in ascolto
 6. **Node.js non trovato**: `source ~/.bashrc` per caricare nvm, poi `nvm use default`
