@@ -38,10 +38,12 @@ function checkApiRateLimit(req: NextRequest): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Percorsi pubblici (login, cambio password, sitemap, robots)
+  // Percorsi pubblici (login, cambio password, install, sitemap, robots)
   if (
     pathname === '/login' ||
     pathname === '/change-password' ||
+    pathname === '/install' ||
+    pathname.startsWith('/api/install-file') ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
     pathname.startsWith('/_next') ||

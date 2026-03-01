@@ -15,7 +15,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Smartphone
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
@@ -41,6 +42,7 @@ const navItems = [
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
   { href: '/gallery', label: 'Galleria', icon: Images },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
+  { href: '/install', label: 'Installa', icon: Smartphone },
 ];
 
 const settingsNavItem = { href: '/settings', label: 'Impostazioni', icon: Settings };
