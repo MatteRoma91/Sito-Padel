@@ -1,7 +1,8 @@
 import dynamic from 'next/dynamic';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getSiteConfig, getUsers, getUsersWithLoginCounts, getTournaments } from '@/lib/db/queries';
+import { getSiteConfig, getUsers, getUsersWithLoginCounts, getTournaments, logSecurityEvent } from '@/lib/db/queries';
 import { getServerStats } from '@/lib/server-stats';
 import { Settings } from 'lucide-react';
 
@@ -14,7 +15,7 @@ function canAccessSettings(_username: string, role: string): boolean {
   return role === 'admin';
 }
 
-const VALID_TABS: SettingsTabId[] = ['colori', 'testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria'];
+const VALID_TABS: SettingsTabId[] = ['colori', 'testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs'];
 
 export default async function SettingsPage({
   searchParams,
@@ -27,6 +28,11 @@ export default async function SettingsPage({
   if (!canAccessSettings(user.username, user.role)) {
     redirect('/');
   }
+
+  const headersList = await headers();
+  const forwarded = headersList.get('x-forwarded-for');
+  const ip = forwarded ? forwarded.split(',')[0].trim() : headersList.get('x-real-ip') || 'unknown';
+  logSecurityEvent({ type: 'admin_access', ip, username: user.username, path: '/settings' });
 
   const params = await searchParams;
   const tabParam = params.tab;

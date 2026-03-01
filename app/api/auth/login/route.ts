@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { login, getClientIp } from '@/lib/auth';
-import { getLoginAttempts, recordLoginFailure, recordLoginSuccess } from '@/lib/db/queries';
+import { getLoginAttempts, recordLoginFailure, recordLoginSuccess, logSecurityEvent } from '@/lib/db/queries';
 import { loginSchema, parseOrThrow } from '@/lib/validations';
 
 const BLOCKED_MESSAGE =
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, mustChangePassword: result.mustChangePassword });
     } else {
       recordLoginFailure(ip, username);
+      logSecurityEvent({ type: 'login_failed', ip, username, path: '/api/auth/login' });
       return NextResponse.json({ success: false, error: result.error }, { status: 401 });
     }
   } catch (error) {

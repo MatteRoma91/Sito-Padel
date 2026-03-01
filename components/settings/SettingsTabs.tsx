@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images } from 'lucide-react';
+import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield } from 'lucide-react';
 import { ColorsTab } from './ColorsTab';
 import { TextsTab } from './TextsTab';
 import { UsersTab } from './UsersTab';
@@ -10,9 +10,10 @@ import { ServerTab } from './ServerTab';
 import { RicalcolaTab } from './RicalcolaTab';
 import { StrumentiTab } from './StrumentiTab';
 import { GalleriaTab } from './GalleriaTab';
+import { LogsTab } from './LogsTab';
 import type { ServerStats } from '@/lib/server-stats';
 
-export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria';
+export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs';
 
 interface UserWithLoginCount {
   id: string;
@@ -52,6 +53,7 @@ export function SettingsTabs({
     { id: 'accessi', label: 'Accessi', icon: Activity },
     { id: 'server', label: 'Server', icon: Server },
     { id: 'galleria', label: 'Galleria', icon: Images },
+    { id: 'logs', label: 'Log sicurezza', icon: Shield },
     { id: 'ricalcola', label: 'Ricalcola', icon: RefreshCw },
     { id: 'strumenti', label: 'Strumenti', icon: Wrench },
   ];
@@ -85,6 +87,7 @@ export function SettingsTabs({
       {activeTab === 'accessi' && <AccessiTab usersWithLoginCounts={usersWithLoginCounts} />}
       {activeTab === 'server' && <ServerTab stats={serverStats} />}
       {activeTab === 'galleria' && <GalleriaTab />}
+      {activeTab === 'logs' && <LogsTab />}
       {activeTab === 'ricalcola' && <RicalcolaTab completedTournamentsCount={completedTournamentsCount} />}
       {activeTab === 'strumenti' && <StrumentiTab />}
     </div>

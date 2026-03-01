@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getUserById, updateUser, updateUserPassword, deleteUser } from '@/lib/db/queries';
+import { updateUserSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 import type { UserRole, SkillLevel, FieldSide, Hand } from '@/lib/types';
 
 export async function GET(
@@ -48,16 +49,25 @@ export async function PATCH(
   }
 
   try {
-    const data = await request.json();
+    const body = await request.json();
+    let data: { full_name?: string | null; nickname?: string | null; role?: 'admin' | 'player'; skill_level?: string | null; overall_score?: number | null; bio?: string | null; preferred_side?: string | null; preferred_hand?: string | null; birth_date?: string | null; is_hidden?: boolean; new_password?: string };
+    try {
+      data = parseOrThrow(updateUserSchema, body);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
     const { full_name, nickname, role, skill_level, overall_score, bio, preferred_side, preferred_hand, birth_date, is_hidden, new_password } = data;
 
     // Can manage hidden flag (admin only)
     const canManageHidden = isAdmin;
 
     // Update profile info
-    const updates: { 
-      full_name?: string; 
-      nickname?: string; 
+    const updates: {
+      full_name?: string | null; 
+      nickname?: string | null; 
       role?: UserRole; 
       skill_level?: SkillLevel | null;
       overall_score?: number | null;
@@ -73,7 +83,7 @@ export async function PATCH(
     if (role !== undefined && isAdmin) updates.role = role as UserRole;
     if (skill_level !== undefined && isAdmin) updates.skill_level = skill_level as SkillLevel | null;
     if (overall_score !== undefined && isAdmin) {
-      const v = overall_score === null || overall_score === '' ? null : Math.max(0, Math.min(100, Number(overall_score)));
+      const v = overall_score === null ? null : Math.max(0, Math.min(100, overall_score));
       updates.overall_score = v;
     }
     

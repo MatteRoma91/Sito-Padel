@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getSiteConfig, setSiteConfig, seedSiteConfig } from '@/lib/db/queries';
+import { settingsPatchSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 
 function canManageSettings(_username: string, role: string): boolean {
   return role === 'admin';
@@ -27,23 +28,28 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
+    let data: { action?: 'seed'; [k: string]: string | number | boolean | undefined };
+    try {
+      data = parseOrThrow(settingsPatchSchema, body);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
 
-    if (body.action === 'seed') {
+    if (data.action === 'seed') {
       seedSiteConfig();
       return NextResponse.json({ success: true });
     }
 
-    if (typeof body === 'object' && body !== null && !Array.isArray(body)) {
-      for (const [key, value] of Object.entries(body)) {
-        if (key === 'action') continue;
-        if (typeof value === 'string') {
-          setSiteConfig(key, value);
-        }
+    for (const [key, value] of Object.entries(data)) {
+      if (key === 'action') continue;
+      if (typeof value === 'string') {
+        setSiteConfig(key, value);
       }
-      return NextResponse.json({ success: true });
     }
-
-    return NextResponse.json({ error: 'Body non valido' }, { status: 400 });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('PATCH settings error:', error);
     return NextResponse.json({ error: 'Errore del server' }, { status: 500 });

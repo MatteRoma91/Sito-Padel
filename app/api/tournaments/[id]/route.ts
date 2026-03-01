@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getTournamentById, updateTournament, deleteTournament } from '@/lib/db/queries';
+import { updateTournamentSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 import type { TournamentStatus, TournamentCategory } from '@/lib/types';
 
 export async function GET(
@@ -35,10 +36,19 @@ export async function PATCH(
   }
 
   try {
-    const data = await request.json();
+    const body = await request.json();
+    let data: { name?: string; date?: string; time?: string | null; venue?: string | null; status?: string; category?: string };
+    try {
+      data = parseOrThrow(updateTournamentSchema, body);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
     const { name, date, time, venue, status, category } = data;
 
-    const updates: { name?: string; date?: string; time?: string; venue?: string; status?: TournamentStatus; category?: TournamentCategory } = {};
+    const updates: { name?: string; date?: string; time?: string | null; venue?: string | null; status?: TournamentStatus; category?: TournamentCategory } = {};
     if (name !== undefined) updates.name = name;
     if (date !== undefined) updates.date = date;
     if (time !== undefined) updates.time = time;

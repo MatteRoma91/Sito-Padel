@@ -401,4 +401,19 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_gallery_media_user ON gallery_media(user_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_gallery_media_created ON gallery_media(created_at DESC)`);
+
+  // Tabella security_logs per logging eventi di sicurezza
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS security_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK(type IN ('login_failed', 'auth_401', 'auth_403', 'admin_access')),
+      ip TEXT,
+      username TEXT,
+      path TEXT,
+      details TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at DESC)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_type ON security_logs(type)`);
 }

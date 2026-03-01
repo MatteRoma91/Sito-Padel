@@ -3,8 +3,11 @@ import type { NextRequest } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 100;
+const AUTH_WINDOW_MS = 5 * 60 * 1000;
+const AUTH_MAX = 20;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 const store = new Map<string, { count: number; resetAt: number }>();
+const authStore = new Map<string, { count: number; resetAt: number }>();
 
 setInterval(() => {
   const now = Date.now();
@@ -35,6 +38,29 @@ function checkApiRateLimit(req: NextRequest): boolean {
   return entry.count <= RATE_LIMIT_MAX;
 }
 
+function checkAuthRateLimit(req: NextRequest): boolean {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  let entry = authStore.get(`auth:${ip}`);
+  if (!entry) {
+    authStore.set(`auth:${ip}`, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    return true;
+  }
+  if (now >= entry.resetAt) {
+    authStore.set(`auth:${ip}`, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= AUTH_MAX;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  authStore.forEach((entry, key) => {
+    if (now >= entry.resetAt) authStore.delete(key);
+  });
+}, CLEANUP_INTERVAL_MS);
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -49,6 +75,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth')
   ) {
+    if (pathname === '/api/auth/login') {
+      if (!checkAuthRateLimit(request)) {
+        return NextResponse.json(
+          { error: 'Troppi tentativi. Riprova tra 5 minuti.' },
+          { status: 429 }
+        );
+      }
+    }
     return NextResponse.next();
   }
 
