@@ -15,7 +15,7 @@ function canAccessSettings(_username: string, role: string): boolean {
   return role === 'admin';
 }
 
-const VALID_TABS: SettingsTabId[] = ['colori', 'testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs'];
+const VALID_TABS: SettingsTabId[] = ['colori', 'testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs', 'statistiche'];
 
 export default async function SettingsPage({
   searchParams,

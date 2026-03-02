@@ -416,4 +416,14 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at DESC)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_type ON security_logs(type)`);
+
+  // Tabella page_views per statistiche visualizzazioni
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS page_views (
+      path TEXT NOT NULL,
+      viewed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views(path)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_viewed_at ON page_views(viewed_at)`);
 }

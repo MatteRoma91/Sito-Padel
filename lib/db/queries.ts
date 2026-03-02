@@ -1395,3 +1395,19 @@ export function deleteSecurityLogsBefore(before: string): number {
   const result = getDb().prepare('DELETE FROM security_logs WHERE created_at < ?').run(before);
   return result.changes;
 }
+
+// ============ PAGE VIEWS / ANALYTICS ============
+
+export function recordPageView(path: string): void {
+  ensureDb();
+  getDb().prepare('INSERT INTO page_views (path, viewed_at) VALUES (?, datetime(\'now\'))').run(path);
+}
+
+export function getPageViewStats(): { byPath: { path: string; count: number }[]; total: number } {
+  ensureDb();
+  const byPath = getDb()
+    .prepare('SELECT path, COUNT(*) as count FROM page_views GROUP BY path ORDER BY count DESC')
+    .all() as { path: string; count: number }[];
+  const row = getDb().prepare('SELECT COUNT(*) as total FROM page_views').get() as { total: number };
+  return { byPath, total: row.total };
+}

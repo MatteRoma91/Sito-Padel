@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield } from 'lucide-react';
+import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield, BarChart3 } from 'lucide-react';
 import { ColorsTab } from './ColorsTab';
+import { StatisticheTab } from './StatisticheTab';
 import { TextsTab } from './TextsTab';
 import { UsersTab } from './UsersTab';
 import { AccessiTab } from './AccessiTab';
@@ -13,7 +14,7 @@ import { GalleriaTab } from './GalleriaTab';
 import { LogsTab } from './LogsTab';
 import type { ServerStats } from '@/lib/server-stats';
 
-export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs';
+export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche';
 
 interface UserWithLoginCount {
   id: string;
@@ -53,6 +54,7 @@ export function SettingsTabs({
     { id: 'accessi', label: 'Accessi', icon: Activity },
     { id: 'server', label: 'Server', icon: Server },
     { id: 'galleria', label: 'Galleria', icon: Images },
+    { id: 'statistiche', label: 'Statistiche', icon: BarChart3 },
     { id: 'logs', label: 'Log sicurezza', icon: Shield },
     { id: 'ricalcola', label: 'Ricalcola', icon: RefreshCw },
     { id: 'strumenti', label: 'Strumenti', icon: Wrench },
@@ -88,6 +90,7 @@ export function SettingsTabs({
       {activeTab === 'server' && <ServerTab stats={serverStats} />}
       {activeTab === 'galleria' && <GalleriaTab />}
       {activeTab === 'logs' && <LogsTab />}
+      {activeTab === 'statistiche' && <StatisticheTab />}
       {activeTab === 'ricalcola' && <RicalcolaTab completedTournamentsCount={completedTournamentsCount} />}
       {activeTab === 'strumenti' && <StrumentiTab />}
     </div>
