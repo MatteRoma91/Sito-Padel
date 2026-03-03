@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: tourName,
     appleWebApp: { capable: true, statusBarStyle: "default", title: tourName },
     icons: {
-      icon: "/logo.png",
+      icon: "/favicon.ico",
       apple: [
         { url: "/icons/icon-180.png", sizes: "180x180", type: "image/png" },
         { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
