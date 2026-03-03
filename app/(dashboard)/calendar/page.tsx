@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTournaments } from '@/lib/db/queries';
 import { Calendar, Clock, MapPin } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default async function CalendarPage() {
   const tournaments = getTournaments();
@@ -36,7 +37,12 @@ export default async function CalendarPage() {
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Calendario Tornei</h1>
+      <PageHeader
+        title="Calendario tornei"
+        subtitle="Panoramica dei tornei programmati, raggruppati per mese."
+        icon={Calendar}
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Calendario tornei' }]}
+      />
 
       {tournaments.length === 0 ? (
         <div className="card p-8 text-center">

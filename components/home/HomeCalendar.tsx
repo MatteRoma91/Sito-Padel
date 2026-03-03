@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Calendar, Cake } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
 
 export interface HomeCalendarTournament {
   id: string;
@@ -93,7 +94,7 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
   const capitalizeFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   return (
-    <div className="card">
+    <Card>
       <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
@@ -152,6 +153,6 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
           ))
         )}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { FileText, Trash2 } from 'lucide-react';
+import { SimpleTable } from '@/components/ui/SimpleTable';
 
 interface SecurityLog {
   id: number;
@@ -115,27 +116,27 @@ export function LogsTab() {
         ) : securityLogs.length === 0 ? (
           <p className="text-sm text-slate-700 dark:text-slate-300">Nessun log.</p>
         ) : (
-          <div className="overflow-x-auto -mx-1 sm:mx-0">
-            <table className="w-full text-sm min-w-[520px]">
-              <thead>
-                <tr className="border-b border-primary-200 dark:border-primary-600">
-                  <th className="text-left py-2 px-2 font-medium text-slate-700 dark:text-slate-300">Tipo</th>
-                  <th className="text-left py-2 px-2 font-medium text-slate-700 dark:text-slate-300">IP</th>
-                  <th className="text-left py-2 px-2 font-medium text-slate-700 dark:text-slate-300">Username</th>
-                  <th className="text-left py-2 px-2 font-medium text-slate-700 dark:text-slate-300">Path</th>
-                  <th className="text-left py-2 px-2 font-medium text-slate-700 dark:text-slate-300">Data</th>
-                  <th className="text-right py-2 px-2 font-medium text-slate-700 dark:text-slate-300">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {securityLogs.map((log) => (
+          <SimpleTable
+            headers={[
+              'Tipo',
+              'IP',
+              'Username',
+              'Path',
+              'Data',
+              <span key="azioni" className="sr-only">
+                Azioni
+              </span>,
+            ]}
+            caption="Registro degli eventi di sicurezza recenti."
+          >
+            {securityLogs.map((log) => (
                   <tr
                     key={log.id}
                     className="border-b border-primary-100 dark:border-primary-700/50 hover:bg-primary-50 dark:hover:bg-primary-800/30"
                   >
-                    <td className="py-2 px-2 text-slate-800 dark:text-slate-200">{log.type}</td>
-                    <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{log.ip ?? '-'}</td>
-                    <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{log.username ?? '-'}</td>
+                <td className="py-2 px-2 text-slate-800 dark:text-slate-200">{log.type}</td>
+                <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{log.ip ?? '-'}</td>
+                <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{log.username ?? '-'}</td>
                     <td
                       className="py-2 px-2 text-slate-600 dark:text-slate-400 truncate max-w-[180px]"
                       title={log.path ?? ''}
@@ -149,17 +150,16 @@ export function LogsTab() {
                       <button
                         type="button"
                         onClick={() => handleDeleteLogs([log.id])}
-                        className="text-slate-500 hover:text-red-500 p-1"
+                    className="text-slate-500 hover:text-red-500 p-1"
+                    aria-label={`Elimina log del ${new Date(log.created_at).toLocaleString('it-IT')}`}
                         title="Elimina"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            ))}
+          </SimpleTable>
         )}
       </div>
     </div>

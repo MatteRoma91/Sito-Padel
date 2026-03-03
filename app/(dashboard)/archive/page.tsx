@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getTournamentsPastFiltered, getAllPastTournamentDates } from '@/lib/db/queries';
 import { Trophy, Calendar } from 'lucide-react';
 import { ArchiveFilters } from '@/components/archive/ArchiveFilters';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default async function ArchivePage({
   searchParams,
@@ -22,7 +23,12 @@ export default async function ArchivePage({
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Archivio Tornei</h1>
+      <PageHeader
+        title="Archivio tornei"
+        subtitle="Consulta i tornei passati filtrando per anno, mese o nome."
+        icon={Trophy}
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Archivio tornei' }]}
+      />
 
       {/* Filters */}
       <ArchiveFilters 

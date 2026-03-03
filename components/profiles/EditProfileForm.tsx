@@ -8,6 +8,8 @@ import type { User, SkillLevel } from '@/lib/types';
 import { SKILL_LEVEL_LABELS } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
 import { BirthDateEditor } from '@/components/profiles/BirthDateEditor';
+import { Card } from '@/components/ui/Card';
+import { FormField } from '@/components/ui/FormField';
 
 const HEIC_TYPES = ['image/heic', 'image/heif'];
 
@@ -165,10 +167,10 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
   }
 
   return (
-    <div className="card p-6">
-      <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Modifica Profilo</h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Card className="p-6">
+      <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Modifica profilo</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? 'edit-profile-error' : undefined}>
         {/* Avatar upload + Data di nascita (a destra) */}
         <div className="flex flex-wrap items-start gap-6 mb-6">
           <div className="flex items-center gap-4">
@@ -222,46 +224,43 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
           />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Nome Completo
-            </label>
-            <input 
-              name="full_name" 
-              type="text" 
-              defaultValue={user.full_name || ''} 
-              className="input" 
+          <FormField id="full_name" label="Nome completo">
+            <input
+              id="full_name"
+              name="full_name"
+              type="text"
+              defaultValue={user.full_name || ''}
+              className="input"
+              autoComplete="name"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Nickname
-            </label>
-            <input 
-              name="nickname" 
-              type="text" 
-              defaultValue={user.nickname || ''} 
-              className="input" 
+          </FormField>
+          <FormField id="nickname" label="Nickname">
+            <input
+              id="nickname"
+              name="nickname"
+              type="text"
+              defaultValue={user.nickname || ''}
+              className="input"
+              autoComplete="nickname"
             />
-          </div>
+          </FormField>
         </div>
 
         {isAdmin && (
           <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Ruolo
-              </label>
-              <select name="role" defaultValue={user.role} className="input">
+            <FormField id="role" label="Ruolo">
+              <select id="role" name="role" defaultValue={user.role} className="input">
                 <option value="player">Giocatore</option>
                 <option value="admin">Admin</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Punteggio overall (0-100)
-              </label>
+            </FormField>
+            <FormField
+              id="overall_score"
+              label="Punteggio overall (0-100)"
+              description="Valore indicativo del livello complessivo di gioco."
+            >
               <input
+                id="overall_score"
                 name="overall_score"
                 type="number"
                 min={0}
@@ -270,85 +269,102 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
                 className="input w-24"
                 placeholder="50"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Livello di Gioco
-                <span className="ml-1 text-xs text-slate-600">(derivato da overall)</span>
-              </label>
-              <select name="skill_level" defaultValue={user.skill_level || ''} className="input" disabled>
+            </FormField>
+            <FormField
+              id="skill_level"
+              label="Livello di gioco"
+              description="Derivato automaticamente dal punteggio overall."
+            >
+              <select id="skill_level" name="skill_level" defaultValue={user.skill_level || ''} className="input" disabled>
                 <option value="">Non assegnato</option>
                 {(Object.keys(SKILL_LEVEL_LABELS) as SkillLevel[]).map(level => (
                   <option key={level} value={level}>{SKILL_LEVEL_LABELS[level]}</option>
                 ))}
               </select>
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* Player preferences - editable by owner or admin */}
         {(isAdmin || isOwnProfile) && (
           <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Lato Campo Preferito
-              </label>
-              <select name="preferred_side" defaultValue={user.preferred_side || ''} className="input">
+            <FormField id="preferred_side" label="Lato campo preferito">
+              <select
+                id="preferred_side"
+                name="preferred_side"
+                defaultValue={user.preferred_side || ''}
+                className="input"
+              >
                 <option value="">Non specificato</option>
                 <option value="Destra">Destra</option>
                 <option value="Sinistra">Sinistra</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Mano Preferita
-              </label>
-              <select name="preferred_hand" defaultValue={user.preferred_hand || ''} className="input">
+            </FormField>
+            <FormField id="preferred_hand" label="Mano preferita">
+              <select
+                id="preferred_hand"
+                name="preferred_hand"
+                defaultValue={user.preferred_hand || ''}
+                className="input"
+              >
                 <option value="">Non specificato</option>
                 <option value="Destra">Destra</option>
                 <option value="Sinistra">Sinistra</option>
               </select>
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* Bio - only editable by profile owner (not admin unless it's their own profile) */}
         {isOwnProfile && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Bio
-            </label>
+          <FormField
+            id="bio"
+            label="Bio"
+            description="Una breve descrizione che verrà mostrata nel tuo profilo pubblico."
+          >
             <textarea
+              id="bio"
               name="bio"
               rows={4}
               defaultValue={user.bio || ''}
               className="input resize-none"
               placeholder="Scrivi qualcosa su di te..."
             />
-          </div>
+          </FormField>
         )}
 
         {(isAdmin || isOwnProfile) && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Nuova Password (lascia vuoto per non cambiare)
-            </label>
-            <input 
-              name="new_password" 
-              type="password" 
-              className="input" 
+          <FormField
+            id="new_password"
+            label="Nuova password"
+            description="Lascia vuoto se non vuoi modificare la password."
+          >
+            <input
+              id="new_password"
+              name="new_password"
+              type="password"
+              className="input"
               placeholder="••••••••"
+              autoComplete="new-password"
             />
-          </div>
+          </FormField>
         )}
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-        {success && <p className="text-sm text-green-600 dark:text-green-400">{success}</p>}
+        {error && (
+          <p id="edit-profile-error" className="text-sm text-red-600 dark:text-red-400" role="alert">
+            {error}
+          </p>
+        )}
+        {success && (
+          <p className="text-sm text-green-600 dark:text-green-400" role="status">
+            {success}
+          </p>
+        )}
 
         <button type="submit" disabled={loading} className="btn btn-primary">
           {loading ? 'Salvataggio...' : 'Salva Modifiche'}
         </button>
       </form>
-    </div>
+    </Card>
   );
 }

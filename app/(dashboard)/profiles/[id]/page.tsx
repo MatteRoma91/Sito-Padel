@@ -9,7 +9,7 @@ import { getUserById, getCumulativeRankings, getTournaments, getTournamentPartic
 import { isUserVisible } from '@/lib/visibility';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
-import { ArrowLeft, Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
+import { Trophy, Calendar, Hand, LayoutGrid, Swords, BarChart3, Users } from 'lucide-react';
 import nextDynamic from 'next/dynamic';
 import { Avatar } from '@/components/ui/Avatar';
 import { LazyWhenVisible } from '@/components/ui/LazyWhenVisible';
@@ -21,6 +21,7 @@ const ProfileCharts = nextDynamic(
 
 import { EditProfileForm } from '@/components/profiles/EditProfileForm';
 import { DeleteUserButton } from '@/components/profiles/DeleteUserButton';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -80,10 +81,18 @@ export default async function ProfileDetailPage({
 
   return (
     <div className="max-w-2xl w-full mx-auto space-y-6">
-      <Link href="/profiles" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition">
-        <ArrowLeft className="w-4 h-4" />
-        Torna ai giocatori
-      </Link>
+      <PageHeader
+        title={user.nickname || user.full_name || user.username}
+        subtitle={`Profilo giocatore @${user.username}`}
+        icon={Users}
+        backHref="/profiles"
+        backLabel="Torna all'elenco giocatori"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/' },
+          { label: 'Giocatori', href: '/profiles' },
+          { label: user.nickname || user.full_name || user.username },
+        ]}
+      />
 
       {/* Profile header */}
       <div className="card p-6">

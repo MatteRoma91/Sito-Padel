@@ -2,6 +2,7 @@ import { buildMetadata, getBaseUrl } from '@/lib/seo';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Apple, Smartphone, Share2, Plus, Download } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -18,14 +19,13 @@ export default function InstallPage() {
   return (
     <div className="min-h-screen p-6 pb-12">
       <div className="mx-auto max-w-lg">
-        <header className="text-center mb-10">
-          <h1 className="font-display text-2xl md:text-3xl font-semibold text-foreground">
-            Installa Banana Padel Tour
-          </h1>
-          <p className="mt-2 text-foreground/80">
-            Aggiungi l&apos;app alla schermata Home (iPhone e Android)
-          </p>
-        </header>
+        <PageHeader
+          title="Installa Banana Padel Tour"
+          subtitle="Aggiungi l&apos;app alla schermata Home su iPhone o Android per un accesso più rapido."
+          icon={Download}
+          breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Installa app' }]}
+          className="text-foreground mb-6"
+        />
 
         <div className="space-y-8">
           <section className="card p-6">

@@ -5,6 +5,7 @@ import { getVisibleUsers } from '@/lib/visibility';
 import { User } from 'lucide-react';
 import { CreateUserForm } from '@/components/profiles/CreateUserForm';
 import { Avatar } from '@/components/ui/Avatar';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +33,11 @@ export default async function ProfilesPage() {
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Giocatori</h1>
-      </div>
+      <PageHeader
+        title="Giocatori"
+        subtitle="Elenco completo dei giocatori del Banana Padel Tour, ordinati secondo la classifica generale."
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Giocatori' }]}
+      />
 
       {/* Quick add form for admin */}
       {isAdmin && <CreateUserForm />}

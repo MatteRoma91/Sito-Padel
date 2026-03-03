@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { FormField } from '@/components/ui/FormField';
 
 export function CreateUserForm() {
   const router = useRouter();
@@ -46,7 +48,7 @@ export function CreateUserForm() {
   }
 
   return (
-    <div className="card">
+    <Card>
       <button
         onClick={() => setOpen(!open)}
         className="w-full p-4 flex items-center justify-between text-left"
@@ -65,37 +67,49 @@ export function CreateUserForm() {
           </div>
           
           <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Username *
-              </label>
-              <input name="username" type="text" required className="input" placeholder="mario.rossi" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nickname
-              </label>
-              <input name="nickname" type="text" className="input" placeholder="Mario" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nome Completo
-              </label>
-              <input name="full_name" type="text" className="input" placeholder="Mario Rossi" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Ruolo
-              </label>
-              <select name="role" className="input">
+            <FormField id="new_username" label="Username" required>
+              <input
+                id="new_username"
+                name="username"
+                type="text"
+                required
+                className="input"
+                placeholder="mario.rossi"
+                autoComplete="off"
+              />
+            </FormField>
+            <FormField id="new_nickname" label="Nickname">
+              <input
+                id="new_nickname"
+                name="nickname"
+                type="text"
+                className="input"
+                placeholder="Mario"
+                autoComplete="off"
+              />
+            </FormField>
+            <FormField id="new_full_name" label="Nome completo">
+              <input
+                id="new_full_name"
+                name="full_name"
+                type="text"
+                className="input"
+                placeholder="Mario Rossi"
+                autoComplete="name"
+              />
+            </FormField>
+            <FormField id="new_role" label="Ruolo">
+              <select id="new_role" name="role" className="input" defaultValue="player">
                 <option value="player">Giocatore</option>
                 <option value="admin">Admin</option>
               </select>
-            </div>
+            </FormField>
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {error}
+            </p>
           )}
 
           <button type="submit" disabled={loading} className="btn btn-primary">
@@ -103,6 +117,6 @@ export function CreateUserForm() {
           </button>
         </form>
       )}
-    </div>
+    </Card>
   );
 }

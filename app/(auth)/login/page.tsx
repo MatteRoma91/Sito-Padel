@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Card } from '@/components/ui/Card';
+import { FormField } from '@/components/ui/FormField';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,7 +47,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-500 via-primary-300 to-primary-100">
       <div className="w-full max-w-sm">
-        <div className="card p-6 sm:p-8">
+        <Card className="p-6 sm:p-8">
           <div className="text-center mb-8">
             <div className="inline-block mb-4">
               <Image src="/logo.png" alt="Banana Padel Tour" width={100} height={100} sizes="(max-width: 640px) 80px, 100px" className="rounded-xl max-w-full h-auto w-20 h-20 sm:w-[6.25rem] sm:h-[6.25rem]" priority />
@@ -54,11 +56,12 @@ export default function LoginPage() {
             <p className="text-slate-700 dark:text-slate-300 mt-1">Accedi per continuare</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Username
-              </label>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            aria-describedby={error ? 'login-error' : undefined}
+          >
+            <FormField id="username" label="Username" required>
               <input
                 id="username"
                 type="text"
@@ -69,12 +72,9 @@ export default function LoginPage() {
                 autoComplete="username"
                 autoFocus
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Password
-              </label>
+            <FormField id="password" label="Password" required>
               <input
                 id="password"
                 type="password"
@@ -84,10 +84,14 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
               />
-            </div>
+            </FormField>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">
+              <div
+                id="login-error"
+                className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm"
+                role="alert"
+              >
                 {error}
               </div>
             )}
@@ -100,10 +104,10 @@ export default function LoginPage() {
               {loading ? 'Accesso...' : 'Accedi'}
             </button>
           </form>
-        </div>
+        </Card>
 
         <p className="text-center text-white/80 text-sm mt-6">
-          Sito privato - Solo membri autorizzati
+          Accesso riservato ai membri autorizzati
         </p>
       </div>
     </div>
