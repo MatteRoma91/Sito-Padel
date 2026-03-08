@@ -411,6 +411,13 @@ export function getBookingsByCourtAndDate(courtId: string, date: string): CourtB
     .all(courtId, date, 'confirmed') as CourtBooking[];
 }
 
+export function getBookingsInDateRange(fromDate: string, toDate: string): CourtBooking[] {
+  ensureDb();
+  return getDb()
+    .prepare('SELECT * FROM court_bookings WHERE status = ? AND date >= ? AND date <= ? ORDER BY date, slot_start')
+    .all('confirmed', fromDate, toDate) as CourtBooking[];
+}
+
 export function getBookingById(id: string): CourtBooking | undefined {
   ensureDb();
   return getDb().prepare('SELECT * FROM court_bookings WHERE id = ?').get(id) as CourtBooking | undefined;

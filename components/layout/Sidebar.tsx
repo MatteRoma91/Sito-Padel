@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   Smartphone,
-  LayoutGrid
+  LayoutGrid,
+  Gamepad2
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
@@ -37,6 +38,7 @@ interface SidebarProps {
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/tournaments', label: 'Tornei', icon: Trophy },
+  { href: '/partite', label: 'Partite', icon: Gamepad2 },
   { href: '/profiles', label: 'Giocatori', icon: Users },
   { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/calendar', label: 'Calendario', icon: Calendar },

@@ -5,7 +5,6 @@ import { getBookingById, getBookingParticipants, getMatchByBookingId, getUsers, 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { BookingDetailClient } from './BookingDetailClient';
-import { LayoutGrid } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,8 +53,8 @@ export default async function BookingDetailPage({
     <div className="max-w-2xl w-full mx-auto space-y-6">
       <PageHeader
         title="Partita"
-        subtitle={booking.booking_name}
-        icon={LayoutGrid}
+        subtitle={`${booking.booking_name} · Partita di padel${courtName ? ` · ${courtName}` : ''}`}
+        icon={Trophy}
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
           { label: 'Centro sportivo', href: '/sports-center' },

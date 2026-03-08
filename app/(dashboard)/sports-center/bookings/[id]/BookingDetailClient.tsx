@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Trophy } from 'lucide-react';
 
 type BookingInfo = {
   id: string;
@@ -46,6 +47,24 @@ export type ParticipantSlot = {
 
 function displayUser(u: UserOption): string {
   return u.nickname?.trim() || u.full_name?.trim() || u.username || u.id;
+}
+
+function getCoupleNames(
+  slots: ParticipantSlot[],
+  userMap: Map<string, UserOption>
+): string[] {
+  const names: string[] = [];
+  for (const slot of slots) {
+    if (slot.user_id) {
+      const u = userMap.get(slot.user_id);
+      names.push(u ? displayUser(u) : '—');
+    } else if ((slot.guest_first_name ?? '').trim() || (slot.guest_last_name ?? '').trim()) {
+      names.push(`${(slot.guest_first_name ?? '').trim()} ${(slot.guest_last_name ?? '').trim()}`.trim());
+    } else {
+      names.push('—');
+    }
+  }
+  return names;
 }
 
 function slotEqual(a: ParticipantSlot, b: ParticipantSlot): boolean {
@@ -613,22 +632,203 @@ export function BookingDetailClient({
       {showResultSection && match && (
         <section>
           <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Risultato</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Giochi per set (padel)</p>
           {match.result_winner != null ? (
-            <div className="space-y-1 text-slate-700 dark:text-slate-300">
-              <p className="font-medium">
-                Vincitore: Coppia {match.result_winner}
-              </p>
-              <p className="text-sm">
-                Set 1: {match.result_set1_c1 ?? 0}–{match.result_set1_c2 ?? 0}
-                {' · '}
-                Set 2: {match.result_set2_c1 ?? 0}–{match.result_set2_c2 ?? 0}
-                {(match.result_set3_c1 != null && match.result_set3_c2 != null) && (
-                  <> · Set 3: {match.result_set3_c1}–{match.result_set3_c2}</>
-                )}
-              </p>
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-0 bg-slate-50 dark:bg-slate-800/50">
+                <div
+                  className={`p-4 text-center ${match.result_winner === 1 ? 'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 bg-amber-50/50 dark:bg-amber-900/20' : ''}`}
+                >
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Coppia 1</div>
+                  <div className="text-sm text-slate-800 dark:text-slate-100">
+                    {getCoupleNames(participants.slice(0, 2), userMap).join(' / ')}
+                  </div>
+                  {match.result_winner === 1 && (
+                    <div className="mt-2 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                      <Trophy className="w-3.5 h-3.5" aria-hidden />
+                      Vincitori
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-center px-2 text-slate-400 dark:text-slate-500 text-xs font-medium border-x border-slate-200 dark:border-slate-700">
+                  Set
+                </div>
+                <div
+                  className={`p-4 text-center ${match.result_winner === 2 ? 'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 bg-amber-50/50 dark:bg-amber-900/20' : ''}`}
+                >
+                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Coppia 2</div>
+                  <div className="text-sm text-slate-800 dark:text-slate-100">
+                    {getCoupleNames(participants.slice(2, 4), userMap).join(' / ')}
+                  </div>
+                  {match.result_winner === 2 && (
+                    <div className="mt-2 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                      <Trophy className="w-3.5 h-3.5" aria-hidden />
+                      Vincitori
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                <div className="p-3 text-center">
+                  <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                    {match.result_set1_c1 ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Set 1
+                </div>
+                <div className="p-3 text-center border-l border-slate-200 dark:border-slate-700">
+                  <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                    {match.result_set1_c2 ?? 0}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                <div className="p-3 text-center">
+                  <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                    {match.result_set2_c1 ?? 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Set 2
+                </div>
+                <div className="p-3 text-center border-l border-slate-200 dark:border-slate-700">
+                  <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                    {match.result_set2_c2 ?? 0}
+                  </span>
+                </div>
+              </div>
+              {match.result_set3_c1 != null && match.result_set3_c2 != null && (
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                  <div className="p-3 text-center">
+                    <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                      {match.result_set3_c1}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Set 3
+                  </div>
+                  <div className="p-3 text-center border-l border-slate-200 dark:border-slate-700">
+                    <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
+                      {match.result_set3_c2}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : canSaveResult ? (
             <div className="space-y-4">
+              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-0 bg-slate-50 dark:bg-slate-800/50">
+                  <div className="p-3 text-center">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Coppia 1</div>
+                    <div className="text-sm text-slate-700 dark:text-slate-200 truncate px-1">
+                      {getCoupleNames(participants.slice(0, 2), userMap).join(' / ')}
+                    </div>
+                  </div>
+                  <div className="w-10 border-x border-slate-200 dark:border-slate-700" />
+                  <div className="p-3 text-center">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Coppia 2</div>
+                    <div className="text-sm text-slate-700 dark:text-slate-200 truncate px-1">
+                      {getCoupleNames(participants.slice(2, 4), userMap).join(' / ')}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                  <div className="p-2 flex justify-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={resultSet1.c1}
+                      onChange={(e) => setResultSet1((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-14 text-center text-lg font-bold tabular-nums"
+                      aria-label="Set 1 giochi Coppia 1"
+                    />
+                  </div>
+                  <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Set 1
+                  </div>
+                  <div className="p-2 flex justify-center border-l border-slate-200 dark:border-slate-700">
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={resultSet1.c2}
+                      onChange={(e) => setResultSet1((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-14 text-center text-lg font-bold tabular-nums"
+                      aria-label="Set 1 giochi Coppia 2"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                  <div className="p-2 flex justify-center">
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={resultSet2.c1}
+                      onChange={(e) => setResultSet2((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-14 text-center text-lg font-bold tabular-nums"
+                      aria-label="Set 2 giochi Coppia 1"
+                    />
+                  </div>
+                  <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Set 2
+                  </div>
+                  <div className="p-2 flex justify-center border-l border-slate-200 dark:border-slate-700">
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={resultSet2.c2}
+                      onChange={(e) => setResultSet2((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-14 text-center text-lg font-bold tabular-nums"
+                      aria-label="Set 2 giochi Coppia 2"
+                    />
+                  </div>
+                </div>
+                <div className="border-t border-slate-200 dark:border-slate-700">
+                  <label className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30">
+                    <input
+                      type="checkbox"
+                      checked={resultSet3 != null}
+                      onChange={(e) => setResultSet3(e.target.checked ? { c1: 0, c2: 0 } : null)}
+                      className="rounded border-slate-300"
+                    />
+                    Set 3 (opzionale)
+                  </label>
+                  {resultSet3 != null && (
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-0 border-t border-slate-200 dark:border-slate-700">
+                      <div className="p-2 flex justify-center">
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={resultSet3.c1}
+                          onChange={(e) => setResultSet3((s) => s ? { ...s, c1: parseInt(e.target.value, 10) || 0 } : null)}
+                          className="input w-14 text-center text-lg font-bold tabular-nums"
+                          aria-label="Set 3 giochi Coppia 1"
+                        />
+                      </div>
+                      <div className="flex items-center justify-center px-2 border-x border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        Set 3
+                      </div>
+                      <div className="p-2 flex justify-center border-l border-slate-200 dark:border-slate-700">
+                        <input
+                          type="number"
+                          min={0}
+                          max={99}
+                          value={resultSet3.c2}
+                          onChange={(e) => setResultSet3((s) => s ? { ...s, c2: parseInt(e.target.value, 10) || 0 } : null)}
+                          className="input w-14 text-center text-lg font-bold tabular-nums"
+                          aria-label="Set 3 giochi Coppia 2"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vincitore</label>
                 <select
@@ -639,78 +839,6 @@ export function BookingDetailClient({
                   <option value={1}>Coppia 1</option>
                   <option value={2}>Coppia 2</option>
                 </select>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Set 1 (C1–C2)</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet1.c1}
-                      onChange={(e) => setResultSet1((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
-                      className="input w-16"
-                    />
-                    <span>-</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet1.c2}
-                      onChange={(e) => setResultSet1((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
-                      className="input w-16"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Set 2 (C1–C2)</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet2.c1}
-                      onChange={(e) => setResultSet2((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
-                      className="input w-16"
-                    />
-                    <span>-</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet2.c2}
-                      onChange={(e) => setResultSet2((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
-                      className="input w-16"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 mb-1">
-                  <input
-                    type="checkbox"
-                    checked={resultSet3 != null}
-                    onChange={(e) => setResultSet3(e.target.checked ? { c1: 0, c2: 0 } : null)}
-                    className="rounded border-slate-300"
-                  />
-                  Inserisci Set 3 (opzionale)
-                </label>
-                {resultSet3 != null && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet3.c1}
-                      onChange={(e) => setResultSet3((s) => s ? { ...s, c1: parseInt(e.target.value, 10) || 0 } : null)}
-                      className="input w-16"
-                    />
-                    <span>-</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={resultSet3.c2}
-                      onChange={(e) => setResultSet3((s) => s ? { ...s, c2: parseInt(e.target.value, 10) || 0 } : null)}
-                      className="input w-16"
-                    />
-                  </div>
-                )}
               </div>
               <button
                 type="button"
