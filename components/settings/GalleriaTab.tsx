@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Image as ImageIcon, HardDrive, Trash2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { Card } from '@/components/ui/Card';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface GalleryStats {
   totalSize: number;
@@ -34,9 +36,13 @@ export function GalleriaTab() {
   const [stats, setStats] = useState<GalleryStats | null>(null);
   const [items, setItems] = useState<GalleryMediaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; filename: string } | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (showRefreshing = false) => {
+    if (showRefreshing) setRefreshing(true);
+    else setLoading(true);
     setLoading(true);
     try {
       const [statsRes, listRes] = await Promise.all([
@@ -57,6 +63,7 @@ export function GalleriaTab() {
       setItems([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -65,6 +72,8 @@ export function GalleriaTab() {
   }, []);
 
   const handleDelete = async (id: string) => {
+    if (!deleteConfirm || deleteConfirm.id !== id) return;
+    setDeleteConfirm(null);
     setDeletingId(id);
     try {
       const res = await fetch(`/api/gallery/${id}`, { method: 'DELETE' });
@@ -79,17 +88,17 @@ export function GalleriaTab() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="card p-8 animate-pulse">
+        <Card className="p-8 animate-pulse">
           <div className="h-8 bg-primary-200 dark:bg-primary-700 rounded w-1/3 mb-4" />
           <div className="h-4 bg-primary-200 dark:bg-primary-700 rounded w-2/3" />
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-700 dark:text-slate-300">
           Spazio galleria e gestione file
         </p>
@@ -99,49 +108,37 @@ export function GalleriaTab() {
           </Link>
           <button
             type="button"
-            onClick={() => { fetchData(); router.refresh(); }}
+            onClick={() => { fetchData(true); router.refresh(); }}
+            disabled={refreshing}
             className="btn btn-secondary flex items-center gap-2"
           >
-            <RefreshCw className="w-4 h-4" />
-            Aggiorna
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Aggiornamento...' : 'Aggiorna'}
           </button>
         </div>
       </div>
 
       {stats && (
-        <div className="card">
-          <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
-            <HardDrive className="w-5 h-5 text-accent-500" />
-            <h2 className="font-semibold text-slate-800 dark:text-slate-100">Spazio Galleria</h2>
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-slate-700 dark:text-slate-300">
-                  {stats.usedGB.toFixed(2)} GB / {stats.limitGB} GB
-                </span>
-                <span className="text-slate-700 dark:text-slate-300">
-                  Spazio libero: {stats.freeGB.toFixed(2)} GB
-                </span>
-              </div>
-              <div className="w-full h-3 rounded-full bg-primary-200 dark:bg-primary-700 overflow-hidden">
-                <div
-                  className="h-full bg-accent-500 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (stats.usedGB / stats.limitGB) * 100)}%` }}
-                />
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {stats.count} file · Limite totale 20 GB
-            </p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Spazio usato</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stats.usedGB.toFixed(2)} GB</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Limite</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stats.limitGB} GB</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">File</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stats.count}</p>
+          </Card>
         </div>
       )}
 
-      <div className="card">
+      <Card>
         <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
           <ImageIcon className="w-5 h-5 text-accent-500" />
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100">Gestione Galleria</h2>
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100">Ultimi file</h2>
         </div>
         <div className="divide-y divide-primary-100 dark:divide-primary-300/50 max-h-96 overflow-y-auto">
           {items.length === 0 ? (
@@ -176,18 +173,35 @@ export function GalleriaTab() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => setDeleteConfirm({ id: item.id, filename: item.filename })}
                   disabled={!!deletingId}
                   className="btn btn-secondary text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                   title="Elimina"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deletingId === item.id ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             ))
           )}
         </div>
-      </div>
+      </Card>
+
+      {deleteConfirm && (
+        <ConfirmModal
+          open={!!deleteConfirm}
+          title="Elimina file"
+          message={`Eliminare il file "${deleteConfirm.filename}"? Questa azione non può essere annullata.`}
+          confirmLabel="Elimina"
+          cancelLabel="Annulla"
+          variant="danger"
+          onConfirm={() => handleDelete(deleteConfirm.id)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 }

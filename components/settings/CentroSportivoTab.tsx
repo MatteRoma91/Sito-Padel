@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LayoutGrid, Plus, Trash2, Save } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
 
 type Court = { id: string; name: string; type: string; display_order: number };
 
@@ -253,15 +254,25 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
   }
 
   return (
-    <div className="card divide-y divide-slate-200 dark:divide-slate-700">
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-        <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <LayoutGrid className="w-5 h-5" />
-          Centro sportivo – Orari e prenotazioni
-        </h3>
-      </div>
+    <div className="space-y-6">
+      {message && (
+        <div
+          className={`p-3 rounded-lg text-sm ${message.type === 'ok' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}
+          role="alert"
+        >
+          {message.text}
+        </div>
+      )}
 
-      <div className="p-4 space-y-4">
+      <Card className="p-6">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-1">
+          <LayoutGrid className="w-5 h-5 text-accent-500" />
+          Orari e durate
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          Orari di apertura/chiusura del centro e durate consentite per le prenotazioni.
+        </p>
+        <div className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Apertura</label>
@@ -301,10 +312,13 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
         <button type="button" onClick={handleSaveConfig} disabled={saving} className="btn btn-primary">
           {saving ? 'Salvataggio...' : 'Salva orari e durate'}
         </button>
-      </div>
+        </div>
+      </Card>
 
-      <div className="p-4">
-        <h4 className="font-medium text-slate-800 dark:text-slate-100 mb-2">Gestione campi</h4>
+      <Card className="p-6">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-1">
+          Campi
+        </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
           Aggiungi, modifica o elimina i campi. L&apos;ordine determina la visualizzazione nella griglia.
         </p>
@@ -401,12 +415,12 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
             })}
           </ul>
         )}
-      </div>
+      </Card>
 
-      <div className="p-4">
-        <h4 className="font-medium text-slate-800 dark:text-slate-100 mb-2">Slot di chiusura (centro chiuso, non prenotabile)</h4>
+      <Card className="p-6">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-1">Slot chiusi</h3>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          Aggiungi le fasce orarie in cui il centro è chiuso ogni settimana (es. pausa pranzo).
+          Fasce orarie in cui il centro è chiuso ogni settimana (es. pausa pranzo). Non prenotabili.
         </p>
         <form onSubmit={handleAddClosedSlot} className="flex flex-wrap items-end gap-3 mb-4">
           <div>
@@ -459,13 +473,7 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
             ))}
           </ul>
         )}
-      </div>
-
-      {message && (
-        <div className={`p-4 text-sm ${message.type === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-          {message.text}
-        </div>
-      )}
+      </Card>
     </div>
   );
 }

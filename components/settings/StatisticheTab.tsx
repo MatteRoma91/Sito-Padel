@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart3, Eye, Users, Trophy, LogIn } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
 
 interface AnalyticsData {
   pageViews: { path: string; count: number }[];
@@ -33,29 +34,40 @@ export function StatisticheTab() {
     fetchAnalytics();
   }, []);
 
+  function formatNum(n: number): string {
+    return n.toLocaleString('it-IT');
+  }
+
   if (loading) {
     return (
-      <div className="card p-6 animate-pulse">
+      <Card className="p-6 animate-pulse">
         <div className="h-8 bg-primary-200 dark:bg-primary-700 rounded w-1/3 mb-4" />
         <div className="space-y-3">
           <div className="h-20 bg-primary-100 dark:bg-primary-800 rounded" />
           <div className="h-20 bg-primary-100 dark:bg-primary-800 rounded" />
         </div>
-      </div>
+      </Card>
     );
   }
 
   if (!data) {
     return (
-      <div className="card p-6">
+      <Card className="p-6">
         <p className="text-slate-700 dark:text-slate-300">Impossibile caricare le statistiche.</p>
-      </div>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="btn btn-secondary mt-4"
+        >
+          Riprova
+        </button>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="card">
+      <Card>
         <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Panoramica</h2>
@@ -66,33 +78,33 @@ export function StatisticheTab() {
               <Eye className="w-4 h-4" />
               Visualizzazioni totali
             </div>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{data.totalViews}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.totalViews)}</p>
           </div>
           <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Users className="w-4 h-4" />
               Utenti
             </div>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{data.usersCount}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.usersCount)}</p>
           </div>
           <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Trophy className="w-4 h-4" />
               Tornei totali
             </div>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{data.tournamentsCount}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.tournamentsCount)}</p>
           </div>
           <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Trophy className="w-4 h-4" />
               Tornei completati
             </div>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{data.completedTournamentsCount}</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.completedTournamentsCount)}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="card">
+      <Card>
         <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
           <Eye className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Visualizzazioni per pagina</h2>
@@ -110,14 +122,14 @@ export function StatisticheTab() {
                 className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
               >
                 <code className="text-sm text-slate-700 dark:text-slate-300">{pv.path || '/'}</code>
-                <span className="font-bold text-accent-500">{pv.count}</span>
+                <span className="font-bold text-accent-500">{formatNum(pv.count)}</span>
               </div>
             ))
           )}
         </div>
-      </div>
+      </Card>
 
-      <div className="card">
+      <Card>
         <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
           <LogIn className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Top 5 accessi (login)</h2>
@@ -140,12 +152,12 @@ export function StatisticheTab() {
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">@{u.username}</p>
                 </div>
-                <span className="font-bold text-accent-500">{u.login_count}</span>
+                <span className="font-bold text-accent-500">{formatNum(u.login_count)}</span>
               </div>
             ))
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

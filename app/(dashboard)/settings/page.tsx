@@ -17,7 +17,7 @@ function canAccessSettings(_username: string, role: string): boolean {
   return role === 'admin';
 }
 
-const VALID_TABS: SettingsTabId[] = ['colori', 'testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs', 'statistiche', 'centrosportivo'];
+const VALID_TABS: SettingsTabId[] = ['testi', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs', 'statistiche', 'centrosportivo'];
 
 export default async function SettingsPage({
   searchParams,
@@ -40,7 +40,7 @@ export default async function SettingsPage({
   const tabParam = params.tab;
   const initialTab: SettingsTabId = tabParam && VALID_TABS.includes(tabParam as SettingsTabId)
     ? (tabParam as SettingsTabId)
-    : 'colori';
+    : 'testi';
 
   const config = getSiteConfig();
   const allUsers = getUsers();
@@ -62,7 +62,7 @@ export default async function SettingsPage({
   const loginsLast7Days = usersWithLoginCounts.reduce((sum, u) => sum + (u.login_count ?? 0), 0);
 
   return (
-    <div className="max-w-4xl w-full mx-auto space-y-6">
+    <div className="max-w-5xl w-full mx-auto space-y-6">
       <PageHeader
         title="Pannello amministrazione"
         subtitle="Riepilogo e gestione centralizzata di impostazioni, utenti, accessi, server e strumenti del Banana Padel Tour."
@@ -73,36 +73,36 @@ export default async function SettingsPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/40">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10">
               <Users className="w-5 h-5 text-accent-500" />
             </span>
             <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Utenti attivi</p>
-              <p className="text-xl font-semibold text-slate-800 dark:text-slate-100">{totalUsers}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Utenti attivi</p>
+              <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{totalUsers}</p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/40">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10">
               <Trophy className="w-5 h-5 text-accent-500" />
             </span>
             <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Tornei (totali / completati)</p>
-              <p className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-                {totalTournaments} <span className="text-sm text-slate-600 dark:text-slate-400">/ {completedTournamentsCount}</span>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tornei (totali / completati)</p>
+              <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                {totalTournaments} <span className="text-sm font-normal text-slate-600 dark:text-slate-400">/ {completedTournamentsCount}</span>
               </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/40">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500/10">
               <Server className="w-5 h-5 text-accent-500" />
             </span>
             <div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Accessi ultimi 7 giorni</p>
-              <p className="text-xl font-semibold text-slate-800 dark:text-slate-100">{loginsLast7Days}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Accessi ultimi 7 giorni</p>
+              <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{loginsLast7Days}</p>
             </div>
           </div>
         </Card>

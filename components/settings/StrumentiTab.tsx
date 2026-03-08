@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Database, KeyRound, Download, Archive } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { Card } from '@/components/ui/Card';
 
 export function StrumentiTab() {
   const { showToast } = useToast();
@@ -29,6 +30,7 @@ export function StrumentiTab() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      showToast('Backup completo scaricato', 'success');
     } catch {
       showToast('Errore di connessione', 'error');
     } finally {
@@ -55,6 +57,7 @@ export function StrumentiTab() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      showToast('Backup database scaricato', 'success');
     } catch {
       showToast('Errore di connessione', 'error');
     } finally {
@@ -64,7 +67,10 @@ export function StrumentiTab() {
 
   return (
     <div className="space-y-6">
-      <div className="card p-6">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Backup e utilità per l&apos;amministrazione del sito.
+      </p>
+      <Card className="p-6">
         <div className="flex items-center gap-2 mb-2">
           <Archive className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Backup completo</h2>
@@ -81,9 +87,9 @@ export function StrumentiTab() {
           <Download className="w-5 h-5" />
           {downloadingFull ? 'Download...' : 'Scarica backup completo'}
         </button>
-      </div>
+      </Card>
 
-      <div className="card p-6">
+      <Card className="p-6">
         <div className="flex items-center gap-2 mb-2">
           <Database className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Backup database</h2>
@@ -100,9 +106,9 @@ export function StrumentiTab() {
           <Download className="w-5 h-5" />
           {downloading ? 'Download...' : 'Scarica backup'}
         </button>
-      </div>
+      </Card>
 
-      <div className="card p-6">
+      <Card className="p-6">
         <div className="flex items-center gap-2 mb-2">
           <KeyRound className="w-5 h-5 text-accent-500" />
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Password predefinita</h2>
@@ -118,7 +124,7 @@ export function StrumentiTab() {
           <KeyRound className="w-5 h-5" />
           Vai a Utenti (reset password)
         </Link>
-      </div>
+      </Card>
     </div>
   );
 }
