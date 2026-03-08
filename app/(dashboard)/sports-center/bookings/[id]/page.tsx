@@ -101,6 +101,7 @@ export default async function BookingDetailPage({
           nickname: u.nickname,
           full_name: u.full_name,
           username: u.username,
+          avatar: u.avatar ?? null,
         }))}
         canEdit={canEdit}
         canReopen={canReopen}

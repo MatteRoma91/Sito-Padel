@@ -5,7 +5,7 @@ import { buildMetadata } from '@/lib/seo';
 import { getSiteConfig } from '@/lib/db/queries';
 
 export const dynamic = 'force-dynamic';
-import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats, getOverallScoreHistory, getPointsHistory } from '@/lib/db/queries';
+import { getUserById, getCumulativeRankings, getTournaments, getTournamentParticipantsByTournament, getMatchHistoryForUser, getPlayerStats, getNonTournamentMatchHistoryForUser, getNonTournamentPlayerStats, computePlayerStatsFromMatchList, getOverallScoreHistory, getPointsHistory } from '@/lib/db/queries';
 import { isUserVisible } from '@/lib/visibility';
 import { ROUND_LABELS } from '@/lib/bracket';
 import { overallScoreToLevel, OVERALL_LEVEL_LABELS } from '@/lib/types';
@@ -77,6 +77,22 @@ export default async function ProfileDetailPage({
 
   const matchHistory = getMatchHistoryForUser(user.id);
   const playerStats = getPlayerStats(user.id);
+  const nonTournamentMatchHistory = getNonTournamentMatchHistoryForUser(user.id);
+  const nonTournamentPlayerStats = getNonTournamentPlayerStats(user.id);
+  const hasTournamentMatches = matchHistory.length > 0;
+  const hasNonTournamentMatches = nonTournamentMatchHistory.length > 0;
+  const hasBoth = hasTournamentMatches && hasNonTournamentMatches;
+
+  const combinedStats = hasBoth
+    ? (() => {
+        const combinedEntries = [
+          ...matchHistory.map((m) => ({ date: m.date, scoreUs: m.scoreUs, scoreThem: m.scoreThem, isWin: m.isWin })),
+          ...nonTournamentMatchHistory.map((m) => ({ date: m.date, scoreUs: m.scoreUs, scoreThem: m.scoreThem, isWin: m.isWin })),
+        ].sort((a, b) => b.date.localeCompare(a.date));
+        return computePlayerStatsFromMatchList(combinedEntries);
+      })()
+    : null;
+
   const overallHistory = getOverallScoreHistory(user.id);
   const pointsHistory = getPointsHistory(user.id);
 
@@ -168,12 +184,12 @@ export default async function ProfileDetailPage({
           <ProfileCharts overallHistory={overallHistory} pointsHistory={pointsHistory} />
         </LazyWhenVisible>
 
-        {/* Statistiche di gioco - solo se ha partite */}
-        {matchHistory.length > 0 && (
+        {/* Statistiche di gioco (solo tornei) - solo se ha partite torneo */}
+        {hasTournamentMatches && (
           <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-accent-500" />
-              Statistiche di gioco
+              {hasBoth ? 'Statistiche tornei' : 'Statistiche di gioco'}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
@@ -212,6 +228,130 @@ export default async function ProfileDetailPage({
                     {playerStats.favoritePartner.name}
                   </Link>
                   <span>({playerStats.favoritePartner.matchesTogether} partite)</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Partite fuori torneo - solo se ha almeno una partita fuori torneo */}
+        {hasNonTournamentMatches && (
+          <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-accent-500" />
+              Partite fuori torneo
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.gamesWon}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{nonTournamentPlayerStats.gamesLost}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.winRate}%</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.gamesWinRate}%</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 mt-4">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium text-slate-800 dark:text-slate-200">Partite:</span>
+                <span>{nonTournamentPlayerStats.matchesWon} vinte, {nonTournamentPlayerStats.matchesLost} perse</span>
+              </div>
+              {(nonTournamentPlayerStats.currentWinStreak > 0 || nonTournamentPlayerStats.bestWinStreak > 0) && (
+                <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Streak:</span>
+                  <span>attuale {nonTournamentPlayerStats.currentWinStreak}, migliore {nonTournamentPlayerStats.bestWinStreak}</span>
+                </div>
+              )}
+              {nonTournamentPlayerStats.favoritePartner && (
+                <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <Users className="w-4 h-4" />
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Coppia preferita:</span>
+                  <Link href={`/profiles/${nonTournamentPlayerStats.favoritePartner.id}`} className="text-accent-500 hover:underline">
+                    {nonTournamentPlayerStats.favoritePartner.name}
+                  </Link>
+                  <span>({nonTournamentPlayerStats.favoritePartner.matchesTogether} partite)</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-4">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Elenco partite</p>
+              <div className="divide-y divide-primary-100 dark:divide-primary-300/50 rounded-lg border border-primary-100 dark:border-primary-300/50 overflow-hidden">
+                {nonTournamentMatchHistory.map((m) => (
+                  <Link
+                    key={m.bookingId}
+                    href={`/sports-center/bookings/${m.bookingId}`}
+                    className="flex items-center justify-between p-3 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-800 dark:text-slate-100 truncate">{m.bookingName}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300">
+                        {new Date(m.date).toLocaleDateString('it-IT')}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-500 truncate">vs {m.opponentPairNames}</p>
+                    </div>
+                    <div className="flex items-center gap-3 ml-4 shrink-0">
+                      <span className="font-mono font-semibold text-slate-800 dark:text-slate-100">
+                        {m.scoreUs} - {m.scoreThem}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 text-xs font-medium rounded ${
+                          m.isWin
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {m.isWin ? 'Vittoria' : 'Sconfitta'}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tutte le partite - solo se ha sia torneo sia fuori torneo */}
+        {hasBoth && combinedStats && (
+          <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-accent-500" />
+              Tutte le partite
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{combinedStats.gamesWon}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{combinedStats.gamesLost}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{combinedStats.winRate}%</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+                <p className="text-xl font-bold text-accent-500">{combinedStats.gamesWinRate}%</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 mt-4">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium text-slate-800 dark:text-slate-200">Partite:</span>
+                <span>{combinedStats.matchesWon} vinte, {combinedStats.matchesLost} perse</span>
+              </div>
+              {(combinedStats.currentWinStreak > 0 || combinedStats.bestWinStreak > 0) && (
+                <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="font-medium text-slate-800 dark:text-slate-200">Streak:</span>
+                  <span>attuale {combinedStats.currentWinStreak}, migliore {combinedStats.bestWinStreak}</span>
                 </div>
               )}
             </div>
@@ -323,12 +463,12 @@ export default async function ProfileDetailPage({
         </div>
       </div>
 
-      {/* Match history */}
+      {/* Match history (solo torneo) */}
       <div className="card">
         <div className="p-4 border-b border-primary-100 dark:border-primary-300/50">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Swords className="w-5 h-5 text-accent-500" />
-            Storico Partite
+            {hasBoth ? 'Storico partite torneo' : 'Storico Partite'}
           </h2>
         </div>
         <div className="divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">

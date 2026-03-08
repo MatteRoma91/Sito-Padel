@@ -41,6 +41,9 @@ img {
   .btn-danger {
     @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
   }
+  .btn-orange {
+    @apply bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700;
+  }
   .card {
     @apply bg-white dark:bg-[#0c1451]/80 rounded-2xl shadow-md border border-primary-100 dark:border-[#6270F3]/50 text-slate-900 dark:text-slate-100;
   }

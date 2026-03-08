@@ -1054,6 +1054,155 @@ export function getMatchHistoryForUser(userId: string): MatchHistoryEntry[] {
   return result;
 }
 
+// ---------- Partite fuori torneo (prenotazioni centro sportivo senza torneo) ----------
+
+export interface NonTournamentMatchHistoryEntry {
+  bookingId: string;
+  bookingName: string;
+  date: string;
+  opponentPairNames: string;
+  scoreUs: number;
+  scoreThem: number;
+  isWin: boolean;
+  /** user_id of the other player in our couple (same booking, same couple), or null if guest */
+  partnerId: string | null;
+}
+
+export function getNonTournamentMatchHistoryForUser(userId: string): NonTournamentMatchHistoryEntry[] {
+  ensureDb();
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT cb.id AS booking_id, cb.booking_name, cb.date,
+              m.result_winner, m.result_set1_c1, m.result_set1_c2, m.result_set2_c1, m.result_set2_c2, m.result_set3_c1, m.result_set3_c2,
+              cbp.position AS our_position
+       FROM court_booking_participants cbp
+       JOIN court_bookings cb ON cb.id = cbp.booking_id AND cb.status = 'confirmed' AND cb.tournament_id IS NULL
+       JOIN court_booking_matches m ON m.booking_id = cb.id AND m.result_winner IS NOT NULL
+       WHERE cbp.user_id = ?
+       ORDER BY cb.date DESC, cb.id`
+    )
+    .all(userId) as Array<{
+    booking_id: string;
+    booking_name: string;
+    date: string;
+    result_winner: number;
+    result_set1_c1: number | null;
+    result_set1_c2: number | null;
+    result_set2_c1: number | null;
+    result_set2_c2: number | null;
+    result_set3_c1: number | null;
+    result_set3_c2: number | null;
+    our_position: number;
+  }>;
+
+  const bookingIds = [...new Set(rows.map((r) => r.booking_id))];
+  const allParticipants: CourtBookingParticipant[] =
+    bookingIds.length === 0
+      ? []
+      : (db
+          .prepare(
+            `SELECT * FROM court_booking_participants WHERE booking_id IN (${bookingIds.map(() => '?').join(',')}) ORDER BY booking_id, position`
+          )
+          .all(...bookingIds) as CourtBookingParticipant[]);
+  const participantsByBooking = new Map<string, CourtBookingParticipant[]>();
+  for (const p of allParticipants) {
+    const list = participantsByBooking.get(p.booking_id) ?? [];
+    list.push(p);
+    participantsByBooking.set(p.booking_id, list);
+  }
+  const users = getUsers();
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  function participantDisplayName(p: CourtBookingParticipant): string {
+    if (p.user_id) {
+      const u = userMap.get(p.user_id);
+      return u?.nickname || u?.full_name || u?.username || '?';
+    }
+    const first = (p.guest_first_name ?? '').trim();
+    const last = (p.guest_last_name ?? '').trim();
+    return [first, last].filter(Boolean).join(' ') || 'Ospite';
+  }
+
+  const result: NonTournamentMatchHistoryEntry[] = [];
+  for (const r of rows) {
+    const isCouple1 = r.our_position === 1 || r.our_position === 2;
+    const scoreUs =
+      (isCouple1 ? (r.result_set1_c1 ?? 0) + (r.result_set2_c1 ?? 0) + (r.result_set3_c1 ?? 0) : (r.result_set1_c2 ?? 0) + (r.result_set2_c2 ?? 0) + (r.result_set3_c2 ?? 0));
+    const scoreThem =
+      (isCouple1 ? (r.result_set1_c2 ?? 0) + (r.result_set2_c2 ?? 0) + (r.result_set3_c2 ?? 0) : (r.result_set1_c1 ?? 0) + (r.result_set2_c1 ?? 0) + (r.result_set3_c1 ?? 0));
+    const isWin = isCouple1 ? r.result_winner === 1 : r.result_winner === 2;
+
+    const participants = participantsByBooking.get(r.booking_id) ?? [];
+    const opponentPositions = isCouple1 ? [3, 4] : [1, 2];
+    const opponentNames = opponentPositions
+      .map((pos) => participants.find((p) => p.position === pos))
+      .filter(Boolean)
+      .map((p) => participantDisplayName(p!));
+    const opponentPairNames = opponentNames.join(' / ') || '—';
+    const partnerPosition = r.our_position === 1 ? 2 : r.our_position === 2 ? 1 : r.our_position === 3 ? 4 : 3;
+    const partnerParticipant = participants.find((p) => p.position === partnerPosition);
+    const partnerId = partnerParticipant?.user_id ?? null;
+
+    result.push({
+      bookingId: r.booking_id,
+      bookingName: r.booking_name || 'Partita amichevole',
+      date: r.date,
+      opponentPairNames,
+      scoreUs,
+      scoreThem,
+      isWin,
+      partnerId,
+    });
+  }
+
+  return result;
+}
+
+/** Minimal entry shape for computing aggregate stats (tournament + non-tournament). */
+export interface MatchStatsEntry {
+  scoreUs: number;
+  scoreThem: number;
+  isWin: boolean;
+}
+
+/** Computes PlayerStats from a list of match entries (e.g. for "Tutte le partite"). List should be sorted by date DESC (newest first) for correct streak. */
+export function computePlayerStatsFromMatchList(entries: MatchStatsEntry[]): Omit<PlayerStats, 'favoritePartner'> & { favoritePartner: null } {
+  const matchesWon = entries.filter((m) => m.isWin).length;
+  const matchesLost = entries.filter((m) => !m.isWin).length;
+  const matchesTotal = entries.length;
+  const winRate = matchesTotal > 0 ? Math.round((matchesWon / matchesTotal) * 100) : 0;
+  const gamesWon = entries.reduce((sum, m) => sum + m.scoreUs, 0);
+  const gamesLost = entries.reduce((sum, m) => sum + m.scoreThem, 0);
+  const gamesTotal = gamesWon + gamesLost;
+  const gamesWinRate = gamesTotal > 0 ? Math.round((gamesWon / gamesTotal) * 100) : 0;
+  let currentWinStreak = 0;
+  for (let i = 0; i < entries.length && entries[i].isWin; i++) currentWinStreak++;
+  let bestWinStreak = 0;
+  let run = 0;
+  for (const m of entries) {
+    if (m.isWin) {
+      run++;
+      bestWinStreak = Math.max(bestWinStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+  return {
+    matchesWon,
+    matchesLost,
+    matchesTotal,
+    winRate,
+    gamesWon,
+    gamesLost,
+    gamesTotal,
+    gamesWinRate,
+    currentWinStreak,
+    bestWinStreak,
+    favoritePartner: null,
+  };
+}
+
 export interface PlayerStats {
   matchesWon: number;
   matchesLost: number;
@@ -1136,6 +1285,43 @@ export function getPlayerStats(userId: string): PlayerStats {
     gamesWinRate,
     currentWinStreak,
     bestWinStreak,
+    favoritePartner,
+  };
+}
+
+export function getNonTournamentPlayerStats(userId: string): PlayerStats {
+  ensureDb();
+  const matchHistory = getNonTournamentMatchHistoryForUser(userId);
+  const base = computePlayerStatsFromMatchList(matchHistory);
+  let favoritePartner: PlayerStats['favoritePartner'] = null;
+  const partnerCounts = new Map<string, number>();
+  for (const m of matchHistory) {
+    if (m.partnerId) {
+      partnerCounts.set(m.partnerId, (partnerCounts.get(m.partnerId) ?? 0) + 1);
+    }
+  }
+  if (partnerCounts.size > 0) {
+    let maxPartnerId: string | null = null;
+    let maxCount = 0;
+    for (const [pid, c] of Array.from(partnerCounts.entries())) {
+      if (c > maxCount) {
+        maxCount = c;
+        maxPartnerId = pid;
+      }
+    }
+    if (maxPartnerId) {
+      const partnerUser = getUserById(maxPartnerId);
+      if (partnerUser) {
+        favoritePartner = {
+          id: maxPartnerId,
+          name: partnerUser.nickname || partnerUser.full_name || partnerUser.username || '?',
+          matchesTogether: maxCount,
+        };
+      }
+    }
+  }
+  return {
+    ...base,
     favoritePartner,
   };
 }

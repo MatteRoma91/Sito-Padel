@@ -109,7 +109,12 @@ export function Sidebar({ user }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-[var(--header-mobile-offset)] md:mt-0 pb-[env(safe-area-inset-bottom,0px)] md:pb-0">
-          {navItems.map((item) => {
+          {navItems
+            .filter((item) => {
+              if (item.href === '/partite' || item.href === '/sports-center') return user.role === 'admin';
+              return true;
+            })
+            .map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || 
               (item.href !== '/' && pathname.startsWith(item.href));

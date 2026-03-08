@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
 
 type BookingInfo = {
   id: string;
@@ -22,6 +23,7 @@ type UserOption = {
   nickname: string | null;
   full_name: string | null;
   username: string;
+  avatar?: string | null;
 };
 
 type MatchInfo = {
@@ -121,6 +123,7 @@ export function BookingDetailClient({
   const [savingDetails, setSavingDetails] = useState(false);
   const [savingResult, setSavingResult] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resultMessage, setResultMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resultWinner, setResultWinner] = useState<1 | 2>(1);
@@ -265,6 +268,26 @@ export function BookingDetailClient({
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Eliminare la partita? La prenotazione verrà cancellata e non sarà più visibile.')) return;
+    setDeleting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/sports-center/bookings/${booking.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        router.push('/partite');
+        router.refresh();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Errore durante l\'eliminazione' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Errore di connessione' });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const hasDetailsChanges =
     bookingName.trim() !== booking.booking_name ||
     courtId !== booking.court_id ||
@@ -390,14 +413,25 @@ export function BookingDetailClient({
             </span>
           )}
           {canReopen && (
-            <button
-              type="button"
-              onClick={handleReopen}
-              disabled={reopening}
-              className="btn btn-secondary text-sm min-h-0 py-1.5 px-3"
-            >
-              {reopening ? 'Riapertura...' : 'Riapri partita'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleReopen}
+                disabled={reopening || deleting}
+                className="btn btn-orange text-sm min-h-0 py-1.5 px-3"
+              >
+                {reopening ? 'Riapertura...' : 'Riapri partita'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={reopening || deleting}
+                className="btn btn-danger text-sm min-h-0 py-1.5 px-3"
+                aria-label="Elimina partita e cancella prenotazione"
+              >
+                {deleting ? 'Eliminazione...' : 'Elimina partita'}
+              </button>
+            </>
           )}
         </div>
       )}
@@ -421,15 +455,23 @@ export function BookingDetailClient({
               : null;
             return (
               <div key={index} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-8">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-6 shrink-0">
                     {index + 1}.
                   </span>
-                  {(assignedUser || guestLabel) && (
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                      {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
-                    </span>
-                  )}
+                  {(assignedUser || guestLabel) ? (
+                    <>
+                      <Avatar
+                        src={assignedUser?.avatar ?? null}
+                        name={assignedUser ? displayUser(assignedUser) : (guestLabel ?? 'Ospite')}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
+                      </span>
+                    </>
+                  ) : null}
                 </div>
                 {canEditParticipants ? (
                   <div className="space-y-2 pl-0">
@@ -534,15 +576,23 @@ export function BookingDetailClient({
               : null;
             return (
               <div key={index} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-8">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-6 shrink-0">
                     {index + 1}.
                   </span>
-                  {(assignedUser || guestLabel) && (
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                      {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
-                    </span>
-                  )}
+                  {(assignedUser || guestLabel) ? (
+                    <>
+                      <Avatar
+                        src={assignedUser?.avatar ?? null}
+                        name={assignedUser ? displayUser(assignedUser) : (guestLabel ?? 'Ospite')}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
+                      </span>
+                    </>
+                  ) : null}
                 </div>
                 {canEditParticipants ? (
                   <div className="space-y-2 pl-0">
