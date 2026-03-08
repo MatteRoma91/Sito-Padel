@@ -84,7 +84,7 @@ export function BookingsList({ bookings, courts, users, currentUserId, isAdmin, 
               <div className="flex items-center gap-1 shrink-0">
                 <Link
                   href={b.tournament_id ? `/tournaments/${b.tournament_id}` : `/sports-center/bookings/${b.id}`}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+                  className="touch-target p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
                   title={b.tournament_id ? 'Vai al torneo' : 'Dettaglio partita'}
                 >
                   <ExternalLink className="w-5 h-5" />
@@ -93,7 +93,7 @@ export function BookingsList({ bookings, courts, users, currentUserId, isAdmin, 
                   <button
                     type="button"
                     onClick={() => onCancel(b.id)}
-                    className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
+                    className="touch-target p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"
                     title="Annulla prenotazione"
                   >
                     <Trash2 className="w-5 h-5" />

@@ -46,7 +46,7 @@ export function CourtGrid({ courts, bookings = [], canBook, onSlotClick }: Court
   const sortedStarts = Array.from(allStarts).sort();
 
   return (
-    <div className="card overflow-x-auto">
+    <div className="card overflow-x-auto max-w-full">
       <div className="min-w-[600px]">
         <table className="w-full text-sm">
           <thead>
@@ -108,12 +108,12 @@ export function CourtGrid({ courts, bookings = [], canBook, onSlotClick }: Court
                     return (
                       <td key={court.court_id} className="p-1">
                         {isClosed && (
-                          <span className="block px-2 py-1.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs text-center">
+                          <span className="flex min-h-[2.75rem] items-center justify-center px-2 py-1.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs text-center">
                             Chiuso
                           </span>
                         )}
                         {isOccupied && (
-                          <span className="block px-2 py-1.5 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs text-center">
+                          <span className="flex min-h-[2.75rem] items-center justify-center px-2 py-1.5 rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs text-center">
                             Occupato
                           </span>
                         )}
@@ -121,13 +121,13 @@ export function CourtGrid({ courts, bookings = [], canBook, onSlotClick }: Court
                           <button
                             type="button"
                             onClick={() => onSlotClick(court.court_id, court.court_name, slot.slot_start, slot.slot_end)}
-                            className="w-full px-2 py-1.5 rounded bg-accent-100 dark:bg-accent-900/30 text-accent-800 dark:text-accent-200 text-xs font-medium hover:bg-accent-200 dark:hover:bg-accent-800/50 transition"
+                            className="touch-target w-full px-2 py-1.5 rounded bg-accent-100 dark:bg-accent-900/30 text-accent-800 dark:text-accent-200 text-xs font-medium hover:bg-accent-200 dark:hover:bg-accent-800/50 transition"
                           >
                             Libero
                           </button>
                         )}
                         {slot.status === 'free' && !canBook && (
-                          <span className="block px-2 py-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs text-center">
+                          <span className="flex min-h-[2.75rem] items-center justify-center px-2 py-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs text-center">
                             Libero
                           </span>
                         )}

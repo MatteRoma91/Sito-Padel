@@ -5,12 +5,15 @@
 :root {
   --background: linear-gradient(135deg, #1a1f4e, #162079, #0c1451);
   --foreground: #f1f5f9;
+  /* Offset per main/nav su mobile: altezza header + safe area (notch/Dynamic Island) */
+  --header-mobile-offset: calc(3.5rem + env(safe-area-inset-top, 0px));
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 /* Evita CLS: dimensioni esplicite, contenuto riservato */
@@ -27,7 +30,7 @@ img {
 
 @layer components {
   .btn {
-    @apply px-4 py-2 min-h-[2.75rem] rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 min-h-[2.75rem] rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-primary-900;
   }
   .btn-primary {
     @apply bg-accent-500 text-slate-900 hover:bg-accent-400 active:bg-accent-600;
@@ -36,7 +39,7 @@ img {
     @apply bg-primary-100 text-slate-900 hover:bg-primary-300 dark:bg-primary-300 dark:text-slate-900 dark:hover:bg-primary-400;
   }
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
   }
   .card {
     @apply bg-white dark:bg-[#0c1451]/80 rounded-2xl shadow-md border border-primary-100 dark:border-[#6270F3]/50 text-slate-900 dark:text-slate-100;
@@ -49,5 +52,16 @@ img {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* WCAG/Lighthouse: touch target min 44x44px per mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+}
+
+/* Tap highlight coerente con brand su iOS/Android */
+@media (hover: none) {
+  a, button {
+    -webkit-tap-highlight-color: rgba(178, 255, 0, 0.25);
   }
 }

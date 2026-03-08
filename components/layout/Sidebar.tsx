@@ -62,9 +62,12 @@ export function Sidebar({ user }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-primary-500 border-b border-primary-300 px-4 py-2 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      {/* Mobile header: safe area per notch/Dynamic Island */}
+      <header
+        className="md:hidden fixed top-0 left-0 right-0 z-50 bg-primary-500 border-b border-primary-300 px-4 flex items-center justify-between min-h-14 pb-2"
+        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0px))' }}
+      >
+        <Link href="/" className="flex items-center gap-2 min-h-[2.75rem] items-center">
           <Image src="/logo.png" alt="Banana Padel Tour" width={40} height={40} className="rounded-lg" />
           <span className="font-bold text-white">Banana Padel</span>
         </Link>
@@ -103,13 +106,13 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-14 md:mt-0">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-[var(--header-mobile-offset)] md:mt-0 pb-[env(safe-area-inset-bottom,0px)] md:pb-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || 
               (item.href !== '/' && pathname.startsWith(item.href));
             const linkClass = `
-              flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+              flex items-center gap-3 px-3 py-2.5 min-h-[2.75rem] rounded-lg transition
               ${isActive 
                 ? 'bg-accent-500 text-slate-900' 
                 : 'text-white hover:bg-primary-300'
@@ -151,7 +154,7 @@ export function Sidebar({ user }: SidebarProps) {
                     key={settingsNavItem.href}
                     href={settingsNavItem.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${isActive ? 'bg-accent-500 text-slate-900' : 'text-white hover:bg-primary-300'}`}
+                    className={`flex items-center gap-3 px-3 py-2.5 min-h-[2.75rem] rounded-lg transition ${isActive ? 'bg-accent-500 text-slate-900' : 'text-white hover:bg-primary-300'}`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{settingsNavItem.label}</span>
@@ -162,12 +165,12 @@ export function Sidebar({ user }: SidebarProps) {
           )}
         </nav>
 
-        {/* User section */}
-        <div className="p-4 border-t border-white/20">
+        {/* User section: safe area bottom per home indicator su mobile */}
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] md:pb-4 border-t border-white/20">
           <Link 
             href={`/profiles/${user.id}`}
             onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-primary-300 transition text-white"
+            className="flex items-center gap-3 mb-3 p-3 min-h-[2.75rem] rounded-lg hover:bg-primary-300 transition text-white"
           >
             <Avatar 
               src={user.avatar} 
@@ -185,7 +188,7 @@ export function Sidebar({ user }: SidebarProps) {
           </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-white hover:bg-primary-300 transition"
+            className="flex items-center gap-2 w-full min-h-[2.75rem] px-3 py-2 rounded-lg text-white hover:bg-primary-300 transition"
           >
             <LogOut className="w-5 h-5" />
             <span>Esci</span>

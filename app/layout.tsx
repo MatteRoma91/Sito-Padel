@@ -35,6 +35,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#162079",
+  viewportFit: "cover",
 };
 
 function buildConfigCss(config: Record<string, string>): string {

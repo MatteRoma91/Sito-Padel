@@ -93,7 +93,7 @@ export function BookingForm({
       >
         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
           <h3 className="font-bold text-slate-800 dark:text-slate-100">Prenota campo</h3>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
+          <button type="button" onClick={onClose} className="touch-target p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2">
             <X className="w-5 h-5" />
           </button>
         </div>

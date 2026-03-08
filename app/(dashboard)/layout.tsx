@@ -46,7 +46,7 @@ export default async function DashboardLayout({
           avatar: user.avatar,
         }}
       />
-      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 pt-20 md:pt-6 overflow-auto">
+      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 overflow-auto overflow-x-hidden pt-[var(--header-mobile-offset)] md:pt-6">
         {children}
       </main>
     </div>
