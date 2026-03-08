@@ -37,6 +37,7 @@ interface SidebarProps {
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/sports-center', label: 'Prenota un campo', icon: LayoutGrid },
   { href: '/tournaments', label: 'Tornei', icon: Trophy },
   { href: '/partite', label: 'Partite', icon: Gamepad2 },
   { href: '/profiles', label: 'Giocatori', icon: Users },
@@ -44,7 +45,6 @@ const navItems = [
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
   { href: '/gallery', label: 'Galleria', icon: Images },
-  { href: '/sports-center', label: 'Centro sportivo', icon: LayoutGrid },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
   { href: '/install', label: 'Installa', icon: Smartphone },
 ];

@@ -112,7 +112,7 @@ export default async function PartitePage({
           className="inline-flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
         >
           <ArrowRight className="w-4 h-4" />
-          Vai al Centro sportivo
+          Prenota un campo
         </Link>
       </div>
 
@@ -261,14 +261,14 @@ export default async function PartitePage({
               </div>
               <p className="text-slate-700 dark:text-slate-300 font-medium">Nessuna partita nel periodo</p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Modifica le date del filtro oppure crea una prenotazione dal Centro sportivo.
+                Modifica le date del filtro oppure crea una prenotazione da Prenota un campo.
               </p>
               <Link
                 href="/sports-center"
                 className="btn btn-primary mt-6 inline-flex items-center gap-2 min-h-[2.75rem]"
               >
                 <ArrowRight className="w-4 h-4" />
-                Vai al Centro sportivo
+                Prenota un campo
               </Link>
             </div>
           )}

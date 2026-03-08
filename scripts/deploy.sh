@@ -8,6 +8,10 @@ echo "=== Deploy Padel Tour ==="
 
 cd /home/ubuntu/Sito-Padel
 
+# Aggiorna codice da Git (origin main)
+echo ">>> Pull ultime modifiche..."
+git pull origin main
+
 # Install dependencies
 echo ">>> Installazione dipendenze..."
 npm ci --production=false

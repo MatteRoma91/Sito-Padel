@@ -27,10 +27,10 @@ export default async function SportsCenterPage() {
   return (
     <div className="max-w-6xl w-full mx-auto space-y-6">
       <PageHeader
-        title="Centro sportivo"
+        title="Prenota un campo"
         subtitle="Campi e prenotazioni"
         icon={LayoutGrid}
-        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Centro sportivo' }]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Prenota un campo' }]}
       />
       <SportsCenterClient
         courts={courts}

@@ -59,7 +59,7 @@ export default async function BookingDetailPage({
         icon={Trophy}
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
-          { label: 'Centro sportivo', href: '/sports-center' },
+          { label: 'Prenota un campo', href: '/sports-center' },
           { label: booking.booking_name },
         ]}
       />

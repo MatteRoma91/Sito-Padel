@@ -63,7 +63,7 @@ const SETTINGS_GROUPS: { id: string; label: string; items: { id: SettingsTabId; 
     id: 'tour-partite',
     label: 'Tour e partite',
     items: [
-      { id: 'centrosportivo', label: 'Centro sportivo', description: 'Campi, orari e slot chiusi.', icon: LayoutGrid },
+      { id: 'centrosportivo', label: 'Prenota un campo', description: 'Campi, orari e slot chiusi.', icon: LayoutGrid },
       { id: 'statistiche', label: 'Statistiche', description: 'Analytics e KPI del tour.', icon: BarChart3 },
     ],
   },
