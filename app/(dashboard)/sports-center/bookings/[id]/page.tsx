@@ -32,6 +32,8 @@ export default async function BookingDetailPage({
   const isAdmin = user.role === 'admin';
   const isOwner = booking.booked_by_user_id === user.id || booking.created_by === user.id;
   const canEdit = isAdmin || isOwner;
+  const canReopen = (isAdmin || isOwner) && match != null;
+  const canEditParticipants = canEdit && !match;
   const participantUserIds = new Set(participants.map((p) => p.user_id).filter((id): id is string => id != null));
   const canSaveResult = isAdmin || participantUserIds.has(user.id);
 
@@ -101,6 +103,8 @@ export default async function BookingDetailPage({
           username: u.username,
         }))}
         canEdit={canEdit}
+        canReopen={canReopen}
+        canEditParticipants={canEditParticipants}
         isAdmin={isAdmin}
         match={match}
         canSaveResult={canSaveResult}

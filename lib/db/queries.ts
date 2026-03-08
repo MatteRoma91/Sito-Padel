@@ -590,6 +590,11 @@ export function updateCourtBookingMatchResult(
     .run(...values, bookingId);
 }
 
+export function deleteMatchByBookingId(bookingId: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM court_booking_matches WHERE booking_id = ?').run(bookingId);
+}
+
 export function getClosedSlotsByDay(dayOfWeek: number): CenterClosedSlot[] {
   ensureDb();
   return getDb()

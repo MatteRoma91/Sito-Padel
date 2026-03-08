@@ -83,6 +83,8 @@ interface BookingDetailClientProps {
   initialParticipants: ParticipantSlot[];
   users: UserOption[];
   canEdit: boolean;
+  canReopen: boolean;
+  canEditParticipants: boolean;
   isAdmin: boolean;
   match: MatchInfo;
   canSaveResult: boolean;
@@ -100,6 +102,8 @@ export function BookingDetailClient({
   initialParticipants,
   users,
   canEdit,
+  canReopen,
+  canEditParticipants,
   isAdmin,
   match,
   canSaveResult,
@@ -116,6 +120,7 @@ export function BookingDetailClient({
   const [saving, setSaving] = useState(false);
   const [savingDetails, setSavingDetails] = useState(false);
   const [savingResult, setSavingResult] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resultMessage, setResultMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [resultWinner, setResultWinner] = useState<1 | 2>(1);
@@ -241,6 +246,25 @@ export function BookingDetailClient({
     }
   };
 
+  const handleReopen = async () => {
+    if (!confirm('Riaprire la partita? I partecipanti potranno essere modificati di nuovo. L\'eventuale risultato verrà rimosso.')) return;
+    setReopening(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/sports-center/bookings/${booking.id}/reopen`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        router.refresh();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Errore durante la riapertura' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Errore di connessione' });
+    } finally {
+      setReopening(false);
+    }
+  };
+
   const hasDetailsChanges =
     bookingName.trim() !== booking.booking_name ||
     courtId !== booking.court_id ||
@@ -356,7 +380,7 @@ export function BookingDetailClient({
       </div>
 
       {match && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
             Partita confermata
           </span>
@@ -364,6 +388,16 @@ export function BookingDetailClient({
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {new Date(match.created_at).toLocaleDateString('it-IT')}
             </span>
+          )}
+          {canReopen && (
+            <button
+              type="button"
+              onClick={handleReopen}
+              disabled={reopening}
+              className="btn btn-secondary text-sm min-h-0 py-1.5 px-3"
+            >
+              {reopening ? 'Riapertura...' : 'Riapri partita'}
+            </button>
           )}
         </div>
       )}
@@ -397,7 +431,7 @@ export function BookingDetailClient({
                     </span>
                   )}
                 </div>
-                {canEdit ? (
+                {canEditParticipants ? (
                   <div className="space-y-2 pl-0">
                     <div className="flex flex-wrap gap-3">
                       <label className="inline-flex items-center gap-1.5">
@@ -510,7 +544,7 @@ export function BookingDetailClient({
                     </span>
                   )}
                 </div>
-                {canEdit ? (
+                {canEditParticipants ? (
                   <div className="space-y-2 pl-0">
                     <div className="flex flex-wrap gap-3">
                       <label className="inline-flex items-center gap-1.5">
@@ -613,7 +647,7 @@ export function BookingDetailClient({
         </p>
       )}
 
-      {canEdit && (
+      {canEditParticipants && (
         <div className="pt-2 flex items-center gap-2">
           <button
             type="button"
