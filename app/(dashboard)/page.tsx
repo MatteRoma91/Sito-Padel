@@ -4,9 +4,8 @@ import Image from 'next/image';
 import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig, getTournamentsWithOpenMvpVoting } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
-import { Trophy, Users, Calendar, BarChart3, Plus, MessageCircle } from 'lucide-react';
+import { Trophy, Calendar, BarChart3, LayoutGrid, Images } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
-import { ChatLinkWithBadge } from '@/components/ui/ChatLinkWithBadge';
 
 const CountdownBroccoburgher = dynamic(() => import('@/components/home/CountdownBroccoburgher').then((m) => ({ default: m.CountdownBroccoburgher })));
 const MvpVoteCard = dynamic(() => import('@/components/home/MvpVoteCard').then((m) => ({ default: m.MvpVoteCard })));
@@ -79,7 +78,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Griglia unica: Il Mio Profilo, Chat, Giocatori, Calendario, Classifiche per tutti + Nuovo Torneo solo admin */}
+      {/* Griglia: Il Mio Profilo, Prenota un campo, Calendario, Classifiche, Galleria */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href={`/profiles/${user?.id}`} className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
           <Avatar
@@ -89,25 +88,11 @@ export default async function HomePage() {
           />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Il Mio Profilo</span>
         </Link>
-        <ChatLinkWithBadge href="/chat" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+        <Link href="/sports-center" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
           <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-            <MessageCircle className="w-6 h-6 text-slate-900" />
+            <LayoutGrid className="w-6 h-6 text-slate-900" />
           </div>
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Chat</span>
-        </ChatLinkWithBadge>
-        {isAdmin && userCanEdit && (
-          <Link href="/tournaments/new" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-            <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuovo Torneo</span>
-          </Link>
-        )}
-        <Link href="/profiles" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
-          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
-            <Users className="w-6 h-6 text-slate-900" />
-          </div>
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Giocatori</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Prenota un campo</span>
         </Link>
         <Link href="/calendar" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
           <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
@@ -120,6 +105,12 @@ export default async function HomePage() {
             <BarChart3 className="w-6 h-6 text-slate-900" />
           </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Classifiche</span>
+        </Link>
+        <Link href="/gallery" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
+          <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
+            <Images className="w-6 h-6 text-slate-900" />
+          </div>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Galleria</span>
         </Link>
       </div>
 
