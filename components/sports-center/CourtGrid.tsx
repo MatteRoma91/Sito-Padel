@@ -89,12 +89,14 @@ export function CourtGrid({ courts, bookings = [], canBook, onSlotClick }: Court
                           rowSpan={rowSpan}
                           className="relative p-1 align-top"
                         >
-                          <Link
-                            href={startBooking.tournament_id ? `/tournaments/${startBooking.tournament_id}` : `/sports-center/bookings/${startBooking.id}`}
-                            className="absolute inset-1 flex items-center justify-center rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs text-center font-medium hover:bg-primary-200 dark:hover:bg-primary-800/50 transition"
-                          >
-                            {startBooking.booking_name}
-                          </Link>
+                          <span className="absolute inset-0 flex p-1">
+                            <Link
+                              href={startBooking.tournament_id ? `/tournaments/${startBooking.tournament_id}` : `/sports-center/bookings/${startBooking.id}`}
+                              className="flex-1 min-h-0 flex items-center justify-center rounded bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs text-center font-medium hover:bg-primary-200 dark:hover:bg-primary-800/50 transition"
+                            >
+                              {startBooking.booking_name}
+                            </Link>
+                          </span>
                         </td>
                       );
                     }
