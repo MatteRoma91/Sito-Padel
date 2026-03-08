@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Trophy } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -460,17 +461,34 @@ export function BookingDetailClient({
                     {index + 1}.
                   </span>
                   {(assignedUser || guestLabel) ? (
-                    <>
-                      <Avatar
-                        src={assignedUser?.avatar ?? null}
-                        name={assignedUser ? displayUser(assignedUser) : (guestLabel ?? 'Ospite')}
-                        size="sm"
-                        className="shrink-0"
-                      />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                        {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
-                      </span>
-                    </>
+                    assignedUser && slot.user_id ? (
+                      <Link
+                        href={`/profiles/${slot.user_id}`}
+                        className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                      >
+                        <Avatar
+                          src={assignedUser.avatar ?? null}
+                          name={displayUser(assignedUser)}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          {displayUser(assignedUser)}
+                        </span>
+                      </Link>
+                    ) : (
+                      <>
+                        <Avatar
+                          src={null}
+                          name={guestLabel ?? 'Ospite'}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          Ospite: {guestLabel}
+                        </span>
+                      </>
+                    )
                   ) : null}
                 </div>
                 {canEditParticipants ? (
@@ -581,17 +599,34 @@ export function BookingDetailClient({
                     {index + 1}.
                   </span>
                   {(assignedUser || guestLabel) ? (
-                    <>
-                      <Avatar
-                        src={assignedUser?.avatar ?? null}
-                        name={assignedUser ? displayUser(assignedUser) : (guestLabel ?? 'Ospite')}
-                        size="sm"
-                        className="shrink-0"
-                      />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                        {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
-                      </span>
-                    </>
+                    assignedUser && slot.user_id ? (
+                      <Link
+                        href={`/profiles/${slot.user_id}`}
+                        className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                      >
+                        <Avatar
+                          src={assignedUser.avatar ?? null}
+                          name={displayUser(assignedUser)}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          {displayUser(assignedUser)}
+                        </span>
+                      </Link>
+                    ) : (
+                      <>
+                        <Avatar
+                          src={null}
+                          name={guestLabel ?? 'Ospite'}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          Ospite: {guestLabel}
+                        </span>
+                      </>
+                    )
                   ) : null}
                 </div>
                 {canEditParticipants ? (
