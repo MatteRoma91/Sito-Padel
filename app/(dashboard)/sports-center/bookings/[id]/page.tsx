@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import { getBookingById, getBookingParticipants, getUsers, getCourtsOrdered } from '@/lib/db/queries';
+import { getBookingById, getBookingParticipants, getMatchByBookingId, getUsers, getCourtsOrdered } from '@/lib/db/queries';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { BookingDetailClient } from './BookingDetailClient';
@@ -24,6 +24,7 @@ export default async function BookingDetailPage({
   }
 
   const participants = getBookingParticipants(id);
+  const match = getMatchByBookingId(id) ?? null;
   const users = getUsers().filter((u) => !u.is_hidden);
   const courts = getCourtsOrdered();
   const court = courts.find((c) => c.id === booking.court_id);
@@ -32,11 +33,22 @@ export default async function BookingDetailPage({
   const isAdmin = user.role === 'admin';
   const isOwner = booking.booked_by_user_id === user.id || booking.created_by === user.id;
   const canEdit = isAdmin || isOwner;
+  const participantUserIds = new Set(participants.map((p) => p.user_id).filter((id): id is string => id != null));
+  const canSaveResult = isAdmin || participantUserIds.has(user.id);
 
-  const participantsByPosition = [1, 2, 3, 4].map((pos) => ({
-    position: pos,
-    user_id: participants.find((p) => p.position === pos)?.user_id ?? null,
-  }));
+  const initialParticipants = [1, 2, 3, 4].map((pos) => {
+    const p = participants.find((p) => p.position === pos);
+    if (!p) return {};
+    if (p.user_id) return { user_id: p.user_id };
+    if (p.guest_first_name != null || p.guest_last_name != null) {
+      return {
+        guest_first_name: p.guest_first_name ?? '',
+        guest_last_name: p.guest_last_name ?? '',
+        guest_phone: p.guest_phone ?? '',
+      };
+    }
+    return {};
+  });
 
   return (
     <div className="max-w-2xl w-full mx-auto space-y-6">
@@ -82,7 +94,7 @@ export default async function BookingDetailPage({
           slot_end: booking.slot_end,
         }}
         courts={courts.map((c) => ({ id: c.id, name: c.name, type: c.type }))}
-        initialParticipants={participantsByPosition.map((p) => p.user_id)}
+        initialParticipants={initialParticipants}
         users={users.map((u) => ({
           id: u.id,
           nickname: u.nickname,
@@ -91,6 +103,8 @@ export default async function BookingDetailPage({
         }))}
         canEdit={canEdit}
         isAdmin={isAdmin}
+        match={match}
+        canSaveResult={canSaveResult}
       />
     </div>
   );

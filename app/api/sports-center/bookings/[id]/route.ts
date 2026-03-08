@@ -9,6 +9,8 @@ import {
   getSiteConfig,
   getBookingParticipants,
   setBookingParticipants,
+  getMatchByBookingId,
+  createMatchForBooking,
   getUsers,
   getCourtsOrdered,
 } from '@/lib/db/queries';
@@ -43,14 +45,14 @@ export async function GET(
   }
 
   const participants = getBookingParticipants(id);
-  const userIds = participants.map((p) => p.user_id);
+  const userIds = participants.map((p) => p.user_id).filter((id): id is string => id != null);
   const users = getUsers().filter((u) => userIds.includes(u.id));
   const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
   const participantsWithUser = participants.map((p) => ({
     position: p.position,
     user_id: p.user_id,
-    user: userMap[p.user_id]
+    user: p.user_id && userMap[p.user_id]
       ? {
           id: userMap[p.user_id].id,
           nickname: userMap[p.user_id].nickname,
@@ -58,9 +60,13 @@ export async function GET(
           username: userMap[p.user_id].username,
         }
       : null,
+    guest_first_name: p.guest_first_name ?? null,
+    guest_last_name: p.guest_last_name ?? null,
+    guest_phone: p.guest_phone ?? null,
   }));
 
-  return NextResponse.json({ booking, participants: participantsWithUser });
+  const match = getMatchByBookingId(id) ?? null;
+  return NextResponse.json({ booking, participants: participantsWithUser, match });
 }
 
 export async function PATCH(
@@ -179,22 +185,49 @@ export async function PATCH(
       if (participants.length !== 4) {
         return NextResponse.json({
           success: false,
-          error: 'participants deve essere un array di 4 elementi (user_id o null)',
+          error: 'participants deve essere un array di 4 elementi',
         }, { status: 400 });
       }
-      const userIds = participants.map((v: unknown) => (v === null || v === undefined || v === '') ? null : String(v));
-      const allUserIds = userIds.filter((id): id is string => id != null && id.trim() !== '');
       const existingUsers = getUsers();
       const existingIds = new Set(existingUsers.map((u) => u.id));
-      for (const uid of allUserIds) {
-        if (!existingIds.has(uid)) {
+      const slots: { user_id?: string | null; guest_first_name?: string | null; guest_last_name?: string | null; guest_phone?: string | null }[] = [];
+      for (let i = 0; i < 4; i++) {
+        const raw = participants[i];
+        if (raw === null || raw === undefined) {
+          slots.push({});
+          continue;
+        }
+        const item = raw as Record<string, unknown>;
+        const userId = item.user_id != null && item.user_id !== '' ? String(item.user_id).trim() : null;
+        const gFirst = item.guest_first_name != null && item.guest_first_name !== '' ? String(item.guest_first_name).trim() : null;
+        const gLast = item.guest_last_name != null && item.guest_last_name !== '' ? String(item.guest_last_name).trim() : null;
+        const gPhone = item.guest_phone != null && item.guest_phone !== '' ? String(item.guest_phone).trim() : null;
+        if (userId) {
+          if (!existingIds.has(userId)) {
+            return NextResponse.json({
+              success: false,
+              error: `Utente non trovato: ${userId}`,
+            }, { status: 400 });
+          }
+          slots.push({ user_id: userId });
+        } else if (gFirst && gLast) {
+          slots.push({ guest_first_name: gFirst, guest_last_name: gLast, guest_phone: gPhone || null });
+        } else if (gFirst || gLast) {
           return NextResponse.json({
             success: false,
-            error: `Utente non trovato: ${uid}`,
+            error: 'Per un giocatore ospite sono obbligatori nome e cognome',
           }, { status: 400 });
+        } else {
+          slots.push({});
         }
       }
-      setBookingParticipants(id, userIds);
+      setBookingParticipants(id, slots);
+      const allFourFilled = slots.every(
+        (s) => s.user_id || (s.guest_first_name && s.guest_last_name)
+      );
+      if (allFourFilled) {
+        createMatchForBooking(id);
+      }
     }
 
     // Modifica solo orario (stesso campo/data) quando non è stato fatto un reschedule completo

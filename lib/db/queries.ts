@@ -5,7 +5,7 @@ import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../constants';
-import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot } from '../types';
+import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot, CourtBookingMatch } from '../types';
 import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8 } from '../types';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
@@ -507,19 +507,80 @@ export function getBookingParticipants(bookingId: string): CourtBookingParticipa
     .all(bookingId) as CourtBookingParticipant[];
 }
 
-export function setBookingParticipants(bookingId: string, userIdsByPosition: (string | null)[]): void {
+export type BookingParticipantSlot = {
+  user_id?: string | null;
+  guest_first_name?: string | null;
+  guest_last_name?: string | null;
+  guest_phone?: string | null;
+};
+
+export function setBookingParticipants(bookingId: string, participants: BookingParticipantSlot[]): void {
   ensureDb();
   const db = getDb();
   db.prepare('DELETE FROM court_booking_participants WHERE booking_id = ?').run(bookingId);
   const insert = db.prepare(
-    'INSERT INTO court_booking_participants (id, booking_id, user_id, position) VALUES (?, ?, ?, ?)'
+    `INSERT INTO court_booking_participants (id, booking_id, user_id, position, guest_first_name, guest_last_name, guest_phone)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
   for (let position = 1; position <= 4; position++) {
-    const userId = userIdsByPosition[position - 1];
-    if (userId && userId.trim()) {
-      insert.run(randomUUID(), bookingId, userId.trim(), position);
+    const slot = participants[position - 1];
+    if (!slot) continue;
+    const userId = slot.user_id != null && String(slot.user_id).trim() ? String(slot.user_id).trim() : null;
+    const gFirst = slot.guest_first_name != null && String(slot.guest_first_name).trim() ? String(slot.guest_first_name).trim() : null;
+    const gLast = slot.guest_last_name != null && String(slot.guest_last_name).trim() ? String(slot.guest_last_name).trim() : null;
+    const gPhone = slot.guest_phone != null && String(slot.guest_phone).trim() ? String(slot.guest_phone).trim() : null;
+    if (userId) {
+      insert.run(randomUUID(), bookingId, userId, position, null, null, null);
+    } else if (gFirst && gLast) {
+      insert.run(randomUUID(), bookingId, null, position, gFirst, gLast, gPhone);
     }
   }
+}
+
+export function getMatchByBookingId(bookingId: string): CourtBookingMatch | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM court_booking_matches WHERE booking_id = ?').get(bookingId) as CourtBookingMatch | undefined;
+}
+
+export function createMatchForBooking(bookingId: string): void {
+  ensureDb();
+  const existing = getMatchByBookingId(bookingId);
+  if (existing) return;
+  const id = randomUUID();
+  getDb()
+    .prepare('INSERT INTO court_booking_matches (id, booking_id, created_at) VALUES (?, ?, datetime(\'now\'))')
+    .run(id, bookingId);
+}
+
+export function updateCourtBookingMatchResult(
+  bookingId: string,
+  data: {
+    result_winner: 1 | 2;
+    result_set1_c1: number;
+    result_set1_c2: number;
+    result_set2_c1: number;
+    result_set2_c2: number;
+    result_set3_c1?: number;
+    result_set3_c2?: number;
+  }
+): void {
+  ensureDb();
+  const updates: string[] = [
+    'result_winner = ?',
+    'result_set1_c1 = ?', 'result_set1_c2 = ?',
+    'result_set2_c1 = ?', 'result_set2_c2 = ?',
+    'result_set3_c1 = ?', 'result_set3_c2 = ?',
+    'result_entered_at = datetime(\'now\')',
+  ];
+  const values: (number | null)[] = [
+    data.result_winner,
+    data.result_set1_c1, data.result_set1_c2,
+    data.result_set2_c1, data.result_set2_c2,
+    data.result_set3_c1 ?? null, data.result_set3_c2 ?? null,
+  ];
+  getDb()
+    .prepare(`UPDATE court_booking_matches SET ${updates.join(', ')} WHERE booking_id = ?`)
+    .run(...values, bookingId);
 }
 
 export function getClosedSlotsByDay(dayOfWeek: number): CenterClosedSlot[] {

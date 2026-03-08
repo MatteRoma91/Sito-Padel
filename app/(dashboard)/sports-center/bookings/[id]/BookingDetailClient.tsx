@@ -23,17 +23,56 @@ type UserOption = {
   username: string;
 };
 
+type MatchInfo = {
+  id: string;
+  booking_id: string;
+  created_at: string;
+  result_winner: number | null;
+  result_set1_c1: number | null;
+  result_set1_c2: number | null;
+  result_set2_c1: number | null;
+  result_set2_c2: number | null;
+  result_set3_c1: number | null;
+  result_set3_c2: number | null;
+  result_entered_at: string | null;
+} | null;
+
+export type ParticipantSlot = {
+  user_id?: string | null;
+  guest_first_name?: string;
+  guest_last_name?: string;
+  guest_phone?: string;
+};
+
 function displayUser(u: UserOption): string {
   return u.nickname?.trim() || u.full_name?.trim() || u.username || u.id;
+}
+
+function slotEqual(a: ParticipantSlot, b: ParticipantSlot): boolean {
+  const au = a.user_id ?? '';
+  const bu = b.user_id ?? '';
+  if (au !== bu) return false;
+  if ((a.guest_first_name ?? '') !== (b.guest_first_name ?? '')) return false;
+  if ((a.guest_last_name ?? '') !== (b.guest_last_name ?? '')) return false;
+  if ((a.guest_phone ?? '') !== (b.guest_phone ?? '')) return false;
+  return true;
 }
 
 interface BookingDetailClientProps {
   booking: BookingInfo;
   courts: CourtOption[];
-  initialParticipants: (string | null)[];
+  initialParticipants: ParticipantSlot[];
   users: UserOption[];
   canEdit: boolean;
   isAdmin: boolean;
+  match: MatchInfo;
+  canSaveResult: boolean;
+}
+
+function normalizeInitial(init: ParticipantSlot[]): ParticipantSlot[] {
+  const arr = [...init];
+  while (arr.length < 4) arr.push({});
+  return arr.slice(0, 4);
 }
 
 export function BookingDetailClient({
@@ -43,10 +82,12 @@ export function BookingDetailClient({
   users,
   canEdit,
   isAdmin,
+  match,
+  canSaveResult,
 }: BookingDetailClientProps) {
   const router = useRouter();
-  const [participants, setParticipants] = useState<(string | null)[]>(
-    () => [...initialParticipants, null, null, null].slice(0, 4)
+  const [participants, setParticipants] = useState<ParticipantSlot[]>(
+    () => normalizeInitial(initialParticipants)
   );
   const [bookingName, setBookingName] = useState(booking.booking_name);
   const [courtId, setCourtId] = useState(booking.court_id);
@@ -55,7 +96,15 @@ export function BookingDetailClient({
   const [slotEnd, setSlotEnd] = useState(booking.slot_end);
   const [saving, setSaving] = useState(false);
   const [savingDetails, setSavingDetails] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [resultMessage, setResultMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [resultWinner, setResultWinner] = useState<1 | 2>(1);
+  const [resultSet1, setResultSet1] = useState({ c1: 0, c2: 0 });
+  const [resultSet2, setResultSet2] = useState({ c1: 0, c2: 0 });
+  const [resultSet3, setResultSet3] = useState<{ c1: number; c2: number } | null>(null);
+
+  const initial = normalizeInitial(initialParticipants);
 
   useEffect(() => {
     setBookingName(booking.booking_name);
@@ -65,11 +114,26 @@ export function BookingDetailClient({
     setSlotEnd(booking.slot_end);
   }, [booking.id, booking.booking_name, booking.court_id, booking.date, booking.slot_start, booking.slot_end]);
 
-  const handlePositionChange = (index: number, value: string) => {
+  useEffect(() => {
+    setParticipants(normalizeInitial(initialParticipants));
+  }, [booking.id, JSON.stringify(initialParticipants)]);
+
+  const setSlot = (index: number, slot: ParticipantSlot) => {
     const next = [...participants];
-    next[index] = value === '' ? null : value;
+    next[index] = slot;
     setParticipants(next);
     setMessage(null);
+  };
+
+  const handleUserChange = (index: number, userId: string) => {
+    if (userId) setSlot(index, { user_id: userId });
+    else setSlot(index, {});
+  };
+
+  const handleGuestChange = (index: number, field: 'guest_first_name' | 'guest_last_name' | 'guest_phone', value: string) => {
+    const prev = participants[index] ?? {};
+    const next = { ...prev, [field]: value };
+    if (!next.user_id) setSlot(index, next);
   };
 
   const handleSave = async () => {
@@ -84,6 +148,7 @@ export function BookingDetailClient({
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Partecipanti aggiornati.' });
+        router.refresh();
       } else {
         setMessage({ type: 'error', text: data.error || 'Errore durante il salvataggio' });
       }
@@ -123,6 +188,40 @@ export function BookingDetailClient({
     }
   };
 
+  const handleSaveResult = async () => {
+    setSavingResult(true);
+    setResultMessage(null);
+    try {
+      const body: {
+        result_winner: 1 | 2;
+        set1: { c1: number; c2: number };
+        set2: { c1: number; c2: number };
+        set3?: { c1: number; c2: number };
+      } = {
+        result_winner: resultWinner,
+        set1: resultSet1,
+        set2: resultSet2,
+      };
+      if (resultSet3 != null) body.set3 = resultSet3;
+      const res = await fetch(`/api/sports-center/bookings/${booking.id}/result`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResultMessage({ type: 'success', text: 'Risultato salvato.' });
+        router.refresh();
+      } else {
+        setResultMessage({ type: 'error', text: data.error || 'Errore durante il salvataggio' });
+      }
+    } catch {
+      setResultMessage({ type: 'error', text: 'Errore di connessione' });
+    } finally {
+      setSavingResult(false);
+    }
+  };
+
   const hasDetailsChanges =
     bookingName.trim() !== booking.booking_name ||
     courtId !== booking.court_id ||
@@ -132,14 +231,15 @@ export function BookingDetailClient({
 
   const hasChanges =
     participants.length === 4 &&
-    (initialParticipants[0] !== participants[0] ||
-      initialParticipants[1] !== participants[1] ||
-      initialParticipants[2] !== participants[2] ||
-      initialParticipants[3] !== participants[3]);
+    (initial.length !== 4 || initial.some((init, i) => !slotEqual(init, participants[i] ?? {})));
 
   const displayCourt = courts.find((c) => c.id === courtId) ?? { name: booking.court_name, type: booking.court_type };
   const courtTypeLabel = displayCourt.type === 'outdoor' ? 'scoperto' : 'coperto';
   const userMap = new Map(users.map((u) => [u.id, u]));
+  const bookingEndPast = match
+    ? new Date(`${booking.date}T${booking.slot_end}`) < new Date()
+    : false;
+  const showResultSection = match && bookingEndPast;
 
   return (
     <div className="card space-y-6">
@@ -236,40 +336,248 @@ export function BookingDetailClient({
         )}
       </div>
 
+      {match && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+            Partita confermata
+          </span>
+          {match.created_at && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {new Date(match.created_at).toLocaleDateString('it-IT')}
+            </span>
+          )}
+        </div>
+      )}
+
       <section>
         <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Partecipanti</h3>
-        <div className="space-y-3">
-          {[0, 1, 2, 3].map((index) => {
-            const userId = participants[index];
-            const assignedUser = userId ? userMap.get(userId) : null;
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Coppia 1</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[0, 1].map((index) => {
+            const slot = participants[index] ?? {};
+            const hasUser = slot.user_id != null && String(slot.user_id).trim() !== '';
+            const hasGuestFields = Boolean(((slot.guest_first_name ?? '').trim() || (slot.guest_last_name ?? '').trim()));
+            const isGuestMode = 'guest_first_name' in slot || 'guest_last_name' in slot || hasGuestFields;
+            const isGuest = !hasUser && isGuestMode;
+            const isUserMode = hasUser || ('user_id' in slot && !isGuestMode);
+            const assignedUser = slot.user_id ? userMap.get(slot.user_id) : null;
+            const guestLabel = (slot.guest_first_name ?? '').trim() || (slot.guest_last_name ?? '').trim()
+              ? `${(slot.guest_first_name ?? '').trim()} ${(slot.guest_last_name ?? '').trim()}`.trim()
+              : null;
             return (
-              <div key={index} className="flex flex-col gap-1">
-                {assignedUser && (
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                    Posizione {index + 1}: {displayUser(assignedUser)}
-                  </span>
-                )}
+              <div key={index} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-500 dark:text-slate-400 w-8">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-8">
                     {index + 1}.
                   </span>
-                  <select
-                    value={participants[index] ?? ''}
-                    onChange={(e) => handlePositionChange(index, e.target.value)}
-                    disabled={!canEdit}
-                    className="input flex-1"
-                  >
-                    <option value="">Nessuno</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {displayUser(u)}
-                      </option>
-                    ))}
-                  </select>
+                  {(assignedUser || guestLabel) && (
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
+                    </span>
+                  )}
                 </div>
+                {canEdit ? (
+                  <div className="space-y-2 pl-0">
+                    <div className="flex flex-wrap gap-3">
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!!isUserMode}
+                          onChange={() => setSlot(index, { user_id: (slot.user_id ?? '') })}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Utente</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!!isGuest}
+                          onChange={() => setSlot(index, {
+                            guest_first_name: (slot.guest_first_name ?? '').trim() || '',
+                            guest_last_name: (slot.guest_last_name ?? '').trim() || '',
+                            guest_phone: slot.guest_phone ?? '',
+                          })}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Ospite</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!isUserMode && !isGuest ? true : false}
+                          onChange={() => setSlot(index, {})}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Nessuno</span>
+                      </label>
+                    </div>
+                    {isUserMode ? (
+                      <select
+                        value={slot.user_id ?? ''}
+                        onChange={(e) => handleUserChange(index, e.target.value)}
+                        className="input flex-1 max-w-xs"
+                      >
+                        <option value="">Seleziona utente</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {displayUser(u)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : isGuest ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Nome *"
+                          value={slot.guest_first_name ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_first_name', e.target.value)}
+                          className="input"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Cognome *"
+                          value={slot.guest_last_name ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_last_name', e.target.value)}
+                          className="input"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Cellulare (opzionale)"
+                          value={slot.guest_phone ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_phone', e.target.value)}
+                          className="input"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {assignedUser ? displayUser(assignedUser) : guestLabel || '—'}
+                  </p>
+                )}
               </div>
             );
           })}
+        </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Coppia 2</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[2, 3].map((index) => {
+            const slot = participants[index] ?? {};
+            const hasUser = slot.user_id != null && String(slot.user_id).trim() !== '';
+            const hasGuestFields = Boolean(((slot.guest_first_name ?? '').trim() || (slot.guest_last_name ?? '').trim()));
+            const isGuestMode = 'guest_first_name' in slot || 'guest_last_name' in slot || hasGuestFields;
+            const isGuest = !hasUser && isGuestMode;
+            const isUserMode = hasUser || ('user_id' in slot && !isGuestMode);
+            const assignedUser = slot.user_id ? userMap.get(slot.user_id) : null;
+            const guestLabel = (slot.guest_first_name ?? '').trim() || (slot.guest_last_name ?? '').trim()
+              ? `${(slot.guest_first_name ?? '').trim()} ${(slot.guest_last_name ?? '').trim()}`.trim()
+              : null;
+            return (
+              <div key={index} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-8">
+                    {index + 1}.
+                  </span>
+                  {(assignedUser || guestLabel) && (
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {assignedUser ? displayUser(assignedUser) : `Ospite: ${guestLabel}`}
+                    </span>
+                  )}
+                </div>
+                {canEdit ? (
+                  <div className="space-y-2 pl-0">
+                    <div className="flex flex-wrap gap-3">
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!!isUserMode}
+                          onChange={() => setSlot(index, { user_id: (slot.user_id ?? '') })}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Utente</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!!isGuest}
+                          onChange={() => setSlot(index, {
+                            guest_first_name: (slot.guest_first_name ?? '').trim() || '',
+                            guest_last_name: (slot.guest_last_name ?? '').trim() || '',
+                            guest_phone: slot.guest_phone ?? '',
+                          })}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Ospite</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name={`participant-type-${index}`}
+                          checked={!isUserMode && !isGuest ? true : false}
+                          onChange={() => setSlot(index, {})}
+                          className="rounded border-slate-300"
+                        />
+                        <span className="text-sm">Nessuno</span>
+                      </label>
+                    </div>
+                    {isUserMode ? (
+                      <select
+                        value={slot.user_id ?? ''}
+                        onChange={(e) => handleUserChange(index, e.target.value)}
+                        className="input flex-1 max-w-xs"
+                      >
+                        <option value="">Seleziona utente</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {displayUser(u)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : isGuest ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Nome *"
+                          value={slot.guest_first_name ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_first_name', e.target.value)}
+                          className="input"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Cognome *"
+                          value={slot.guest_last_name ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_last_name', e.target.value)}
+                          className="input"
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Cellulare (opzionale)"
+                          value={slot.guest_phone ?? ''}
+                          onChange={(e) => handleGuestChange(index, 'guest_phone', e.target.value)}
+                          className="input"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {assignedUser ? displayUser(assignedUser) : guestLabel || '—'}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -296,11 +604,137 @@ export function BookingDetailClient({
           >
             {saving ? 'Salvataggio...' : 'Salva partecipanti'}
           </button>
-          {!hasChanges && participants.some(Boolean) && (
+          {!hasChanges && participants.some((s) => s.user_id || (s.guest_first_name ?? '').trim() || (s.guest_last_name ?? '').trim()) && (
             <span className="text-sm text-slate-500 dark:text-slate-400">Nessuna modifica da salvare</span>
           )}
         </div>
       )}
+
+      {showResultSection && match && (
+        <section>
+          <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-3">Risultato</h3>
+          {match.result_winner != null ? (
+            <div className="space-y-1 text-slate-700 dark:text-slate-300">
+              <p className="font-medium">
+                Vincitore: Coppia {match.result_winner}
+              </p>
+              <p className="text-sm">
+                Set 1: {match.result_set1_c1 ?? 0}–{match.result_set1_c2 ?? 0}
+                {' · '}
+                Set 2: {match.result_set2_c1 ?? 0}–{match.result_set2_c2 ?? 0}
+                {(match.result_set3_c1 != null && match.result_set3_c2 != null) && (
+                  <> · Set 3: {match.result_set3_c1}–{match.result_set3_c2}</>
+                )}
+              </p>
+            </div>
+          ) : canSaveResult ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vincitore</label>
+                <select
+                  value={resultWinner}
+                  onChange={(e) => setResultWinner(Number(e.target.value) as 1 | 2)}
+                  className="input w-full max-w-xs"
+                >
+                  <option value={1}>Coppia 1</option>
+                  <option value={2}>Coppia 2</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Set 1 (C1–C2)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet1.c1}
+                      onChange={(e) => setResultSet1((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-16"
+                    />
+                    <span>-</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet1.c2}
+                      onChange={(e) => setResultSet1((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-16"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1">Set 2 (C1–C2)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet2.c1}
+                      onChange={(e) => setResultSet2((s) => ({ ...s, c1: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-16"
+                    />
+                    <span>-</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet2.c2}
+                      onChange={(e) => setResultSet2((s) => ({ ...s, c2: parseInt(e.target.value, 10) || 0 }))}
+                      className="input w-16"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 mb-1">
+                  <input
+                    type="checkbox"
+                    checked={resultSet3 != null}
+                    onChange={(e) => setResultSet3(e.target.checked ? { c1: 0, c2: 0 } : null)}
+                    className="rounded border-slate-300"
+                  />
+                  Inserisci Set 3 (opzionale)
+                </label>
+                {resultSet3 != null && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet3.c1}
+                      onChange={(e) => setResultSet3((s) => s ? { ...s, c1: parseInt(e.target.value, 10) || 0 } : null)}
+                      className="input w-16"
+                    />
+                    <span>-</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={resultSet3.c2}
+                      onChange={(e) => setResultSet3((s) => s ? { ...s, c2: parseInt(e.target.value, 10) || 0 } : null)}
+                      className="input w-16"
+                    />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveResult}
+                disabled={savingResult}
+                className="btn btn-primary"
+              >
+                {savingResult ? 'Salvataggio...' : 'Salva risultato'}
+              </button>
+              {resultMessage && (
+                <p
+                  className={`text-sm ${resultMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                  role="alert"
+                >
+                  {resultMessage.text}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Risultato non ancora inserito.</p>
+          )}
+        </section>
+      )}
+
     </div>
   );
 }

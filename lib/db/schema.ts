@@ -479,6 +479,35 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_court_booking_participants_booking ON court_booking_participants(booking_id)`);
 
+  // Migrazione: user_id nullable + colonne guest per giocatori ospite
+  try {
+    const cols = db.prepare("PRAGMA table_info(court_booking_participants)").all() as { name: string }[];
+    const hasGuest = cols.some((c) => c.name === 'guest_first_name');
+    if (!hasGuest) {
+      db.exec(`
+        CREATE TABLE court_booking_participants_new (
+          id TEXT PRIMARY KEY,
+          booking_id TEXT NOT NULL REFERENCES court_bookings(id) ON DELETE CASCADE,
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          position INTEGER NOT NULL CHECK(position >= 1 AND position <= 4),
+          guest_first_name TEXT,
+          guest_last_name TEXT,
+          guest_phone TEXT,
+          UNIQUE(booking_id, position)
+        )
+      `);
+      db.exec(`
+        INSERT INTO court_booking_participants_new (id, booking_id, user_id, position)
+        SELECT id, booking_id, user_id, position FROM court_booking_participants
+      `);
+      db.exec(`DROP TABLE court_booking_participants`);
+      db.exec(`ALTER TABLE court_booking_participants_new RENAME TO court_booking_participants`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_court_booking_participants_booking ON court_booking_participants(booking_id)`);
+    }
+  } catch {
+    // Migrazione già applicata o errore
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS center_closed_slots (
       id TEXT PRIMARY KEY,
@@ -488,6 +517,23 @@ export function initSchema() {
     )
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_center_closed_slots_day ON center_closed_slots(day_of_week)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS court_booking_matches (
+      id TEXT PRIMARY KEY,
+      booking_id TEXT NOT NULL UNIQUE REFERENCES court_bookings(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      result_winner INTEGER CHECK(result_winner IN (1, 2)),
+      result_set1_c1 INTEGER,
+      result_set1_c2 INTEGER,
+      result_set2_c1 INTEGER,
+      result_set2_c2 INTEGER,
+      result_set3_c1 INTEGER,
+      result_set3_c2 INTEGER,
+      result_entered_at TEXT
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_court_booking_matches_booking ON court_booking_matches(booking_id)`);
 
   // Seed 4 campi (2 coperti, 2 scoperti) se tabella vuota
   const courtsCount = (db.prepare('SELECT COUNT(*) as c FROM courts').get() as { c: number }).c;

@@ -247,8 +247,11 @@ export interface CourtBooking {
 export interface CourtBookingParticipant {
   id: string;
   booking_id: string;
-  user_id: string;
+  user_id: string | null;
   position: number;
+  guest_first_name?: string | null;
+  guest_last_name?: string | null;
+  guest_phone?: string | null;
 }
 
 export interface CenterClosedSlot {
@@ -256,4 +259,18 @@ export interface CenterClosedSlot {
   day_of_week: number;
   slot_start: string;
   slot_end: string;
+}
+
+export interface CourtBookingMatch {
+  id: string;
+  booking_id: string;
+  created_at: string;
+  result_winner: number | null;
+  result_set1_c1: number | null;
+  result_set1_c2: number | null;
+  result_set2_c1: number | null;
+  result_set2_c2: number | null;
+  result_set3_c1: number | null;
+  result_set3_c2: number | null;
+  result_entered_at: string | null;
 }
