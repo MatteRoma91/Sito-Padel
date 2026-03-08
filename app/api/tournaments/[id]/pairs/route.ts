@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { 
   getTournamentById,
   getPairs,
@@ -17,6 +17,9 @@ export async function POST(
   
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
   if (user.role !== 'admin') {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });

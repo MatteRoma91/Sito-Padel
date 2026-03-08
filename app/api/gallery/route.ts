@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import {
   insertGalleryMedia,
   getGalleryMedia,
@@ -62,6 +62,9 @@ export async function POST(request: Request) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(currentUser)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   try {

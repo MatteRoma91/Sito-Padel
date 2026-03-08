@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { 
   getTournamentById, 
   getUsers, 
@@ -38,6 +38,7 @@ export default async function TournamentBracketPage({
 
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
   const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const allUsers = getUsers();
@@ -49,7 +50,7 @@ export default async function TournamentBracketPage({
 
   // If no pairs, redirect to pairs page (admin) or tournament page (player)
   if (pairs.length < expectedPairs) {
-    redirect(isAdmin ? `/tournaments/${id}/pairs` : `/tournaments/${id}`);
+    redirect((isAdmin && userCanEdit) ? `/tournaments/${id}/pairs` : `/tournaments/${id}`);
   }
 
   // Build user map
@@ -109,22 +110,22 @@ export default async function TournamentBracketPage({
       </div>
 
       {/* Generate bracket if no matches yet */}
-      {matches.length === 0 && pairs.length === expectedPairs && isAdmin && (
+      {matches.length === 0 && pairs.length === expectedPairs && isAdmin && userCanEdit && (
         <GenerateBracketButton tournamentId={tournament.id} />
       )}
 
       {/* Reopen tournament button (admin only, completed tournaments) */}
-      {isAdmin && tournament.status === 'completed' && (
+      {isAdmin && userCanEdit && tournament.status === 'completed' && (
         <ReopenTournamentButton tournamentId={tournament.id} />
       )}
 
       {/* Riapri votazione MVP (admin only, when MVP voting was closed) */}
-      {isAdmin && tournament.status === 'completed' && tournament.completed_at && mvpVotingClosed && (
+      {isAdmin && userCanEdit && tournament.status === 'completed' && tournament.completed_at && mvpVotingClosed && (
         <ReopenMvpVotingButton tournamentId={tournament.id} tournamentName={tournament.name} />
       )}
 
       {/* Consolidate results button (admin only, when all matches have results but not yet completed) */}
-      {isAdmin && tournament.status !== 'completed' && matches.length > 0 && isTournamentComplete(matches) && (
+      {isAdmin && userCanEdit && tournament.status !== 'completed' && matches.length > 0 && isTournamentComplete(matches) && (
         <ConsolidateResultsButton tournamentId={tournament.id} />
       )}
 
@@ -136,7 +137,7 @@ export default async function TournamentBracketPage({
           pairs={pairs}
           matches={matches}
           userMap={userMap}
-          isAdmin={isAdmin ?? false}
+          isAdmin={(isAdmin && userCanEdit) ?? false}
           tournamentStatus={tournament.status}
           hiddenUserIds={hiddenUserIds}
         />

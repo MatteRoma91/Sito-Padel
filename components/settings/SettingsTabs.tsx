@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield, BarChart3 } from 'lucide-react';
+import { Palette, FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield, BarChart3, LayoutGrid } from 'lucide-react';
 import { ColorsTab } from './ColorsTab';
 import { StatisticheTab } from './StatisticheTab';
 import { TextsTab } from './TextsTab';
@@ -12,9 +12,10 @@ import { RicalcolaTab } from './RicalcolaTab';
 import { StrumentiTab } from './StrumentiTab';
 import { GalleriaTab } from './GalleriaTab';
 import { LogsTab } from './LogsTab';
+import { CentroSportivoTab } from './CentroSportivoTab';
 import type { ServerStats } from '@/lib/server-stats';
 
-export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche';
+export type SettingsTabId = 'colori' | 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche' | 'centrosportivo';
 
 interface UserWithLoginCount {
   id: string;
@@ -54,6 +55,7 @@ export function SettingsTabs({
     { id: 'accessi', label: 'Accessi', icon: Activity },
     { id: 'server', label: 'Server', icon: Server },
     { id: 'galleria', label: 'Galleria', icon: Images },
+    { id: 'centrosportivo', label: 'Centro sportivo', icon: LayoutGrid },
     { id: 'statistiche', label: 'Statistiche', icon: BarChart3 },
     { id: 'logs', label: 'Log sicurezza', icon: Shield },
     { id: 'ricalcola', label: 'Ricalcola', icon: RefreshCw },
@@ -93,6 +95,7 @@ export function SettingsTabs({
       {activeTab === 'statistiche' && <StatisticheTab />}
       {activeTab === 'ricalcola' && <RicalcolaTab completedTournamentsCount={completedTournamentsCount} />}
       {activeTab === 'strumenti' && <StrumentiTab />}
+      {activeTab === 'centrosportivo' && <CentroSportivoTab config={config} />}
     </div>
   );
 }

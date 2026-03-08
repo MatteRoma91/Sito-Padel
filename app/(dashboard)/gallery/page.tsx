@@ -1,5 +1,5 @@
 import nextDynamic from 'next/dynamic';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getGalleryMedia, getGalleryMediaCount, getGalleryTotalSize } from '@/lib/db/queries';
 import { Images } from 'lucide-react';
 
@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 export default async function GalleryPage() {
   const user = await getCurrentUser();
   const isAdmin = user?.role === 'admin';
+  const userCanEdit = canEdit(user);
 
   const initialItems = getGalleryMedia({ limit: 24, offset: 0 });
   const initialTotal = getGalleryMediaCount();
@@ -28,7 +29,7 @@ export default async function GalleryPage() {
         Carica e visualizza immagini e video. Tutti possono caricare, solo gli admin possono eliminare.
       </p>
       <GalleryView
-        isAdmin={!!isAdmin}
+        isAdmin={!!(isAdmin && userCanEdit)}
         initialItems={initialItems}
         initialTotal={initialTotal}
         initialTotalSize={initialTotalSize}

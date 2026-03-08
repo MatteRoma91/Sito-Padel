@@ -100,3 +100,12 @@ export async function isAdmin(): Promise<boolean> {
   const session = await getSession();
   return session.isLoggedIn && session.role === 'admin';
 }
+
+export function isGuest(user: { role?: string } | null): boolean {
+  return user?.role === 'guest';
+}
+
+/** True if the user can create/edit/delete content (not read-only guest). */
+export function canEdit(user: { role?: string } | null): boolean {
+  return !!user && user.role !== 'guest';
+}

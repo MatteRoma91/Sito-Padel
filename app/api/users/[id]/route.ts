@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getUserById, updateUser, updateUserPassword, deleteUser } from '@/lib/db/queries';
 import { updateUserSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 import type { UserRole, SkillLevel, FieldSide, Hand } from '@/lib/types';
@@ -41,6 +41,10 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
   }
 
+  if (!canEdit(currentUser)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
+  }
+
   const isAdmin = currentUser.role === 'admin';
   const isOwnProfile = currentUser.id === id;
 
@@ -50,7 +54,7 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    let data: { full_name?: string | null; nickname?: string | null; role?: 'admin' | 'player'; skill_level?: string | null; overall_score?: number | null; bio?: string | null; preferred_side?: string | null; preferred_hand?: string | null; birth_date?: string | null; is_hidden?: boolean; new_password?: string };
+    let data: { full_name?: string | null; nickname?: string | null; role?: UserRole; skill_level?: string | null; overall_score?: number | null; bio?: string | null; preferred_side?: string | null; preferred_hand?: string | null; birth_date?: string | null; is_hidden?: boolean; new_password?: string };
     try {
       data = parseOrThrow(updateUserSchema, body);
     } catch (err) {
@@ -130,6 +134,9 @@ export async function DELETE(
   const currentUser = await getCurrentUser();
   if (!currentUser) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(currentUser)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   const canDelete = currentUser.role === 'admin';

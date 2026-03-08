@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getConversationsForUser, getAllConversationsForAdmin, getParticipantIds, getOrCreateDmConversation, getOrCreateGroupConversation, getOrCreateTournamentConversation, getOrCreateBroadcastConversation, isParticipant, ensureTournamentParticipant } from '@/lib/db/chat-queries';
 import { getTournamentById, getUsers } from '@/lib/db/queries';
 import { parseOrThrow, createDmSchema, ValidationError } from '@/lib/validations';
@@ -63,6 +63,9 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   try {

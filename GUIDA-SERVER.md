@@ -286,6 +286,21 @@ Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REP
 
 ---
 
+### 13. Centro sportivo e account Guest (marzo 2026)
+
+**Centro sportivo (Sito-Padel)**:
+
+- Nuova sezione **Centro sportivo** (`/sports-center`): griglia giorno × campi × slot (30 min), prenotazioni 60 o 90 min con nome prenotazione e celle unificate; pagina partita (`/sports-center/bookings/[id]`) per assegnare 4 partecipanti (utenti del sito).
+- Tabelle DB: `courts`, `court_bookings` (con `booking_name`), `court_booking_participants`, `center_closed_slots`. Config in `site_config`: `court_open_time`, `court_close_time`, `court_allowed_durations`.
+- API: `GET/POST /api/sports-center/courts`, `GET/PATCH/DELETE /api/sports-center/courts/[id]`, `GET /api/sports-center/availability`, `GET/POST/PATCH/DELETE` bookings, `GET/PUT /api/sports-center/closed-slots` (solo admin).
+- Impostazioni → tab **Centro sportivo**: orari apertura/chiusura, durate 60/90 min, slot di chiusura (fasce non prenotabili), gestione campi (CRUD).
+
+**Ruolo Guest**:
+
+- Ruolo `guest` in `users.role` (migrazione schema): navigazione in sola lettura (tornei, profili, classifiche, galleria, chat, centro sportivo). Nessun pulsante Crea/Modifica/Elimina; API POST/PATCH/DELETE ritornano 403 per guest. Impostazioni nascoste al guest. Creazione utente guest da Impostazioni → Utenti.
+
+---
+
 ## Pacchetti/servizi installati (ordine indicativo)
 
 1. **nvm** – gestione versioni Node.js

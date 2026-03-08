@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournamentById, getTournamentParticipants, setParticipating, removeParticipant } from '@/lib/db/queries';
 
 export async function GET(
@@ -24,6 +24,9 @@ export async function POST(
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
   if (user.role !== 'admin') {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
@@ -68,6 +71,9 @@ export async function DELETE(
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
   if (user.role !== 'admin') {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });

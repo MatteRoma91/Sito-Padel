@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getMatchById, updateMatchPairs, getPairs, getMatches } from '@/lib/db/queries';
 
 export async function POST(
@@ -11,6 +11,9 @@ export async function POST(
   
   if (!currentUser) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(currentUser)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   if (currentUser.role !== 'admin') {

@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, getCumulativeRankings, getSiteConfig, getTournamentsWithOpenMvpVoting } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
 import { Trophy, Users, Calendar, BarChart3, Plus, MessageCircle } from 'lucide-react';
@@ -17,6 +17,7 @@ const HomeCalendar = dynamic(() => import('@/components/home/HomeCalendar').then
 export default async function HomePage() {
   const user = await getCurrentUser();
   const isAdmin = user?.role === 'admin';
+  const userCanEdit = canEdit(user);
   
   const upcomingTournamentsAll = getTournamentsFuture();
   // Countdown solo per tornei realmente in programma (open o in_progress), non draft
@@ -94,7 +95,7 @@ export default async function HomePage() {
           </div>
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Chat</span>
         </ChatLinkWithBadge>
-        {isAdmin && (
+        {isAdmin && userCanEdit && (
           <Link href="/tournaments/new" className="card p-4 flex flex-col items-center gap-2 hover:border-accent-500 hover:shadow-lg transition-all duration-200">
             <div className="w-12 h-12 rounded-full bg-accent-500 flex items-center justify-center">
               <Plus className="w-6 h-6 text-slate-900" />
@@ -141,7 +142,7 @@ export default async function HomePage() {
           allVoted={status.allVoted}
           candidates={status.candidates}
           canVote={status.voterCanVote && !status.userHasVoted}
-          isAdmin={isAdmin}
+          isAdmin={isAdmin && userCanEdit}
           needsAdminAssignment={status.needsAdminAssignment}
         />
       ))}

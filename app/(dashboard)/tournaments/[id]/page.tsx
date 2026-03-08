@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { 
   getTournamentById, 
   getTournamentParticipants, 
@@ -48,6 +48,7 @@ export default async function TournamentDetailPage({
   }
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
   const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const participants = getTournamentParticipants(tournament.id);
@@ -151,7 +152,7 @@ export default async function TournamentDetailPage({
                 userMap={userMap}
               />
             )}
-            {isAdmin && (
+            {isAdmin && userCanEdit && (
               <Link href={`/tournaments/${tournament.id}/edit`} className="btn btn-secondary flex items-center gap-2">
                 <Edit className="w-4 h-4" />
                 Modifica
@@ -161,7 +162,7 @@ export default async function TournamentDetailPage({
         </div>
 
         {/* Status changer for admin */}
-        {isAdmin && (
+        {isAdmin && userCanEdit && (
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <TournamentStatusChanger tournamentId={tournament.id} currentStatus={tournament.status} />
           </div>
@@ -190,7 +191,7 @@ export default async function TournamentDetailPage({
       </div>
 
       {/* Participants (admin only, when not completed) */}
-      {isAdmin && tournament.status !== 'completed' && (
+      {isAdmin && userCanEdit && tournament.status !== 'completed' && (
         <ParticipantsManager
           tournamentId={tournament.id}
           participants={participants}
@@ -201,7 +202,7 @@ export default async function TournamentDetailPage({
       )}
 
       {/* Navigation: Go to pairs page when enough participants and no pairs yet */}
-      {isAdmin && participatingUserIds.length === expectedPlayers && pairs.length === 0 && tournament.status !== 'completed' && (
+      {isAdmin && userCanEdit && participatingUserIds.length === expectedPlayers && pairs.length === 0 && tournament.status !== 'completed' && (
         <div className="card p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
           <div className="flex items-center justify-between">
             <div>
@@ -280,7 +281,7 @@ export default async function TournamentDetailPage({
               <Shuffle className="w-5 h-5 text-accent-500" />
               Coppie ({visiblePairs.length}/{expectedPairs})
             </h3>
-            {isAdmin && (
+            {isAdmin && userCanEdit && (
               <Link href={`/tournaments/${tournament.id}/pairs`} className="text-sm text-accent-500 hover:underline">
                 Gestisci coppie
               </Link>

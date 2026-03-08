@@ -25,6 +25,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 | **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
 | **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
 | **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
+| **[docs/CENTRO-SPORTIVO.md](docs/CENTRO-SPORTIVO.md)** | Centro sportivo: campi, prenotazioni, slot chiusura, pagina partita, API e Impostazioni |
 | **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
 | **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Sicurezza: indici DB, rate limit, validazione Zod, sessioni, firewall, password hashing |
 | **[docs/baseline-report.md](docs/baseline-report.md)** | Misure iniziali di bundle, tempi risposta e dimensione `.next` |
@@ -38,7 +39,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 ## Funzionalità
 
-- **Autenticazione**: Login con username/password, ruoli Admin/Giocatore
+- **Autenticazione**: Login con username/password; ruoli **Admin**, **Giocatore** e **Guest** (sola lettura per demo/acquirenti)
 - **Giocatori**: Gestione profili giocatori
 - **Tornei**: Creazione e gestione tornei
 - **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
@@ -49,6 +50,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 - **Export PDF**: Esportazione tabellone e classifica
 - **Chat interna**: DM tra giocatori, chat di gruppo per torneo e chat broadcast; badge messaggi non letti e possibilità di eliminare messaggi (per admin)
 - **Galleria**: Caricamento e visualizzazione di immagini e video (tutti possono caricare, solo admin può eliminare); limite totale 20 GB; gestione e spazio in Impostazioni
+- **Centro sportivo**: Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot (30 min), prenotazioni 60 o 90 min con **nome prenotazione** e celle unificate; pagina partita con assegnazione di 4 partecipanti (utenti del sito); admin configura da Impostazioni orari apertura/chiusura, durate consentite (60/90 min) e **slot di chiusura** (fasce non prenotabili); gestione campi (aggiungi/modifica/elimina). Visibile ad admin, guest (sola lettura) e giocatori (prenotano per sé; admin può prenotare anche per ospiti)
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
 - **Health Check**: Endpoint `/api/health` per monitoraggio esterno (verifica DB e risposta JSON)
 
@@ -150,7 +152,10 @@ Al primo avvio viene creato l'utente admin:
 │   │   ├── calendar/       # Calendario
 │   │   ├── gallery/        # Galleria immagini e video
 │   │   ├── chat/           # Chat interna
-│   │   └── rankings/       # Classifiche
+│   │   ├── sports-center/  # Centro sportivo: griglia campi, prenotazioni, pagina partita
+│   │   │   └── bookings/[id]/  # Dettaglio partita (4 partecipanti)
+│   │   ├── rankings/       # Classifiche
+│   │   └── settings/       # Impostazioni (solo admin): colori, testi, utenti, centro sportivo, backup
 │   ├── ~offline/           # Pagina PWA offline
 │   ├── manifest.ts         # Web App Manifest (PWA)
 │   ├── sw.ts               # Service Worker (Serwist)
@@ -158,11 +163,14 @@ Al primo avvio viene creato l'utente admin:
 │       ├── auth/           # Login, logout, change-password
 │       ├── health/         # Health check endpoint
 │       ├── gallery/        # Upload e gestione galleria
+│       ├── sports-center/   # courts, bookings, availability, closed-slots
 │       └── ...             # Altre API
 ├── components/
 │   ├── pwa/                # Registrazione SW, notifica aggiornamento
 │   ├── chat/               # ChatLayout, ChatLayoutLazy
 │   ├── tournaments/        # ExportPdfButton, ExportPdfButtonLazy
+│   ├── sports-center/      # CourtGrid, BookingForm, BookingsList, SportsCenterClient
+│   ├── settings/           # Tab Impostazioni (CentroSportivoTab, UsersTab, ecc.)
 │   └── ...                 # Altri componenti React
 ├── lib/
 │   ├── db/                 # Database SQLite
@@ -181,6 +189,10 @@ Al primo avvio viene creato l'utente admin:
 ├── .env.example            # Template variabili d'ambiente
 └── scripts/                # Script deploy, Nginx, icone PWA
 ```
+
+## Impostazioni (solo admin)
+
+Da **Impostazioni** (menu laterale, visibile solo agli admin) si gestiscono: colori e testi del sito, utenti e ruoli (admin, player, guest), galleria, **Centro sportivo** (orari apertura/chiusura, durate prenotazioni 60/90 min, slot di chiusura settimanali, gestione campi: aggiungi/modifica/elimina), statistiche, log, backup e strumenti.
 
 ## Backup e ripristino
 

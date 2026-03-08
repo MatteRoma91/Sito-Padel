@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getConversationById, getParticipantIds, isParticipant, deleteConversation } from '@/lib/db/chat-queries';
 import { getTournamentById, getUsers } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
@@ -12,6 +12,9 @@ export async function DELETE(
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
   if (user.role !== 'admin') {
     return NextResponse.json({ success: false, error: 'Solo gli admin possono eliminare chat' }, { status: 403 });

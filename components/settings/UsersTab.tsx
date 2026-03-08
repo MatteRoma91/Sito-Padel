@@ -129,6 +129,11 @@ export function UsersTab({ users }: UsersTabProps) {
                       Admin
                     </span>
                   )}
+                  {u.role === 'guest' && (
+                    <span className="ml-2 px-2 py-0.5 text-xs rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      Guest
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 shrink-0">

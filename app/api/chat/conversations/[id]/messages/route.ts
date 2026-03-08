@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getMessages, insertMessage, isParticipant } from '@/lib/db/chat-queries';
 import { getUsers } from '@/lib/db/queries';
 import { parseOrThrow, chatMessageSchema, ValidationError } from '@/lib/validations';
@@ -46,6 +46,9 @@ export async function POST(
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   if (!isParticipant(conversationId, user.id)) {

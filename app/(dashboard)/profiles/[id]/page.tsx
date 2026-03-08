@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { buildMetadata } from '@/lib/seo';
 import { getSiteConfig } from '@/lib/db/queries';
 
@@ -60,6 +60,7 @@ export default async function ProfileDetailPage({
   }
 
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
 
   // Get user stats
   const rankings = getCumulativeRankings();
@@ -124,9 +125,9 @@ export default async function ProfileDetailPage({
               </span>
             )}
           </div>
-          {(isAdmin || isOwnProfile) && (
+          {(isAdmin || isOwnProfile) && userCanEdit && (
             <div className="flex gap-2">
-              {isAdmin && user.role !== 'admin' && (
+              {isAdmin && userCanEdit && user.role !== 'admin' && (
                 <DeleteUserButton userId={user.id} />
               )}
             </div>
@@ -281,10 +282,10 @@ export default async function ProfileDetailPage({
       )}
 
       {/* Edit form (admin or own profile) */}
-      {(isAdmin || isOwnProfile) && (
+      {(isAdmin || isOwnProfile) && userCanEdit && (
         <EditProfileForm 
           user={user} 
-          isAdmin={isAdmin ?? false} 
+          isAdmin={isAdmin ?? false}
           isOwnProfile={isOwnProfile ?? false}
         />
       )}

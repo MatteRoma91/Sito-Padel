@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { MessageCircle } from 'lucide-react';
 import { ChatLayoutLazy as ChatLayout } from '@/components/chat/ChatLayoutLazy';
 
@@ -16,7 +16,7 @@ export default async function ChatPage() {
           Messaggi privati e chat di gruppo per i tornei
         </p>
       </div>
-      <ChatLayout isAdmin={user?.role === 'admin'} />
+      <ChatLayout isAdmin={user?.role === 'admin' && !!canEdit(user)} />
     </div>
   );
 }

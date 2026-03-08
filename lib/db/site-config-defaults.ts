@@ -60,4 +60,8 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
     "È risaputo che chi compie gli anni nel proprio mese di nascita ha il sacro dovere — o la simpatica scusa — di organizzare una tappa del Banana Padel Tour in quel mese. Così il compleanno diventa un'occasione per tutti: festeggiare insieme sul campo è praticamente legge. Nessuno può sfuggire al proprio turno!",
   text_regolamento_compleanno_2:
     "Ovviamente anche i partecipanti hanno un sacro dovere… garantire un BROCCOBURGHER (con broccoletti, non cicoria — siete vecchie canaglie come Cora, anche il bacon!) al festeggiato e, perché no… offrirgli anche una bella birra!!!",
+  // Centro sportivo: orari e durate prenotazioni
+  court_open_time: '08:00',
+  court_close_time: '23:00',
+  court_allowed_durations: '60,90',
 };

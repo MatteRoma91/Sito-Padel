@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournamentsFuture, getTournamentParticipants, getUsers, getCumulativeRankings, getPairs } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import { Shuffle, AlertCircle } from 'lucide-react';
@@ -14,6 +14,7 @@ export default async function PairsPage({
   const params = await searchParams;
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
   const canSeeHidden = canSeeHiddenUsers(currentUser);
 
   const tournaments = getTournamentsFuture();
@@ -58,7 +59,7 @@ export default async function PairsPage({
         {tournaments.length === 0 ? (
           <p className="text-slate-700 dark:text-slate-300">
             Nessun torneo futuro disponibile.{' '}
-            {isAdmin && <Link href="/tournaments/new" className="text-accent-500 hover:underline">Crea un torneo</Link>}
+            {isAdmin && userCanEdit && <Link href="/tournaments/new" className="text-accent-500 hover:underline">Crea un torneo</Link>}
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -107,7 +108,7 @@ export default async function PairsPage({
                   <p className="font-medium">Partecipanti insufficienti</p>
                   <p className="text-sm">
                     Servono esattamente 16 partecipanti per estrarre le coppie.{' '}
-                    {isAdmin && (
+                    {isAdmin && userCanEdit && (
                       <Link href={`/tournaments/${selectedTournament.id}`} className="underline">
                         Aggiungi partecipanti
                       </Link>
@@ -119,7 +120,7 @@ export default async function PairsPage({
           </div>
 
           {/* Extraction button (admin only) */}
-          {isAdmin && participants.length === 16 && (
+          {isAdmin && userCanEdit && participants.length === 16 && (
             <PairsExtractor
               tournamentId={selectedTournament.id}
               hasExistingPairs={existingPairs.length > 0}
@@ -138,7 +139,7 @@ export default async function PairsPage({
               <Shuffle className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
               <p className="text-slate-700 dark:text-slate-300">
                 Le coppie non sono ancora state estratte.
-                {isAdmin && ' Clicca il pulsante sopra per procedere.'}
+                {isAdmin && userCanEdit && ' Clicca il pulsante sopra per procedere.'}
               </p>
             </div>
           ) : null}

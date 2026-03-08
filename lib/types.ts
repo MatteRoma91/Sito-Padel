@@ -1,6 +1,6 @@
 // Tipi condivisi
 
-export type UserRole = 'admin' | 'player';
+export type UserRole = 'admin' | 'player' | 'guest';
 
 export type TournamentStatus = 'draft' | 'open' | 'in_progress' | 'completed';
 
@@ -215,3 +215,45 @@ export const MEDAL_ICONS: Record<MedalType, string> = {
   wooden_spoon: '🥄',
   mvp: '⭐',
 };
+
+// Centro sportivo: campi e prenotazioni
+export type CourtType = 'indoor' | 'outdoor';
+
+export type BookingStatus = 'confirmed' | 'cancelled';
+
+export interface Court {
+  id: string;
+  name: string;
+  type: CourtType;
+  display_order: number;
+}
+
+export interface CourtBooking {
+  id: string;
+  court_id: string;
+  date: string;
+  slot_start: string;
+  slot_end: string;
+  booking_name: string;
+  tournament_id: string | null;
+  booked_by_user_id: string | null;
+  guest_name: string | null;
+  guest_phone: string | null;
+  status: BookingStatus;
+  created_at: string;
+  created_by: string | null;
+}
+
+export interface CourtBookingParticipant {
+  id: string;
+  booking_id: string;
+  user_id: string;
+  position: number;
+}
+
+export interface CenterClosedSlot {
+  id: string;
+  day_of_week: number;
+  slot_start: string;
+  slot_end: string;
+}

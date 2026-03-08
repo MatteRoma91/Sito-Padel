@@ -102,6 +102,7 @@ export function CreateUserForm() {
               <select id="new_role" name="role" className="input" defaultValue="player">
                 <option value="player">Giocatore</option>
                 <option value="admin">Admin</option>
+                <option value="guest">Guest (sola lettura)</option>
               </select>
             </FormField>
           </div>

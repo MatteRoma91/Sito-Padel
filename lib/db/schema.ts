@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { getDb } from './db';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
@@ -11,7 +12,7 @@ export function initSchema() {
       password_hash TEXT NOT NULL,
       full_name TEXT,
       nickname TEXT,
-      role TEXT NOT NULL DEFAULT 'player' CHECK(role IN ('admin', 'player')),
+      role TEXT NOT NULL DEFAULT 'player' CHECK(role IN ('admin', 'player', 'guest')),
       avatar TEXT,
       must_change_password INTEGER NOT NULL DEFAULT 0,
       skill_level TEXT CHECK(skill_level IN ('A_GOLD', 'A_SILVER', 'B_GOLD', 'B_SILVER', 'C')),
@@ -426,4 +427,115 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_path ON page_views(path)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_viewed_at ON page_views(viewed_at)`);
+
+  // Centro sportivo: campi, prenotazioni, slot chiusura
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS courts (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('indoor', 'outdoor')),
+      display_order INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS court_bookings (
+      id TEXT PRIMARY KEY,
+      court_id TEXT NOT NULL REFERENCES courts(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      slot_start TEXT NOT NULL,
+      slot_end TEXT NOT NULL,
+      booked_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      guest_name TEXT,
+      guest_phone TEXT,
+      status TEXT NOT NULL DEFAULT 'confirmed' CHECK(status IN ('confirmed', 'cancelled')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_by TEXT REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_court_bookings_court_date ON court_bookings(court_id, date)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_court_bookings_date ON court_bookings(date)`);
+
+  try {
+    db.exec(`ALTER TABLE court_bookings ADD COLUMN booking_name TEXT NOT NULL DEFAULT 'Prenotazione'`);
+  } catch {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE court_bookings ADD COLUMN tournament_id TEXT REFERENCES tournaments(id) ON DELETE CASCADE`);
+  } catch {
+    // Column already exists
+  }
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_court_bookings_tournament ON court_bookings(tournament_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS court_booking_participants (
+      id TEXT PRIMARY KEY,
+      booking_id TEXT NOT NULL REFERENCES court_bookings(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      position INTEGER NOT NULL CHECK(position >= 1 AND position <= 4),
+      UNIQUE(booking_id, position)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_court_booking_participants_booking ON court_booking_participants(booking_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS center_closed_slots (
+      id TEXT PRIMARY KEY,
+      day_of_week INTEGER NOT NULL CHECK(day_of_week >= 0 AND day_of_week <= 6),
+      slot_start TEXT NOT NULL,
+      slot_end TEXT NOT NULL
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_center_closed_slots_day ON center_closed_slots(day_of_week)`);
+
+  // Seed 4 campi (2 coperti, 2 scoperti) se tabella vuota
+  const courtsCount = (db.prepare('SELECT COUNT(*) as c FROM courts').get() as { c: number }).c;
+  if (courtsCount === 0) {
+    const courtsSeed = [
+      { id: randomUUID(), name: 'Campo 1', type: 'indoor', display_order: 1 },
+      { id: randomUUID(), name: 'Campo 2', type: 'indoor', display_order: 2 },
+      { id: randomUUID(), name: 'Campo 3', type: 'outdoor', display_order: 3 },
+      { id: randomUUID(), name: 'Campo 4', type: 'outdoor', display_order: 4 },
+    ];
+    const insertCourt = db.prepare('INSERT INTO courts (id, name, type, display_order) VALUES (?, ?, ?, ?)');
+    for (const c of courtsSeed) {
+      insertCourt.run(c.id, c.name, c.type, c.display_order);
+    }
+  }
+
+  // Migrazione: aggiungere ruolo 'guest' (SQLite non permette ALTER CHECK, ricreiamo users)
+  try {
+    const schemaRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get() as { sql: string } | undefined;
+    if (schemaRow && !schemaRow.sql.includes("'guest'")) {
+      const userCols = 'id, username, password_hash, full_name, nickname, role, avatar, must_change_password, skill_level, bio, preferred_side, preferred_hand, created_at, login_count, birth_date, overall_score, is_hidden';
+      db.exec(`
+        CREATE TABLE users_new (
+          id TEXT PRIMARY KEY,
+          username TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          full_name TEXT,
+          nickname TEXT,
+          role TEXT NOT NULL DEFAULT 'player' CHECK(role IN ('admin', 'player', 'guest')),
+          avatar TEXT,
+          must_change_password INTEGER NOT NULL DEFAULT 0,
+          skill_level TEXT CHECK(skill_level IN ('A_GOLD', 'A_SILVER', 'B_GOLD', 'B_SILVER', 'C')),
+          bio TEXT,
+          preferred_side TEXT CHECK(preferred_side IN ('Destra', 'Sinistra')),
+          preferred_hand TEXT CHECK(preferred_hand IN ('Destra', 'Sinistra')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          login_count INTEGER NOT NULL DEFAULT 0,
+          birth_date TEXT,
+          overall_score INTEGER,
+          is_hidden INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+      db.exec(`INSERT INTO users_new (${userCols}) SELECT ${userCols} FROM users`);
+      db.exec(`DROP TABLE users`);
+      db.exec(`ALTER TABLE users_new RENAME TO users`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_users_full_name ON users(full_name)`);
+    }
+  } catch {
+    // Migration failed or already applied
+  }
 }

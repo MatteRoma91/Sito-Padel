@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getUsers, getCumulativeRankings } from '@/lib/db/queries';
 import { getVisibleUsers } from '@/lib/visibility';
 import { User } from 'lucide-react';
@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function ProfilesPage() {
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
   
   const allUsers = getUsers();
   // Exclude only the 'admin' user account from the players list (not all admins)
@@ -40,7 +41,7 @@ export default async function ProfilesPage() {
       />
 
       {/* Quick add form for admin */}
-      {isAdmin && <CreateUserForm />}
+      {isAdmin && userCanEdit && <CreateUserForm />}
 
       {/* Players list */}
       <div className="card divide-y divide-primary-100 dark:divide-primary-300/50">

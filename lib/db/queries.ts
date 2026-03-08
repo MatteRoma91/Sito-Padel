@@ -5,7 +5,7 @@ import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../constants';
-import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory } from '../types';
+import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot } from '../types';
 import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8 } from '../types';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
@@ -337,6 +337,217 @@ export function seedSiteConfig(): void {
   }
 }
 
+// ============ SPORTS CENTER (courts, bookings, closed slots) ============
+
+export function getCourts(): Court[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM courts').all() as Court[];
+}
+
+export function getCourtsOrdered(): Court[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM courts ORDER BY display_order, name').all() as Court[];
+}
+
+export function insertCourt(data: { name: string; type: 'indoor' | 'outdoor'; display_order: number }): string {
+  ensureDb();
+  const id = randomUUID();
+  getDb()
+    .prepare('INSERT INTO courts (id, name, type, display_order) VALUES (?, ?, ?, ?)')
+    .run(id, data.name.trim(), data.type, data.display_order);
+  return id;
+}
+
+export function updateCourt(id: string, data: { name?: string; type?: 'indoor' | 'outdoor'; display_order?: number }): void {
+  ensureDb();
+  const updates: string[] = [];
+  const values: (string | number)[] = [];
+  if (data.name !== undefined) {
+    updates.push('name = ?');
+    values.push(data.name.trim());
+  }
+  if (data.type !== undefined) {
+    updates.push('type = ?');
+    values.push(data.type);
+  }
+  if (data.display_order !== undefined) {
+    updates.push('display_order = ?');
+    values.push(data.display_order);
+  }
+  if (updates.length === 0) return;
+  values.push(id);
+  getDb().prepare(`UPDATE courts SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function getCourtById(id: string): Court | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM courts WHERE id = ?').get(id) as Court | undefined;
+}
+
+export function hasActiveBookings(courtId: string): boolean {
+  ensureDb();
+  const row = getDb()
+    .prepare('SELECT 1 FROM court_bookings WHERE court_id = ? AND status = ? LIMIT 1')
+    .get(courtId, 'confirmed') as { '1'?: number } | undefined;
+  return !!row;
+}
+
+export function deleteCourtById(id: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM courts WHERE id = ?').run(id);
+}
+
+export function getBookingsByDate(date: string): CourtBooking[] {
+  ensureDb();
+  return getDb()
+    .prepare('SELECT * FROM court_bookings WHERE date = ? AND status = ? ORDER BY slot_start')
+    .all(date, 'confirmed') as CourtBooking[];
+}
+
+export function getBookingsByCourtAndDate(courtId: string, date: string): CourtBooking[] {
+  ensureDb();
+  return getDb()
+    .prepare('SELECT * FROM court_bookings WHERE court_id = ? AND date = ? AND status = ? ORDER BY slot_start')
+    .all(courtId, date, 'confirmed') as CourtBooking[];
+}
+
+export function getBookingById(id: string): CourtBooking | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM court_bookings WHERE id = ?').get(id) as CourtBooking | undefined;
+}
+
+export function createBooking(data: {
+  court_id: string;
+  date: string;
+  slot_start: string;
+  slot_end: string;
+  booking_name: string;
+  tournament_id?: string | null;
+  booked_by_user_id?: string | null;
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  created_by?: string | null;
+}): string {
+  ensureDb();
+  const id = randomUUID();
+  const name = (data.booking_name && data.booking_name.trim()) ? data.booking_name.trim() : 'Prenotazione';
+  getDb()
+    .prepare(
+      `INSERT INTO court_bookings (id, court_id, date, slot_start, slot_end, booking_name, tournament_id, booked_by_user_id, guest_name, guest_phone, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      id,
+      data.court_id,
+      data.date,
+      data.slot_start,
+      data.slot_end,
+      name,
+      data.tournament_id ?? null,
+      data.booked_by_user_id ?? null,
+      data.guest_name ?? null,
+      data.guest_phone ?? null,
+      data.created_by ?? null
+    );
+  return id;
+}
+
+export function updateBooking(
+  id: string,
+  data: {
+    booking_name?: string;
+    court_id?: string;
+    date?: string;
+    slot_start?: string;
+    slot_end?: string;
+    status?: string;
+  }
+): void {
+  ensureDb();
+  const updates: string[] = [];
+  const values: (string | number)[] = [];
+  if (data.booking_name !== undefined) {
+    updates.push('booking_name = ?');
+    values.push(data.booking_name);
+  }
+  if (data.court_id !== undefined) {
+    updates.push('court_id = ?');
+    values.push(data.court_id);
+  }
+  if (data.date !== undefined) {
+    updates.push('date = ?');
+    values.push(data.date);
+  }
+  if (data.slot_start !== undefined) {
+    updates.push('slot_start = ?');
+    values.push(data.slot_start);
+  }
+  if (data.slot_end !== undefined) {
+    updates.push('slot_end = ?');
+    values.push(data.slot_end);
+  }
+  if (data.status !== undefined) {
+    updates.push('status = ?');
+    values.push(data.status);
+  }
+  if (updates.length === 0) return;
+  values.push(id);
+  getDb().prepare(`UPDATE court_bookings SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+}
+
+export function cancelBooking(id: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE court_bookings SET status = ? WHERE id = ?').run('cancelled', id);
+}
+
+export function getBookingParticipants(bookingId: string): CourtBookingParticipant[] {
+  ensureDb();
+  return getDb()
+    .prepare('SELECT * FROM court_booking_participants WHERE booking_id = ? ORDER BY position')
+    .all(bookingId) as CourtBookingParticipant[];
+}
+
+export function setBookingParticipants(bookingId: string, userIdsByPosition: (string | null)[]): void {
+  ensureDb();
+  const db = getDb();
+  db.prepare('DELETE FROM court_booking_participants WHERE booking_id = ?').run(bookingId);
+  const insert = db.prepare(
+    'INSERT INTO court_booking_participants (id, booking_id, user_id, position) VALUES (?, ?, ?, ?)'
+  );
+  for (let position = 1; position <= 4; position++) {
+    const userId = userIdsByPosition[position - 1];
+    if (userId && userId.trim()) {
+      insert.run(randomUUID(), bookingId, userId.trim(), position);
+    }
+  }
+}
+
+export function getClosedSlotsByDay(dayOfWeek: number): CenterClosedSlot[] {
+  ensureDb();
+  return getDb()
+    .prepare('SELECT * FROM center_closed_slots WHERE day_of_week = ? ORDER BY slot_start')
+    .all(dayOfWeek) as CenterClosedSlot[];
+}
+
+export function getAllClosedSlots(): CenterClosedSlot[] {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM center_closed_slots ORDER BY day_of_week, slot_start').all() as CenterClosedSlot[];
+}
+
+export function insertClosedSlot(data: { day_of_week: number; slot_start: string; slot_end: string }): string {
+  ensureDb();
+  const id = randomUUID();
+  getDb()
+    .prepare('INSERT INTO center_closed_slots (id, day_of_week, slot_start, slot_end) VALUES (?, ?, ?, ?)')
+    .run(id, data.day_of_week, data.slot_start, data.slot_end);
+  return id;
+}
+
+export function deleteClosedSlot(id: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM center_closed_slots WHERE id = ?').run(id);
+}
+
 // ============ TOURNAMENTS ============
 
 export function getTournaments(): Tournament[] {
@@ -400,6 +611,62 @@ export function createTournament(data: { name: string; date: string; time?: stri
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(id, data.name, data.date, data.time || null, data.venue || null, category, maxPlayers, data.created_by);
   return id;
+}
+
+export function createTournamentWithCourtBookings(data: {
+  name: string;
+  date: string;
+  time?: string;
+  venue?: string;
+  category?: TournamentCategory;
+  max_players?: number;
+  created_by: string;
+  slot_start: string;
+  slot_end: string;
+  court_ids: string[];
+}): string {
+  ensureDb();
+  const db = getDb();
+  const maxPlayers = data.max_players === 8 ? 8 : 16;
+  const category: TournamentCategory =
+    maxPlayers === 8
+      ? 'brocco_500'
+      : data.category === 'grand_slam'
+        ? 'grand_slam'
+        : 'master_1000';
+
+  const tournamentId = randomUUID();
+  const name = (data.name && data.name.trim()) ? data.name.trim() : 'Torneo';
+
+  db.transaction(() => {
+    db.prepare(
+      `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(tournamentId, name, data.date, data.time || null, data.venue || null, category, maxPlayers, data.created_by);
+
+    const insertBooking = db.prepare(
+      `INSERT INTO court_bookings (id, court_id, date, slot_start, slot_end, booking_name, tournament_id, booked_by_user_id, guest_name, guest_phone, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const court_id of data.court_ids) {
+      if (!court_id || !court_id.trim()) continue;
+      insertBooking.run(
+        randomUUID(),
+        court_id.trim(),
+        data.date,
+        data.slot_start,
+        data.slot_end,
+        name,
+        tournamentId,
+        null,
+        null,
+        null,
+        data.created_by
+      );
+    }
+  })();
+
+  return tournamentId;
 }
 
 export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'completed_at' | 'mvp_deadline'>>): void {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { submitMvpVote, getMvpVotingStatus } from '@/lib/db/queries';
 
 export async function POST(
@@ -9,6 +9,9 @@ export async function POST(
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
+  }
+  if (!canEdit(user)) {
+    return NextResponse.json({ error: 'Utente in sola lettura' }, { status: 403 });
   }
 
   const { id: tournamentId } = await params;

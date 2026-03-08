@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, clearMustChangePassword } from '@/lib/auth';
+import { getCurrentUser, canEdit, clearMustChangePassword } from '@/lib/auth';
 import { updateUserPassword } from '@/lib/db/queries';
 import { changePasswordSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 
@@ -8,6 +8,9 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ success: false, error: 'Non autenticato' }, { status: 401 });
+    }
+    if (!canEdit(user)) {
+      return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
     }
 
     const body = await request.json();

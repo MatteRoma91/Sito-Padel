@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournaments } from '@/lib/db/queries';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { Plus, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Plus, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
 export default async function TournamentsPage() {
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+  const userCanEdit = canEdit(currentUser);
   
   const tournaments = getTournaments();
 
@@ -21,7 +22,7 @@ export default async function TournamentsPage() {
     <div className="max-w-4xl w-full mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Tornei</h1>
-        {isAdmin && (
+        {isAdmin && userCanEdit && (
           <Link href="/tournaments/new" className="btn btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nuovo Torneo</span>
@@ -91,7 +92,7 @@ export default async function TournamentsPage() {
           <div className="card p-8 text-center">
             <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-600 dark:text-slate-500" />
             <p className="text-slate-700 dark:text-slate-300">Nessun torneo presente</p>
-            {isAdmin && (
+            {isAdmin && userCanEdit && (
               <Link href="/tournaments/new" className="btn btn-primary mt-4 inline-flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Crea il primo torneo

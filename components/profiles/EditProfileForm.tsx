@@ -252,6 +252,7 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
               <select id="role" name="role" defaultValue={user.role} className="input">
                 <option value="player">Giocatore</option>
                 <option value="admin">Admin</option>
+                <option value="guest">Guest (sola lettura)</option>
               </select>
             </FormField>
             <FormField

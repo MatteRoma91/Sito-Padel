@@ -16,7 +16,8 @@ import {
   LogOut,
   Menu,
   X,
-  Smartphone
+  Smartphone,
+  LayoutGrid
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
@@ -41,13 +42,14 @@ const navItems = [
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/rankings', label: 'Classifiche', icon: BarChart3 },
   { href: '/gallery', label: 'Galleria', icon: Images },
+  { href: '/sports-center', label: 'Centro sportivo', icon: LayoutGrid },
   { href: '/regolamento', label: 'Regolamento', icon: BookOpen },
   { href: '/install', label: 'Installa', icon: Smartphone },
 ];
 
 const settingsNavItem = { href: '/settings', label: 'Impostazioni', icon: Settings };
 
-const canSeeSettings = (_username: string, role: string) => role === 'admin';
+const canSeeSettings = (_username: string, role: string) => role === 'admin'; // guest e player non vedono Impostazioni
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();

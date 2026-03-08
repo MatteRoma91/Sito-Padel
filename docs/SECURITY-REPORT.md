@@ -1,7 +1,8 @@
 # Report di Sicurezza - Banana Padel Tour
 
-**Data:** 28 Febbraio 2026
-**Versione:** Post-aggiornamento Next.js 15 / Node.js 22
+**Data:** 28 Febbraio 2026  
+**Aggiornato:** Marzo 2026 (ruoli admin/player/guest, sezione Centro sportivo, indici e autorizzazioni)  
+**Versione:** Next.js 15 / Node.js 22
 
 ---
 
@@ -23,6 +24,9 @@
 | mvp_votes | `idx_mvp_votes_tournament` | Voti MVP per torneo |
 | login_attempts | `idx_login_attempts_locked` | Query IP bloccati |
 | gallery_media | `idx_gallery_media_user`, `idx_gallery_media_created` | Lista galleria per utente, ordinamento per data |
+| court_bookings | `idx_court_bookings_court_date`, `idx_court_bookings_date` | Prenotazioni per campo/data, disponibilità |
+| center_closed_slots | `idx_center_closed_slots_day` | Slot chiusura per giorno settimana |
+| court_booking_participants | `idx_court_booking_participants_booking` | Partecipanti per prenotazione |
 
 ### Query ottimizzate
 
@@ -172,7 +176,20 @@ Endpoint `/api/health` su entrambe le app. Verifica la connessione al database e
 
 ---
 
-## 12. Raccomandazioni aggiuntive
+## 12. Ruoli e autorizzazione
+
+| Ruolo | Descrizione | Scrittura (POST/PATCH/DELETE) |
+|-------|-------------|-------------------------------|
+| **admin** | Accesso completo, Impostazioni, creazione utenti | Tutte le API consentite |
+| **player** | Tornei, prenotazioni centro sportivo (per sé), chat, galleria | Consentita; prenotazioni solo proprie per PATCH/DELETE bookings |
+| **guest** | Navigazione in sola lettura (tornei, profili, classifiche, galleria, chat, centro sportivo) | **403** su tutte le API di modifica; GET consentite |
+
+- **Centro sportivo:** Creazione/modifica/eliminazione campi (`/api/sports-center/courts`) e slot di chiusura (`/api/sports-center/closed-slots`) solo admin. Prenotazioni: admin può prenotare per sé o per ospiti; player solo per sé; guest 403.
+- **Impostazioni:** Accessibili solo agli admin (redirect se non admin). Il menu Impostazioni è nascosto ai guest.
+
+---
+
+## 13. Raccomandazioni aggiuntive
 
 1. **SQL injection:** Le query usano prepared statements (`?` placeholders). Nessuna concatenazione diretta di input utente.
 2. **Backup:** I backup (`/api/settings/backup`) sono accessibili solo agli admin.
@@ -187,7 +204,8 @@ Endpoint `/api/health` su entrambe le app. Verifica la connessione al database e
 
 | Area | Stato |
 |------|-------|
-| Indici DB | Implementati |
+| Indici DB | Implementati (inclusi courts, court_bookings, center_closed_slots) |
+| Ruoli (admin/player/guest) | Implementati; guest in sola lettura, 403 su scritture |
 | Validazione Zod | Implementata |
 | XSS | Gestita |
 | Rate limit | Implementato (con cleanup automatico) |
