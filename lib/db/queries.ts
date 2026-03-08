@@ -323,9 +323,10 @@ function getSiteConfigImpl(): Record<string, string> {
 
 /** Deduplicato per richiesta (generateMetadata + layout condividono il risultato). */
 // Vitest can run with a React build where `cache` is not exposed; fallback keeps tests executable.
-const cacheCompat: <T>(fn: T) => T = typeof reactCache === 'function'
+type CacheableFn = (...args: never[]) => unknown;
+const cacheCompat: typeof reactCache = typeof reactCache === 'function'
   ? reactCache
-  : (fn) => fn;
+  : ((fn: CacheableFn) => fn) as typeof reactCache;
 export const getSiteConfig = cacheCompat(getSiteConfigImpl);
 
 export function setSiteConfig(key: string, value: string): void {
