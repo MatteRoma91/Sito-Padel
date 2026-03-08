@@ -1,4 +1,4 @@
-import { cache } from 'react';
+import { cache as reactCache } from 'react';
 import { getDb } from './db';
 import { initSchema } from './schema';
 import { seed } from './seed';
@@ -322,7 +322,11 @@ function getSiteConfigImpl(): Record<string, string> {
 }
 
 /** Deduplicato per richiesta (generateMetadata + layout condividono il risultato). */
-export const getSiteConfig = cache(getSiteConfigImpl);
+// Vitest can run with a React build where `cache` is not exposed; fallback keeps tests executable.
+const cacheCompat: <T>(fn: T) => T = typeof reactCache === 'function'
+  ? reactCache
+  : (fn) => fn;
+export const getSiteConfig = cacheCompat(getSiteConfigImpl);
 
 export function setSiteConfig(key: string, value: string): void {
   ensureDb();
