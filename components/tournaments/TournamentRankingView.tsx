@@ -46,7 +46,7 @@ export function TournamentRankingView({ rankings, pairs, userMap }: TournamentRa
             <div 
               key={r.pair_id} 
               className={`flex items-center justify-between p-4 ${
-                r.position <= 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-[#0c1451]/20' : ''
+                r.position <= 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-surface-dark/20' : ''
               }`}
             >
               <div className="flex items-center gap-4">

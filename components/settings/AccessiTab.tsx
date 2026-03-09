@@ -99,7 +99,7 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
             sortedByLogins.map((u) => (
               <div
                 key={u.id}
-                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
               >
                 <div>
                   <p className="font-medium text-slate-800 dark:text-slate-100">
@@ -134,7 +134,7 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
               return (
                 <div
                   key={key}
-                  className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition gap-4"
+                  className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition gap-4"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-slate-800 dark:text-slate-100">

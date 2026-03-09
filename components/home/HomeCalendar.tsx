@@ -100,7 +100,7 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
           <button
             type="button"
             onClick={goPrev}
-            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
+            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-surface-primary/50 transition text-slate-700 dark:text-slate-300"
             aria-label="Mese precedente"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -111,7 +111,7 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
           <button
             type="button"
             onClick={goNext}
-            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-[#162079]/50 transition text-slate-700 dark:text-slate-300"
+            className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-surface-primary/50 transition text-slate-700 dark:text-slate-300"
             aria-label="Mese successivo"
           >
             <ChevronRight className="w-5 h-5" />
@@ -131,9 +131,9 @@ export function HomeCalendar({ tournaments, birthdays }: HomeCalendarProps) {
             <Link
               key={`${e.type}-${e.id}`}
               href={e.link}
-              className="flex items-center gap-4 p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+              className="flex items-center gap-4 p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
             >
-              <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-primary-100 dark:bg-[#162079]/30">
+              <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-primary-100 dark:bg-surface-primary/30">
                 {e.type === 'tournament' ? (
                   <Calendar className="w-5 h-5 text-accent-500" />
                 ) : (

@@ -49,7 +49,7 @@ export default async function ProfilesPage() {
           <Link
             key={user.id}
             href={`/profiles/${user.id}`}
-            className="flex items-center gap-4 p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+            className="flex items-center gap-4 p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
           >
             <Avatar 
               src={user.avatar} 

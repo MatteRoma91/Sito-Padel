@@ -24,7 +24,7 @@ export default async function CalendarPage() {
   const statusColors: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
     open: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    in_progress: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-primary-300',
+    in_progress: 'bg-primary-100 text-[#202ca1] dark:bg-surface-dark/30 dark:text-primary-300',
     completed: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
   };
 
@@ -85,7 +85,7 @@ export default async function CalendarPage() {
                             <div className={`w-14 h-14 rounded-lg flex flex-col items-center justify-center shrink-0 ${
                               isToday ? 'bg-accent-500 text-slate-900' :
                               isPast ? 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300' :
-                              'bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300'
+                              'bg-primary-100 dark:bg-surface-dark/30 text-[#202ca1] dark:text-primary-300'
                             }`}>
                               <span className="text-xl font-bold leading-none">
                                 {new Date(t.date).getDate()}

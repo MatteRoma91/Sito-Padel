@@ -46,7 +46,7 @@ export function ResetPasswordClient({ users }: { users: UserRow[] }) {
       {users.map((u) => (
         <div
           key={u.id}
-          className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+          className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
         >
           <div>
             <p className="font-medium text-slate-800 dark:text-slate-100">

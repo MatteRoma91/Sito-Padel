@@ -95,7 +95,7 @@ export function TextsTab({ config }: TextsTabProps) {
         </div>
       )}
       {SECTIONS.map((section) => (
-        <div key={section.title} className="rounded-xl bg-primary-50/50 dark:bg-[#0c1451]/30 p-4 space-y-4">
+        <div key={section.title} className="rounded-xl bg-primary-50/50 dark:bg-surface-dark/30 p-4 space-y-4">
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-primary-200 dark:border-primary-600 pb-2">
             {section.title}
           </h3>

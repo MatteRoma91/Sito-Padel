@@ -79,7 +79,7 @@ function SvgLineChart({
   const { path, yTicks, xTicks, vMin, range } = chartData;
 
   return (
-    <div className="rounded-lg bg-primary-50 dark:bg-[#0c1451]/20 p-4">
+    <div className="rounded-lg bg-primary-50 dark:bg-surface-dark/20 p-4">
       <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{title}</p>
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
@@ -184,7 +184,7 @@ export function ProfileCharts({ overallHistory, pointsHistory }: ProfileChartsPr
         <SvgLineChart
           title="Punti ATP cumulativi"
           data={pointsData}
-          stroke="var(--primary-300, #6270F3)"
+          stroke="var(--border-accent, var(--primary-300, #6270F3))"
           yMin={0}
         />
       )}

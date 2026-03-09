@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shuffle, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { User, Pair } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -29,6 +30,7 @@ export function PairsManager({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showConfirmExtract, setShowConfirmExtract] = useState(false);
+  const [pairToDelete, setPairToDelete] = useState<string | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [player1Id, setPlayer1Id] = useState('');
   const [player2Id, setPlayer2Id] = useState('');
@@ -112,7 +114,13 @@ export function PairsManager({
   }
 
   async function handleDeletePair(pairId: string) {
-    if (!confirm('Vuoi eliminare questa coppia?')) return;
+    setPairToDelete(pairId);
+  }
+
+  async function confirmDeletePair() {
+    const pairId = pairToDelete;
+    setPairToDelete(null);
+    if (!pairId) return;
 
     setLoading(true);
     setError('');
@@ -143,6 +151,16 @@ export function PairsManager({
 
   return (
     <div className="card">
+      <ConfirmDialog
+        open={pairToDelete !== null}
+        title="Elimina coppia"
+        message="Vuoi eliminare questa coppia?"
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        variant="danger"
+        onConfirm={confirmDeletePair}
+        onCancel={() => setPairToDelete(null)}
+      />
       <div className="p-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
           <div>
@@ -162,6 +180,7 @@ export function PairsManager({
               <button
                 onClick={() => setShowManualForm(!showManualForm)}
                 className="btn btn-secondary flex items-center gap-2"
+                aria-label="Aggiungi coppia manualmente"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Aggiungi Manuale</span>
@@ -174,6 +193,7 @@ export function PairsManager({
                 onClick={() => pairs.length > 0 ? setShowConfirmExtract(true) : handleExtract()}
                 disabled={loading}
                 className="btn btn-primary flex items-center gap-2"
+                aria-label="Estrazione automatica coppie"
               >
                 <Shuffle className="w-4 h-4" />
                 <span className="hidden sm:inline">Estrazione Automatica</span>
@@ -314,7 +334,7 @@ export function PairsManager({
             return (
               <div key={pair.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300 text-sm font-medium">
+                  <span className="px-2 py-0.5 rounded bg-primary-100 dark:bg-surface-dark/30 text-[#202ca1] dark:text-primary-300 text-sm font-medium">
                     Coppia {pair.seed}
                   </span>
                   <div className="flex items-center gap-2">
@@ -327,6 +347,7 @@ export function PairsManager({
                         disabled={loading}
                         className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition"
                         title="Elimina coppia"
+                        aria-label="Elimina coppia"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

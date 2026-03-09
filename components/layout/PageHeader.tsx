@@ -79,7 +79,7 @@ export function PageHeader({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {Icon && (
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 dark:bg-[#0c1451]/40">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 dark:bg-surface-dark/40">
                 <Icon className="w-5 h-5 text-accent-500" />
               </span>
             )}

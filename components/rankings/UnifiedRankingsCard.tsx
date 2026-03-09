@@ -94,7 +94,7 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                 <div
                   key={r.user_id}
                   className={`flex items-center justify-between p-4 ${
-                    i < 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-[#0c1451]/20' : ''
+                    i < 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-surface-dark/20' : ''
                   }`}
                 >
                   <div className="flex items-center gap-4">
@@ -140,7 +140,7 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                 <div
                   key={r.id}
                   className={`flex items-center justify-between p-4 ${
-                    i < 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-[#0c1451]/20' : ''
+                    i < 3 ? 'bg-gradient-to-r from-transparent to-[#e8eeff] dark:to-surface-dark/20' : ''
                   }`}
                 >
                   <div className="flex items-center gap-4">

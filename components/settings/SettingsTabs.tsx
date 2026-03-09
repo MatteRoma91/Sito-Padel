@@ -110,7 +110,7 @@ export function SettingsTabs({
   return (
     <div className="flex flex-col md:flex-row gap-6 md:gap-8">
       {/* Sidebar desktop */}
-      <aside className="hidden md:block w-56 shrink-0 rounded-xl border border-primary-200 dark:border-primary-300/50 bg-primary-50/50 dark:bg-[#0c1451]/40 py-3">
+      <aside className="hidden md:block w-56 shrink-0 rounded-xl border border-primary-200 dark:border-primary-300/50 bg-primary-50/50 dark:bg-surface-dark/40 py-3">
         <nav className="space-y-6">
           {SETTINGS_GROUPS.map((group) => (
             <div key={group.id}>

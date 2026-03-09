@@ -16,7 +16,7 @@ import { LazyWhenVisible } from '@/components/ui/LazyWhenVisible';
 
 const ProfileCharts = nextDynamic(
   () => import('@/components/profiles/ProfileCharts').then((m) => ({ default: m.ProfileCharts })),
-  { loading: () => <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" /> }
+  { loading: () => <div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-surface-dark/20" /> }
 );
 
 import { EditProfileForm } from '@/components/profiles/EditProfileForm';
@@ -136,7 +136,7 @@ export default async function ProfileDetailPage({
               );
             })()}
             {user.role === 'admin' && (
-              <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-[#0c1451]/30 text-[#202ca1] dark:text-primary-300">
+              <span className="inline-block mt-2 px-2 py-0.5 text-xs rounded bg-primary-100 dark:bg-surface-dark/30 text-[#202ca1] dark:text-primary-300">
                 Admin
               </span>
             )}
@@ -179,7 +179,7 @@ export default async function ProfileDetailPage({
         </div>
 
         <LazyWhenVisible
-          fallback={<div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-[#0c1451]/20" />}
+          fallback={<div className="mt-6 pt-6 border-t border-primary-100 dark:border-primary-300/50 h-64 animate-pulse rounded-lg bg-primary-50 dark:bg-surface-dark/20" />}
         >
           <ProfileCharts overallHistory={overallHistory} pointsHistory={pointsHistory} />
         </LazyWhenVisible>
@@ -192,19 +192,19 @@ export default async function ProfileDetailPage({
               {hasBoth ? 'Statistiche tornei' : 'Statistiche di gioco'}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{playerStats.gamesWon}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{playerStats.gamesLost}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{playerStats.winRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{playerStats.gamesWinRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
               </div>
@@ -242,19 +242,19 @@ export default async function ProfileDetailPage({
               Partite fuori torneo
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.gamesWon}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{nonTournamentPlayerStats.gamesLost}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.winRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{nonTournamentPlayerStats.gamesWinRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
               </div>
@@ -288,7 +288,7 @@ export default async function ProfileDetailPage({
                   <Link
                     key={m.bookingId}
                     href={`/sports-center/bookings/${m.bookingId}`}
-                    className="flex items-center justify-between p-3 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+                    className="flex items-center justify-between p-3 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-slate-800 dark:text-slate-100 truncate">{m.bookingName}</p>
@@ -326,19 +326,19 @@ export default async function ProfileDetailPage({
               Tutte le partite
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{combinedStats.gamesWon}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game vinti</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-slate-700 dark:text-slate-300">{combinedStats.gamesLost}</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Game persi</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{combinedStats.winRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Vittorie</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-[#0c1451]/20">
+              <div className="text-center p-3 rounded-lg bg-primary-50 dark:bg-surface-dark/20">
                 <p className="text-xl font-bold text-accent-500">{combinedStats.gamesWinRate}%</p>
                 <p className="text-xs text-slate-700 dark:text-slate-300">Efficienza game</p>
               </div>
@@ -448,7 +448,7 @@ export default async function ProfileDetailPage({
               <Link 
                 key={t.id} 
                 href={`/tournaments/${t.id}`}
-                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
               >
                 <div>
                   <p className="font-medium text-slate-800 dark:text-slate-100">{t.name}</p>
@@ -471,7 +471,7 @@ export default async function ProfileDetailPage({
             {hasBoth ? 'Storico partite torneo' : 'Storico Partite'}
           </h2>
         </div>
-        <div className="divide-y divide-[#9AB0F8] dark:divide-[#6270F3]/50">
+        <div className="divide-y divide-[#9AB0F8] dark:divide-border-accent/50">
           {matchHistory.length === 0 ? (
             <p className="p-4 text-slate-700 dark:text-slate-300 text-sm">
               Nessuna partita disputata
@@ -481,7 +481,7 @@ export default async function ProfileDetailPage({
               <Link
                 key={m.matchId}
                 href={`/tournaments/${m.tournamentId}/bracket`}
-                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition"
+                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800 dark:text-slate-100 truncate">

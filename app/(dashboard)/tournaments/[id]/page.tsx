@@ -86,7 +86,7 @@ export default async function TournamentDetailPage({
   const statusLabels: Record<string, { label: string; color: string }> = {
     draft: { label: 'Bozza', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
     open: { label: 'Iscrizioni aperte', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    in_progress: { label: 'In corso', color: 'bg-primary-100 text-[#202ca1] dark:bg-[#0c1451]/30 dark:text-primary-300' },
+    in_progress: { label: 'In corso', color: 'bg-primary-100 text-[#202ca1] dark:bg-surface-dark/30 dark:text-primary-300' },
     completed: { label: 'Completato', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
   };
 

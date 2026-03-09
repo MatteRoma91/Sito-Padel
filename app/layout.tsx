@@ -54,6 +54,12 @@ function buildConfigCss(config: Record<string, string>): string {
       vars.push(`--${cssKey}: ${val}`);
     }
   }
+  const p800 = config.color_primary_800;
+  const p900 = config.color_primary_900;
+  const p300 = config.color_primary_300;
+  if (p800 && /^#[0-9A-Fa-f]{6}$/.test(p800)) vars.push(`--surface-primary: ${p800}`);
+  if (p900 && /^#[0-9A-Fa-f]{6}$/.test(p900)) vars.push(`--surface-dark: ${p900}`);
+  if (p300 && /^#[0-9A-Fa-f]{6}$/.test(p300)) vars.push(`--border-accent: ${p300}`);
   return vars.length > 0 ? `:root { ${vars.join('; ')} }` : '';
 }
 

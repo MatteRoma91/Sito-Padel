@@ -147,7 +147,7 @@ export function GalleriaTab() {
             items.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/20"
+                className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/20"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {item.type === 'image' ? (

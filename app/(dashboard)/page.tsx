@@ -196,7 +196,7 @@ export default async function HomePage() {
               </p>
             ) : (
               recentTournaments.map(t => (
-                <Link key={t.id} href={`/tournaments/${t.id}`} className="block p-4 hover:bg-primary-50 dark:hover:bg-[#162079]/50 transition">
+                <Link key={t.id} href={`/tournaments/${t.id}`} className="block p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition">
                   <p className="font-medium text-slate-800 dark:text-slate-100">{t.name}</p>
                   <p className="text-sm text-slate-700 dark:text-slate-300">
                     {new Date(t.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}
