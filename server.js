@@ -8,6 +8,9 @@ const next = require('next');
 const { Server } = require('socket.io');
 const { unsealData } = require('iron-session');
 const { runChatMigration } = require('./lib/db/chat-migration');
+const { loadEnvConfig } = require('@next/env');
+
+loadEnvConfig(process.cwd());
 
 const SESSION_PASSWORD = (() => {
   const secret = process.env.SESSION_SECRET;
