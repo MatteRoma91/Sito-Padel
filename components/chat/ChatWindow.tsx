@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Send, ArrowLeft, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const CHAT_UNREAD_UPDATE = 'chat:unread-update';
 
@@ -23,22 +24,26 @@ interface ChatWindowProps {
 
 export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDeleted }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<{ on: (e: string, cb: (m: Message) => void) => void; emit: (e: string, ...args: unknown[]) => void; disconnect?: () => void } | null>(null);
 
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      setMessagesError(null);
       setTitle('');
       return;
     }
 
     let cancelled = false;
     setLoading(true);
+    setMessagesError(null);
     fetch(`/api/chat/conversations/${conversationId}`)
       .then(r => r.json())
       .then(data => {
@@ -46,20 +51,34 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
         setTitle(data.conversation?.title ?? 'Chat');
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) {
+          setTitle('Chat');
+          setLoading(false);
+        }
+      });
 
     fetch(`/api/chat/conversations/${conversationId}/messages?limit=50`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('Fetch failed');
+        return r.json();
+      })
       .then(data => {
         if (cancelled) return;
         setMessages(data.messages ?? []);
+        setMessagesError(null);
         fetch(`/api/chat/conversations/${conversationId}/read`, { method: 'POST' })
           .then(() => {
             if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(CHAT_UNREAD_UPDATE));
           })
           .catch(() => {});
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) {
+          setMessages([]);
+          setMessagesError('Impossibile caricare i messaggi');
+        }
+      });
 
     return () => { cancelled = true; };
   }, [conversationId]);
@@ -67,11 +86,17 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
   useEffect(() => {
     if (!conversationId) return;
 
+    let cancelled = false;
+
     import('socket.io-client').then(({ io }) => {
       const socket = io(typeof window !== 'undefined' ? window.location.origin : '', {
         path: '/api/socket',
         addTrailingSlash: false,
       });
+      if (cancelled) {
+        socket.disconnect();
+        return;
+      }
       socketRef.current = socket;
 
       socket.emit('chat:join', conversationId);
@@ -92,9 +117,11 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
     });
 
     return () => {
+      cancelled = true;
       const s = socketRef.current;
       if (s) {
         s.emit('chat:leave', conversationId);
+        s.disconnect?.();
         socketRef.current = null;
       }
     };
@@ -106,7 +133,12 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
 
   const handleDelete = async () => {
     if (!conversationId || !isAdmin || !onConversationDeleted) return;
-    if (!confirm('Eliminare definitivamente questa conversazione e tutti i messaggi?')) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    if (!conversationId || !onConversationDeleted) return;
     try {
       const res = await fetch(`/api/chat/conversations/${conversationId}`, { method: 'DELETE' });
       const data = await res.json();
@@ -149,6 +181,16 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
 
   return (
     <div className="flex flex-col h-full">
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Elimina conversazione"
+        message="Eliminare definitivamente questa conversazione e tutti i messaggi?"
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
       <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
         {onClose && (
           <button
@@ -177,6 +219,8 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
       >
         {loading ? (
           <p className="text-slate-500">Caricamento...</p>
+        ) : messagesError ? (
+          <p className="text-red-500 dark:text-red-400 text-sm" role="alert">{messagesError}</p>
         ) : messages.length === 0 ? (
           <p className="text-slate-500 text-sm">Nessun messaggio. Scrivi qualcosa per iniziare.</p>
         ) : (
