@@ -9,7 +9,14 @@ const { Server } = require('socket.io');
 const { unsealData } = require('iron-session');
 const { runChatMigration } = require('./lib/db/chat-migration');
 
-const SESSION_PASSWORD = process.env.SESSION_SECRET || 'complex_password_at_least_32_characters_long_for_iron_session';
+const SESSION_PASSWORD = (() => {
+  const secret = process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    console.error('SESSION_SECRET è obbligatorio in produzione');
+    process.exit(1);
+  }
+  return secret || 'complex_password_at_least_32_characters_long_for_iron_session';
+})();
 const SESSION_COOKIE = 'padel-session';
 const SESSION_TTL = 60 * 60 * 2; // 2 ore
 
