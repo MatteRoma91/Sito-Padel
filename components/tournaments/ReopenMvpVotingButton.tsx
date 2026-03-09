@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RotateCcw } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface ReopenMvpVotingButtonProps {
   tournamentId: string;
@@ -13,12 +14,14 @@ export function ReopenMvpVotingButton({ tournamentId, tournamentName }: ReopenMv
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleReopen() {
-    if (!confirm(`Vuoi riaprire la votazione MVP per "${tournamentName}"? I voti già espressi resteranno validi e la scadenza sarà impostata a 48 ore da ora.`)) {
-      return;
-    }
+    setShowConfirm(true);
+  }
 
+  async function confirmReopen() {
+    setShowConfirm(false);
     setLoading(true);
     setError('');
 
@@ -45,6 +48,15 @@ export function ReopenMvpVotingButton({ tournamentId, tournamentName }: ReopenMv
 
   return (
     <div className="card p-6 border-2 border-amber-500/50 bg-amber-50/30 dark:bg-amber-900/10">
+      <ConfirmDialog
+        open={showConfirm}
+        title="Riapri votazione MVP"
+        message={`Vuoi riaprire la votazione MVP per "${tournamentName}"? I voti già espressi resteranno validi e la scadenza sarà impostata a 48 ore da ora.`}
+        confirmLabel="Riapri"
+        cancelLabel="Annulla"
+        onConfirm={confirmReopen}
+        onCancel={() => setShowConfirm(false)}
+      />
       <div className="flex items-center justify-between">
         <div>
           <p className="font-medium text-amber-800 dark:text-amber-200">

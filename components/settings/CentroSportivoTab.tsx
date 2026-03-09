@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LayoutGrid, Plus, Trash2, Save } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type Court = { id: string; name: string; type: string; display_order: number };
 
@@ -46,6 +47,7 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
   const [newCourtType, setNewCourtType] = useState<'indoor' | 'outdoor'>('indoor');
   const [newCourtOrder, setNewCourtOrder] = useState(0);
   const [addingCourt, setAddingCourt] = useState(false);
+  const [courtToDelete, setCourtToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCourts() {
@@ -200,8 +202,14 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
     }
   }
 
-  async function handleDeleteCourt(id: string) {
-    if (!confirm('Eliminare questo campo? Non è possibile se esistono prenotazioni confermate.')) return;
+  function handleDeleteCourt(id: string) {
+    setCourtToDelete(id);
+  }
+
+  async function confirmDeleteCourt() {
+    const id = courtToDelete;
+    setCourtToDelete(null);
+    if (!id) return;
     setMessage(null);
     try {
       const res = await fetch(`/api/sports-center/courts/${id}`, { method: 'DELETE' });
@@ -255,6 +263,15 @@ export function CentroSportivoTab({ config }: CentroSportivoTabProps) {
 
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={courtToDelete !== null}
+        title="Elimina campo"
+        message="Eliminare questo campo? Non è possibile se esistono prenotazioni confermate."
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        onConfirm={confirmDeleteCourt}
+        onCancel={() => setCourtToDelete(null)}
+      />
       {message && (
         <div
           className={`p-3 rounded-lg text-sm ${message.type === 'ok' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { KeyRound, Trash2, Edit2, Eye, EyeOff, X, MoreVertical } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Avatar } from '@/components/ui/Avatar';
 
 interface UserRow {
@@ -47,6 +48,7 @@ export function UsersTab({ users }: UsersTabProps) {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('tutti');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
 
   async function handleResetPassword(userId: string, password: string) {
     setLoadingId(userId);
@@ -73,13 +75,19 @@ export function UsersTab({ users }: UsersTabProps) {
     }
   }
 
-  async function handleDelete(userId: string, userName: string) {
-    if (!confirm(`Eliminare l'utente "${userName}"? Questa azione non può essere annullata.`)) return;
-    setLoadingId(userId);
-    setError(null);
+  function handleDelete(userId: string, userName: string) {
+    setUserToDelete({ id: userId, name: userName });
     setOpenMenuId(null);
+  }
+
+  async function confirmDelete() {
+    const u = userToDelete;
+    setUserToDelete(null);
+    if (!u) return;
+    setLoadingId(u.id);
+    setError(null);
     try {
-      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users/${u.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         router.refresh();
@@ -125,6 +133,16 @@ export function UsersTab({ users }: UsersTabProps) {
 
   return (
     <>
+      <ConfirmDialog
+        open={userToDelete !== null}
+        title="Elimina utente"
+        message={userToDelete ? `Eliminare l'utente "${userToDelete.name}"? Questa azione non può essere annullata.` : ''}
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setUserToDelete(null)}
+      />
       <Card className="overflow-hidden">
         {error && (
           <div className="p-4 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm" role="alert">

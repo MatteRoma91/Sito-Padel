@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy, CheckCircle } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface ConsolidateResultsButtonProps {
   tournamentId: string;
@@ -12,12 +13,14 @@ export function ConsolidateResultsButton({ tournamentId }: ConsolidateResultsBut
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleConsolidate() {
-    if (!confirm('Vuoi consolidare i risultati del torneo? Questo calcolerà le classifiche e aggiornerà le statistiche dei giocatori.')) {
-      return;
-    }
+    setShowConfirm(true);
+  }
 
+  async function confirmConsolidate() {
+    setShowConfirm(false);
     setLoading(true);
     setError('');
 
@@ -42,6 +45,15 @@ export function ConsolidateResultsButton({ tournamentId }: ConsolidateResultsBut
 
   return (
     <div className="card p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+      <ConfirmDialog
+        open={showConfirm}
+        title="Consolida risultati"
+        message="Vuoi consolidare i risultati del torneo? Questo calcolerà le classifiche e aggiornerà le statistiche dei giocatori."
+        confirmLabel="Consolida"
+        cancelLabel="Annulla"
+        onConfirm={confirmConsolidate}
+        onCancel={() => setShowConfirm(false)}
+      />
       <div className="flex items-center justify-between">
         <div>
           <p className="font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">

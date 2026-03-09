@@ -3,16 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function RecalculateRankingsClient() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ recalculated: number; totalCompleted: number } | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleRecalculate() {
-    if (!confirm('Ricalcolare i punteggi di tutti i tornei completati con il nuovo sistema (Grande Slam / Master 1000)?')) return;
+    setShowConfirm(true);
+  }
 
+  async function confirmRecalculate() {
+    setShowConfirm(false);
     setLoading(true);
     setError('');
     setSuccess(null);
@@ -36,6 +41,15 @@ export function RecalculateRankingsClient() {
 
   return (
     <div className="card p-6 space-y-4">
+      <ConfirmDialog
+        open={showConfirm}
+        title="Ricalcola punteggi"
+        message="Ricalcolare i punteggi di tutti i tornei completati con il nuovo sistema (Grande Slam / Master 1000)?"
+        confirmLabel="Ricalcola"
+        cancelLabel="Annulla"
+        onConfirm={confirmRecalculate}
+        onCancel={() => setShowConfirm(false)}
+      />
       <button
         type="button"
         onClick={handleRecalculate}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Unlock } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface ReopenTournamentButtonProps {
   tournamentId: string;
@@ -12,12 +13,14 @@ export function ReopenTournamentButton({ tournamentId }: ReopenTournamentButtonP
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleReopen() {
-    if (!confirm('Vuoi riaprire il torneo per modifiche? Il torneo tornerà in stato "In corso" e potrai modificare risultati e coppie.')) {
-      return;
-    }
+    setShowConfirm(true);
+  }
 
+  async function confirmReopen() {
+    setShowConfirm(false);
     setLoading(true);
     setError('');
 
@@ -44,6 +47,15 @@ export function ReopenTournamentButton({ tournamentId }: ReopenTournamentButtonP
 
   return (
     <div className="card p-4 border-[#e5ff99] bg-accent-50">
+      <ConfirmDialog
+        open={showConfirm}
+        title="Riapri torneo"
+        message="Vuoi riaprire il torneo per modifiche? Il torneo tornerà in stato &quot;In corso&quot; e potrai modificare risultati e coppie."
+        confirmLabel="Riapri"
+        cancelLabel="Annulla"
+        onConfirm={confirmReopen}
+        onCancel={() => setShowConfirm(false)}
+      />
       <div className="flex items-center justify-between">
         <div>
           <p className="font-medium text-[#629900]">

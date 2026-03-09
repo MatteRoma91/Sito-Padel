@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Avatar } from '@/components/ui/Avatar';
 
 type BookingInfo = {
@@ -131,6 +132,8 @@ export function BookingDetailClient({
   const [resultSet1, setResultSet1] = useState({ c1: 0, c2: 0 });
   const [resultSet2, setResultSet2] = useState({ c1: 0, c2: 0 });
   const [resultSet3, setResultSet3] = useState<{ c1: number; c2: number } | null>(null);
+  const [showReopenConfirm, setShowReopenConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const initial = normalizeInitial(initialParticipants);
 
@@ -250,8 +253,12 @@ export function BookingDetailClient({
     }
   };
 
-  const handleReopen = async () => {
-    if (!confirm('Riaprire la partita? I partecipanti potranno essere modificati di nuovo. L\'eventuale risultato verrà rimosso.')) return;
+  const handleReopen = () => {
+    setShowReopenConfirm(true);
+  };
+
+  const confirmReopen = async () => {
+    setShowReopenConfirm(false);
     setReopening(true);
     setMessage(null);
     try {
@@ -269,8 +276,12 @@ export function BookingDetailClient({
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Eliminare la partita? La prenotazione verrà cancellata e non sarà più visibile.')) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
     setDeleting(true);
     setMessage(null);
     try {
@@ -310,6 +321,25 @@ export function BookingDetailClient({
 
   return (
     <div className="card space-y-6">
+      <ConfirmDialog
+        open={showReopenConfirm}
+        title="Riapri partita"
+        message="Riaprire la partita? I partecipanti potranno essere modificati di nuovo. L'eventuale risultato verrà rimosso."
+        confirmLabel="Riapri"
+        cancelLabel="Annulla"
+        onConfirm={confirmReopen}
+        onCancel={() => setShowReopenConfirm(false)}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Elimina partita"
+        message="Eliminare la partita? La prenotazione verrà cancellata e non sarà più visibile."
+        confirmLabel="Elimina"
+        cancelLabel="Annulla"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
       <div>
         {isAdmin ? (
           <div className="space-y-3">

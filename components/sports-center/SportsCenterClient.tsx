@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CourtGrid } from './CourtGrid';
 import { BookingsList } from './BookingsList';
 import { BookingForm } from './BookingForm';
@@ -42,6 +43,7 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingModal, setBookingModal] = useState<{ courtId: string; courtName: string; slotStart: string; slotEnd: string } | null>(null);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
 
   const isGuest = user.role === 'guest';
   const isAdmin = user.role === 'admin';
@@ -79,10 +81,16 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
     fetchData();
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm('Annullare questa prenotazione?')) return;
+  const handleCancelBooking = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+  };
+
+  const confirmCancelBooking = async () => {
+    const id = bookingToCancel;
+    setBookingToCancel(null);
+    if (!id) return;
     try {
-      const res = await fetch(`/api/sports-center/bookings/${bookingId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/sports-center/bookings/${id}`, { method: 'DELETE' });
       if (res.ok) fetchData();
     } catch {
       // ignore
@@ -103,6 +111,16 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
 
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={bookingToCancel !== null}
+        title="Annulla prenotazione"
+        message="Annullare questa prenotazione?"
+        confirmLabel="Annulla prenotazione"
+        cancelLabel="Indietro"
+        variant="danger"
+        onConfirm={confirmCancelBooking}
+        onCancel={() => setBookingToCancel(null)}
+      />
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1">
           <button
