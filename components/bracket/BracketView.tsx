@@ -203,6 +203,7 @@ export function BracketView({
             onClick={generateBracket}
             disabled={loading}
             className="btn btn-primary inline-flex items-center gap-2"
+            aria-label="Genera tabellone"
           >
             <Play className="w-4 h-4" />
             {loading ? 'Generazione...' : 'Genera Tabellone'}
@@ -302,6 +303,7 @@ export function BracketView({
                   value={scores.pair1}
                   onChange={(e) => setScores(s => ({ ...s, pair1: e.target.value }))}
                   className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
+                  aria-label="Punteggio coppia 1"
                 />
               ) : (
                 <span className="font-mono">{score1 ?? '-'}</span>
@@ -322,6 +324,7 @@ export function BracketView({
                   value={scores.pair2}
                   onChange={(e) => setScores(s => ({ ...s, pair2: e.target.value }))}
                   className="w-12 px-2 py-1 text-center rounded border border-primary-100 bg-white text-slate-900 dark:text-slate-900"
+                  aria-label="Punteggio coppia 2"
                 />
               ) : (
                 <span className="font-mono">{score2 ?? '-'}</span>
@@ -337,6 +340,7 @@ export function BracketView({
                       onClick={() => submitResult(match.id)}
                       disabled={loading}
                       className="btn btn-primary text-xs py-1 flex-1"
+                      aria-label="Salva risultato match"
                     >
                       <Check className="w-3 h-3 mr-1" />
                       Salva
@@ -344,6 +348,7 @@ export function BracketView({
                     <button
                       onClick={() => { setActiveMatch(null); setScores({ pair1: '', pair2: '' }); }}
                       className="btn btn-secondary text-xs py-1"
+                      aria-label="Annulla inserimento risultato"
                     >
                       Annulla
                     </button>
@@ -358,6 +363,7 @@ export function BracketView({
                       });
                     }}
                     className="btn btn-secondary text-xs py-1 w-full"
+                    aria-label={isComplete ? 'Modifica risultato match' : 'Inserisci risultato match'}
                   >
                     {isComplete ? 'Modifica Risultato' : 'Inserisci risultato'}
                   </button>
@@ -457,6 +463,7 @@ export function BracketView({
                 onClick={generateBracket}
                 disabled={loading}
                 className="btn btn-secondary flex items-center gap-2"
+                aria-label="Rigenera tabellone"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Rigenerazione...' : 'Rigenera Calendario'}
@@ -537,6 +544,7 @@ export function BracketView({
               <button
                 onClick={startEditingQuarterfinals}
                 className="btn btn-secondary text-sm flex items-center gap-1"
+                aria-label="Modifica coppie quarti di finale"
               >
                 <Users className="w-4 h-4" />
                 Modifica Coppie
@@ -547,6 +555,7 @@ export function BracketView({
                 onClick={generateBracket}
                 disabled={loading}
                 className="btn btn-secondary flex items-center gap-2"
+                aria-label="Rigenera tabellone"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Rigenerazione...' : 'Rigenera Tabellone'}
@@ -571,6 +580,7 @@ export function BracketView({
                 onClick={saveAllQuarterfinals}
                 disabled={loading}
                 className="btn btn-primary text-sm flex items-center gap-1"
+                aria-label="Salva assegnazione coppie"
               >
                 <Check className="w-4 h-4" />
                 {loading ? 'Salvataggio...' : 'Salva Tutto'}
@@ -579,6 +589,7 @@ export function BracketView({
                 onClick={cancelEditingQuarterfinals}
                 disabled={loading}
                 className="btn btn-secondary text-sm flex items-center gap-1"
+                aria-label="Annulla modifica coppie"
               >
                 <X className="w-4 h-4" />
                 Annulla

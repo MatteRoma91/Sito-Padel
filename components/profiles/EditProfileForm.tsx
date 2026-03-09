@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import heic2any from 'heic2any';
 import type { User, SkillLevel } from '@/lib/types';
 import { SKILL_LEVEL_LABELS } from '@/lib/types';
@@ -33,6 +34,7 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar);
+  const [showRemoveAvatarConfirm, setShowRemoveAvatarConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -89,9 +91,12 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
     }
   }
 
-  async function handleAvatarDelete() {
-    if (!confirm('Vuoi rimuovere la foto profilo?')) return;
+  function handleAvatarDelete() {
+    setShowRemoveAvatarConfirm(true);
+  }
 
+  async function confirmAvatarDelete() {
+    setShowRemoveAvatarConfirm(false);
     setAvatarLoading(true);
     setError('');
 
@@ -168,6 +173,15 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
 
   return (
     <Card className="p-6">
+      <ConfirmDialog
+        open={showRemoveAvatarConfirm}
+        title="Rimuovi foto profilo"
+        message="Vuoi rimuovere la foto profilo?"
+        confirmLabel="Rimuovi"
+        cancelLabel="Annulla"
+        onConfirm={confirmAvatarDelete}
+        onCancel={() => setShowRemoveAvatarConfirm(false)}
+      />
       <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Modifica profilo</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? 'edit-profile-error' : undefined}>
@@ -209,6 +223,7 @@ export function EditProfileForm({ user, isAdmin, isOwnProfile }: EditProfileForm
                   onClick={handleAvatarDelete}
                   disabled={avatarLoading}
                   className="btn btn-secondary text-sm flex items-center gap-2 text-red-600 hover:text-red-700"
+                  aria-label="Rimuovi foto profilo"
                 >
                   <Trash2 className="w-4 h-4" />
                   Rimuovi

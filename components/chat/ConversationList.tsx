@@ -211,6 +211,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
         <button
           onClick={() => setShowNew(!showNew)}
           className="mt-2 text-sm text-accent-600 dark:text-accent-400 hover:underline"
+          aria-label={showNew ? 'Annulla nuova chat' : 'Avvia nuova chat'}
         >
           {showNew ? 'Annulla' : '+ Nuova chat'}
         </button>
@@ -225,6 +226,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
             <button
               onClick={openOrCreateBroadcast}
               className="block w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium bg-primary-50 dark:bg-primary-900/20"
+              aria-label="Avvia chat con tutti gli utenti"
             >
               Chat con tutti gli utenti
             </button>
@@ -253,6 +255,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
                       type="button"
                       onClick={(e) => { e.preventDefault(); openOrCreateDm(u.id); }}
                       className="text-xs text-accent-600 dark:text-accent-400 hover:underline"
+                      aria-label={`Avvia chat privata con ${u.nickname || u.full_name || u.username}`}
                     >
                       Solo lui
                     </button>
@@ -264,6 +267,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
                     disabled={creatingChat}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); openOrCreateFromSelection(); }}
                     className="mt-2 w-full px-3 py-2 rounded bg-accent-500 text-slate-900 font-medium text-sm hover:bg-accent-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={`Avvia chat ${selectedUserIds.size === 1 ? 'privata' : `di gruppo con ${selectedUserIds.size} utenti`}`}
                   >
                     {creatingChat ? 'Creazione...' : `Avvia chat ${selectedUserIds.size === 1 ? 'privata' : `di gruppo (${selectedUserIds.size})`}`}
                   </button>
@@ -284,6 +288,7 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
                     key={t.id}
                     onClick={() => openOrCreateTournament(t.id)}
                     className="block w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
+                    aria-label={`Avvia chat torneo ${t.name}`}
                   >
                     {t.name}
                   </button>
@@ -316,6 +321,8 @@ export function ConversationList({ activeId, onSelect, deletedConversationId }: 
                     ? 'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
+                aria-label={`Apri conversazione ${c.title}`}
+                aria-pressed={activeId === c.id}
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-primary-700 dark:text-primary-300 flex-shrink-0 bg-primary-200 dark:bg-primary-800">
                   {c.type === 'broadcast' ? <Megaphone className="w-5 h-5" /> : c.type === 'tournament' ? <Trophy className="w-5 h-5" /> : (
