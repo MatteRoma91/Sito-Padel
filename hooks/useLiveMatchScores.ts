@@ -25,12 +25,17 @@ export function useLiveMatchScores(tournamentId: string | null) {
   useEffect(() => {
     if (!tournamentId) return;
 
+    let cancelled = false;
+
     import('socket.io-client').then(({ io }) => {
-      const url = typeof window !== 'undefined' ? window.location.origin : '';
-      const socket = io(url, {
+      const socket = io(typeof window !== 'undefined' ? window.location.origin : '', {
         path: '/api/socket',
         addTrailingSlash: false,
       });
+      if (cancelled) {
+        socket.disconnect();
+        return;
+      }
       socketRef.current = socket;
 
       socket.on('connect', () => {
@@ -55,6 +60,7 @@ export function useLiveMatchScores(tournamentId: string | null) {
     });
 
     return () => {
+      cancelled = true;
       const s = socketRef.current;
       if (s) {
         s.emit('tournament:leave', tournamentId);
