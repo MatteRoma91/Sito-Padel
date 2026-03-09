@@ -68,6 +68,16 @@ export const matchResultSchema = z.object({
   winner_pair_id: z.string().uuid(),
 });
 
+export const matchScoreSchema = z
+  .object({
+    score_pair1: z.number().int().min(0).max(99),
+    score_pair2: z.number().int().min(0).max(99),
+  })
+  .refine((data) => data.score_pair1 !== data.score_pair2, {
+    message: 'I punteggi devono essere diversi',
+    path: ['score_pair1'],
+  });
+
 export const settingsPatchSchema = z.object({
   action: z.literal('seed').optional(),
 }).catchall(z.union([z.string(), z.number(), z.boolean()]));

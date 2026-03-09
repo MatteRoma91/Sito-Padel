@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getMatchById, getMatches, updateMatchResult, updateMatchPairs } from '@/lib/db/queries';
 import { propagateResults } from '@/lib/bracket';
+import { parseOrThrow, matchScoreSchema, ValidationError } from '@/lib/validations';
 
 export async function POST(
   request: Request,
@@ -21,7 +22,8 @@ export async function POST(
   }
 
   try {
-    const { score_pair1, score_pair2 } = await request.json();
+    const body = await request.json();
+    const { score_pair1, score_pair2 } = parseOrThrow(matchScoreSchema, body);
 
     const match = getMatchById(matchId);
     if (!match || match.tournament_id !== tournamentId) {
@@ -32,14 +34,6 @@ export async function POST(
       return NextResponse.json({ 
         success: false, 
         error: 'Le coppie non sono ancora state determinate per questo match' 
-      }, { status: 400 });
-    }
-
-    if (typeof score_pair1 !== 'number' || typeof score_pair2 !== 'number' || 
-        score_pair1 < 0 || score_pair2 < 0 || score_pair1 === score_pair2) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Punteggi non validi (devono essere numeri diversi >= 0)' 
       }, { status: 400 });
     }
 
@@ -80,6 +74,9 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     console.error('Submit result error:', error);
     const message = error instanceof Error ? error.message : 'Errore del server';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
