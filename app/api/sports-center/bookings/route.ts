@@ -74,6 +74,24 @@ export async function POST(request: Request) {
         error: 'Il nome della prenotazione è obbligatorio',
       }, { status: 400 });
     }
+    if (booking_name.trim().length > 200) {
+      return NextResponse.json({
+        success: false,
+        error: 'Il nome della prenotazione non può superare i 200 caratteri',
+      }, { status: 400 });
+    }
+    if (guest_name && typeof guest_name === 'string' && guest_name.trim().length > 200) {
+      return NextResponse.json({
+        success: false,
+        error: 'Il nome ospite non può superare i 200 caratteri',
+      }, { status: 400 });
+    }
+    if (guest_phone && typeof guest_phone === 'string' && guest_phone.trim().length > 50) {
+      return NextResponse.json({
+        success: false,
+        error: 'Il telefono ospite non può superare i 50 caratteri',
+      }, { status: 400 });
+    }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ success: false, error: 'Data non valida (YYYY-MM-DD)' }, { status: 400 });

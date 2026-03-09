@@ -31,6 +31,10 @@ export async function DELETE(
 
   try {
     const fullPath = path.join(process.cwd(), 'public', media.file_path.replace(/^\//, ''));
+    const galleryBase = path.join(process.cwd(), 'public', 'gallery');
+    if (!path.resolve(fullPath).startsWith(path.resolve(galleryBase))) {
+      return NextResponse.json({ success: false, error: 'Percorso file non valido' }, { status: 400 });
+    }
     if (existsSync(fullPath)) {
       await unlink(fullPath);
     }

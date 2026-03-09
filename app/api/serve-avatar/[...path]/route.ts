@@ -24,6 +24,11 @@ export async function GET(
   }
 
   const filepath = path.join(AVATARS_DIR, filename);
+  const resolved = path.resolve(filepath);
+  const base = path.resolve(AVATARS_DIR);
+  if (resolved !== base && !resolved.startsWith(base + path.sep)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   const ext = path.extname(filename).toLowerCase();
 
   if (!MIME_TYPES[ext] || !existsSync(filepath)) {

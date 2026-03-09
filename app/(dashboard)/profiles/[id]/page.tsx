@@ -424,7 +424,21 @@ export default async function ProfileDetailPage({
       {/* Edit form (admin or own profile) */}
       {(isAdmin || isOwnProfile) && userCanEdit && (
         <EditProfileForm 
-          user={user} 
+          user={{
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            nickname: user.nickname,
+            role: user.role,
+            avatar: user.avatar,
+            skill_level: user.skill_level,
+            overall_score: user.overall_score,
+            bio: user.bio,
+            preferred_side: user.preferred_side,
+            preferred_hand: user.preferred_hand,
+            birth_date: user.birth_date,
+            is_hidden: user.is_hidden,
+          }}
           isAdmin={isAdmin ?? false}
           isOwnProfile={isOwnProfile ?? false}
         />

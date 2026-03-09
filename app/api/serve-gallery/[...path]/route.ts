@@ -26,6 +26,11 @@ export async function GET(
   }
 
   const filepath = path.join(GALLERY_DIR, filename);
+  const resolved = path.resolve(filepath);
+  const base = path.resolve(GALLERY_DIR);
+  if (resolved !== base && !resolved.startsWith(base + path.sep)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   const ext = path.extname(filename).toLowerCase();
 
   if (!MIME_TYPES[ext] || !existsSync(filepath)) {

@@ -1,0 +1,34 @@
+---
+description: Regola per push Git - ogni webapp va sulla sua repo, mai mescolare
+alwaysApply: true
+---
+
+# Repo Git separate per webapp
+
+Questo workspace contiene **3 webapp distinte**, ciascuna con la **propria repo Git**:
+
+| Webapp | Cartella | Repo GitHub | Remote |
+|--------|----------|-------------|--------|
+| **Sito-Padel** | `/home/ubuntu/Sito-Padel` | MatteRoma91/Sito-Padel | origin |
+| **Roma-Buche** | `/home/ubuntu/Roma-Buche` | MatteRoma91/Ibuche | origin |
+| **control-room** | `/home/ubuntu/control-room` | MatteRoma91/Control-Room | origin |
+
+## Regola obbligatoria
+
+Quando modifichi una webapp, **pusha SOLO sulla repo corrispondente**:
+
+- **Modifichi file in Sito-Padel** → `git push origin <branch>` (va su Sito-Padel.git)
+- **Modifichi file in Roma-Buche** → `cd /home/ubuntu/Roma-Buche && git push origin <branch>` (va su Ibuche.git)
+- **Modifichi file in control-room** → `cd /home/ubuntu/control-room && git push origin <branch>` (va su Control-Room.git)
+
+## Prima di pushare
+
+1. Verifica di essere nella **cartella corretta**: `pwd`
+2. Verifica il **remote**: `git remote -v` (origin deve puntare alla repo giusta)
+3. Non fare `git add` di file da altre cartelle
+
+## Struttura corretta
+
+- Ogni progetto è un clone separato con il suo `.git`
+- Non esistono branch "incrociate" (es. branch Ibuche dentro repo Sito-Padel)
+- Il workspace può avere più cartelle aperte, ma il push va fatto dalla cartella del progetto modificato

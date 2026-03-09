@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const path = typeof body.path === 'string' ? body.path.trim() : null;
-    if (!path) {
+    if (!path || path.length > 500) {
       return NextResponse.json({ error: 'path richiesto' }, { status: 400 });
     }
     // Escludi path non significativi

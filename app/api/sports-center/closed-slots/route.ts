@@ -39,6 +39,10 @@ export async function PUT(request: Request) {
       if (day_of_week < 0 || day_of_week > 6) {
         return NextResponse.json({ error: 'day_of_week deve essere 0-6 (0=domenica)' }, { status: 400 });
       }
+      const timeRegex = /^\d{2}:\d{2}$/;
+      if (!timeRegex.test(String(slot_start)) || !timeRegex.test(String(slot_end))) {
+        return NextResponse.json({ error: 'slot_start e slot_end devono essere nel formato HH:MM' }, { status: 400 });
+      }
       const id = insertClosedSlot({
         day_of_week,
         slot_start: String(slot_start),

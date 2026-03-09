@@ -4,7 +4,7 @@ test.describe('Live Score', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input#username', 'admin');
-    await page.fill('input#password', 'admin123');
+    await page.fill('input#password', process.env.TEST_ADMIN_PASSWORD || 'admin123');
     await page.click('button[type="submit"]');
     await page.waitForURL('/');
   });

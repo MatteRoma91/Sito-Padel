@@ -15,6 +15,9 @@ const SESSION_PASSWORD = (() => {
     console.error('SESSION_SECRET è obbligatorio in produzione');
     process.exit(1);
   }
+  if (!secret) {
+    console.warn('[SECURITY] SESSION_SECRET non impostato. Usa una variabile d\'ambiente in produzione.');
+  }
   return secret || 'complex_password_at_least_32_characters_long_for_iron_session';
 })();
 const SESSION_COOKIE = 'padel-session';

@@ -1,0 +1,13 @@
+---
+description: Repository git corretta per Sito-Padel
+alwaysApply: true
+---
+
+# Git remote — Sito-Padel
+
+Il progetto in `/home/ubuntu/Sito-Padel` deve essere pushato **solo** sulla repo:
+
+**https://github.com/MatteRoma91/Sito-Padel**
+
+- `origin` e `upstream` puntano a MatteRoma91/Sito-Padel
+- Per pushare: `git push origin HEAD:main` (il branch locale potrebbe avere un nome diverso da `main`)

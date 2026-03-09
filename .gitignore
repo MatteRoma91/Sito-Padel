@@ -80,3 +80,6 @@ temp/
 # Serwist (SW generato a build)
 public/sw*
 public/swe-worker*
+
+# Cartelle/progetti esterni (non committare in Sito-Padel)
+Roma-Buche/

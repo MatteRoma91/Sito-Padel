@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Camera, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import heic2any from 'heic2any';
-import type { User, SkillLevel } from '@/lib/types';
+import type { SafeUser, SkillLevel } from '@/lib/types';
 import { SKILL_LEVEL_LABELS } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
 import { BirthDateEditor } from '@/components/profiles/BirthDateEditor';
@@ -22,7 +22,7 @@ async function convertHeicToJpeg(file: File): Promise<File> {
 }
 
 interface EditProfileFormProps {
-  user: User;
+  user: SafeUser;
   isAdmin: boolean;
   isOwnProfile: boolean;
 }

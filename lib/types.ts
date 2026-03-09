@@ -101,6 +101,8 @@ export interface User {
   created_at: string;
 }
 
+export type SafeUser = Omit<User, 'password_hash' | 'must_change_password' | 'created_at'>;
+
 export interface Tournament {
   id: string;
   name: string;

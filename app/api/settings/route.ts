@@ -8,6 +8,11 @@ function canManageSettings(_username: string, role: string): boolean {
 }
 
 export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
+  }
+
   try {
     const config = getSiteConfig();
     return NextResponse.json(config);

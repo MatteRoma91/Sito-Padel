@@ -20,6 +20,9 @@ function getSessionPassword(): string {
   if (process.env.NODE_ENV === 'production' && !secret) {
     throw new Error('SESSION_SECRET è obbligatorio in produzione');
   }
+  if (!secret) {
+    console.warn('[SECURITY] SESSION_SECRET non impostato. Usa una variabile d\'ambiente in produzione.');
+  }
   return secret || 'complex_password_at_least_32_characters_long_for_iron_session';
 }
 
@@ -105,8 +108,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function isAdmin(): Promise<boolean> {
-  const session = await getSession();
-  return session.isLoggedIn && session.role === 'admin';
+  const user = await getCurrentUser();
+  return !!user && user.role === 'admin';
 }
 
 export function isGuest(user: { role?: string } | null): boolean {

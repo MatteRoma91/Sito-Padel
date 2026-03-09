@@ -7,6 +7,10 @@ import {
   updateCourtBookingMatchResult,
 } from '@/lib/db/queries';
 
+function isValidScore(n: number): boolean {
+  return Number.isInteger(n) && n >= 0 && n <= 7;
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -78,6 +82,23 @@ export async function PATCH(
         { error: 'set1 e set2 sono obbligatori con c1 e c2 numerici' },
         { status: 400 }
       );
+    }
+
+    if (!isValidScore(set1.c1) || !isValidScore(set1.c2) || !isValidScore(set2.c1) || !isValidScore(set2.c2)) {
+      return NextResponse.json(
+        { error: 'I punteggi dei set devono essere numeri interi tra 0 e 7' },
+        { status: 400 }
+      );
+    }
+    if (set3 != null && typeof set3 === 'object') {
+      if (typeof set3.c1 === 'number' && typeof set3.c2 === 'number') {
+        if (!isValidScore(set3.c1) || !isValidScore(set3.c2)) {
+          return NextResponse.json(
+            { error: 'I punteggi del terzo set devono essere numeri interi tra 0 e 7' },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const data: {
