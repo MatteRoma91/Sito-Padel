@@ -1,0 +1,15 @@
+---
+description: Dopo un build di produzione, chiedere sempre se mettere in produzione sul sito
+alwaysApply: true
+---
+
+# Deploy dopo build
+
+Quando in questa sessione viene eseguito un **build di produzione** (`npm run build` o equivalente) per l'app Sito-Padel:
+
+1. **Chiedi sempre all'utente** se vuole mettere in produzione le modifiche sul sito internet.
+2. Esempio di domanda: "Vuoi mettere in produzione le modifiche sul sito? (build + riavvio PM2 padel-tour)"
+3. Se l'utente risponde sì: esegui `pm2 restart padel-tour` (l'app è in `/home/ubuntu/Sito-Padel`, cwd di padel-tour).
+4. Non eseguire build + restart in produzione senza che l'utente abbia confermato (a meno che non l'abbia esplicitamente richiesto).
+
+Questa regola si applica solo quando è stato fatto un build; non obbliga a fare il build.
