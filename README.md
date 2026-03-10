@@ -24,6 +24,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 | **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all'avvio del server (Nginx, build, PM2) |
 | **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
 | **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
+| **[docs/GUIDA-GIT-REPOS.md](docs/GUIDA-GIT-REPOS.md)** | Ripristino e gestione repo Git separate per le 3 webapp |
 | **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
 | **[docs/CENTRO-SPORTIVO.md](docs/CENTRO-SPORTIVO.md)** | Centro sportivo: campi, prenotazioni, slot chiusura, pagina partita, API e Impostazioni |
 | **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
@@ -198,6 +199,7 @@ Da **Impostazioni** (menu laterale, visibile solo agli admin) si gestiscono: col
 
 - **Backup completo** (database + avatar + galleria): da Impostazioni → Strumenti, usa **Scarica backup completo**. Si scarica un file ZIP (`padel-full-backup-YYYY-MM-DD.zip`) da conservare fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** per un singolo file `.db` (utile per backup rapidi).
+- **Backup automatico**: cron giornaliero (03:00) copia `data/padel.db` in `~/backups/padel-YYYYMMDD.db`, retention 7 giorni.
 
 **Ripristino su un nuovo server** (dopo crash o migrazione):
 
@@ -269,7 +271,7 @@ curl http://localhost:3000/api/health
 ## Risoluzione problemi
 
 - **Il sito non risponde dopo un riavvio**
-  Segui i comandi in [AVVIO.md](AVVIO.md): avvia Nginx, poi `pm2 start ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
+  Segui i comandi in [AVVIO.md](AVVIO.md): avvia Nginx, poi `pm2 start ~/ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
 
 - **Errore "Could not find a production build" o "MODULE_NOT_FOUND"**
   La build in `.next` è mancante o corrotta. Esegui `npm run build` nella root del progetto, poi `pm2 restart padel-tour`.

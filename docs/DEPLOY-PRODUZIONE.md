@@ -6,16 +6,17 @@ Configurazione pronta per produzione con PM2, Nginx, SSL, security headers e hea
 
 ---
 
-## 1. PM2 (server custom con Socket.io)
+## 1. PM2 (configurazione centralizzata)
 
-Il server in produzione usa **`server.js`** (custom server Node + Socket.io) invece di `next start`.
-Per evitare problemi con le room WebSocket, PM2 è configurato con **una sola istanza** (`instances: 1` in `ecosystem.config.js`).
+Le 3 app (padel-tour, roma-buche, control-room) sono gestite da una **configurazione PM2 centralizzata** in `~/ecosystem.config.js`.
+
+Il server padel-tour usa **`server.js`** (custom server Node + Socket.io) invece di `next start`. Per evitare problemi con le room WebSocket, PM2 usa **una sola istanza** per app (`instances: 1`).
 
 ### Avvio iniziale
 ```bash
 cd /home/ubuntu/Sito-Padel
 npm run build
-pm2 start ecosystem.config.js
+pm2 start ~/ecosystem.config.js
 pm2 save
 pm2 startup  # esegui il comando suggerito per avvio al boot
 ```
@@ -26,6 +27,7 @@ pm2 install pm2-logrotate
 pm2 set pm2-logrotate:max_size 10M
 pm2 set pm2-logrotate:retain 7
 pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:workerInterval 30
 ```
 
 ### Comandi utili
@@ -49,11 +51,13 @@ curl http://localhost:3000/api/health
 
 ### Setup
 ```bash
-sudo cp /home/ubuntu/Sito-Padel/scripts/nginx-padel.conf /etc/nginx/sites-available/padel
-sudo ln -sf /etc/nginx/sites-available/padel /etc/nginx/sites-enabled/
+sudo cp /home/ubuntu/Sito-Padel/scripts/nginx-padel.conf /etc/nginx/sites-available/padel-tour
+sudo ln -sf /etc/nginx/sites-available/padel-tour /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+Oppure usa lo script unificato (aggiorna entrambi i siti): `sudo ./scripts/update-nginx.sh`
 
 Il file `scripts/nginx-padel.conf` è configurato per:
 
@@ -135,10 +139,12 @@ File `.env.example` incluso nel repository come template.
 
 | Componente        | Dettaglio                                              |
 |-------------------|--------------------------------------------------------|
-| PM2               | `instances: 1` (WebSocket richiede processo singolo)   |
-| PM2 restart       | `autorestart: true`, `max_memory_restart: 400M`        |
-| PM2 heap limit    | `NODE_OPTIONS: --max-old-space-size=384`               |
-| PM2 log rotation  | `pm2-logrotate` (10M, 7 file, compressione)            |
+| PM2               | Config centralizzata `~/ecosystem.config.js`. `instances: 1` per app (WebSocket richiede processo singolo) |
+| PM2 padel-tour    | `max_memory_restart: 512M`, `node_args: --max-old-space-size=512` |
+| PM2 roma-buche    | `max_memory_restart: 768M`, avvio da `.next/standalone/server.js` |
+| PM2 control-room  | `max_memory_restart: 256M` |
+| PM2 restart       | `autorestart: true`, `restart_delay: 5000`, `max_restarts: 15` |
+| PM2 log rotation  | `pm2-logrotate` (10M, 7 file, compressione, workerInterval 30) |
 | Nginx gzip        | Tipi: json, js, css, fonts, svg, xml                   |
 | Nginx HTTP/2      | Con SSL (dopo certbot)                                 |
 | Nginx keepalive   | 16 connessioni, `Connection ""` su blocchi non-WS      |
@@ -148,4 +154,6 @@ File `.env.example` incluso nel repository come template.
 | Swap               | 2 GB `/swapfile`                                       |
 | SSL                | Let's Encrypt, rinnovo automatico + reload hook        |
 | Node.js            | 22 LTS via nvm                                        |
-| Health check       | `/api/health` – verifica DB, JSON response             |
+| Health check       | `/api/health` – verifica DB, JSON response. Cron `*/5` min: `~/scripts/health-check.sh` riavvia padel/buche se non rispondono |
+| SQLite (padel)     | PRAGMA: journal_mode=WAL, synchronous=NORMAL, cache_size=-20000, busy_timeout=5000 |
+| Backup SQLite      | Cron 03:00 copia in `~/backups/`, retention 7 giorni   |

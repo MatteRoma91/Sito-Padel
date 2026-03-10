@@ -9,10 +9,13 @@ Esegui questi comandi **in ordine** dopo l'avvio del server, **solo se PM2 non h
 |------|-----|-------|-----------|
 | Banana Padel Tour | https://bananapadeltour.duckdns.org | 3000 | padel-tour |
 | Roma-Buche (Ibuche) | https://ibuche.duckdns.org | 3001 | roma-buche |
+| Control Room | https://matteroma.duckdns.org | 3005 | control-room |
 
 **Stack**: Node.js 22 LTS (via nvm) · Next.js 15 · React 19 · PM2 6 · Nginx 1.24 · UFW attivo
 
-**Altre guide**: [README.md](README.md) · [GUIDA-SERVER.md](GUIDA-SERVER.md) (architettura, troubleshooting)
+**PM2**: Configurazione centralizzata in `~/ecosystem.config.js` (non più per-app).
+
+**Altre guide**: [README.md](README.md) · [GUIDA-SERVER.md](GUIDA-SERVER.md) (architettura, cronologia, troubleshooting)
 
 ---
 
@@ -24,7 +27,7 @@ curl http://localhost:3000/api/health
 curl http://localhost:3001/api/health
 ```
 
-Se entrambe le app sono `online` e i health check restituiscono `{"status":"ok"}`, il server è operativo. Non servono altri passaggi.
+Se tutte le app sono `online` e i health check restituiscono `{"status":"ok"}` (padel e buche), il server è operativo. control-room risponde con redirect 302 (login). Non servono altri passaggi.
 
 ---
 
@@ -38,25 +41,20 @@ sudo systemctl start nginx
 
 ---
 
-## 3. Avvia entrambe le applicazioni
+## 3. Avvia le applicazioni
+
+Le app sono gestite da una **configurazione PM2 centralizzata** in `~/ecosystem.config.js`:
 
 ```bash
-# Banana Padel Tour (porta 3000)
-cd /home/ubuntu/Sito-Padel
-pm2 start ecosystem.config.js
-
-# Roma-Buche (porta 3001)
-cd /home/ubuntu/Roma-Buche
-pm2 start ecosystem.config.js
+pm2 start ~/ecosystem.config.js
 ```
 
 Oppure, se le app sono già in lista PM2 ma ferme:
 
 ```bash
-pm2 start padel-tour
-pm2 start roma-buche
-# oppure riavvio di entrambe:
-pm2 restart padel-tour roma-buche
+pm2 start padel-tour roma-buche control-room
+# oppure riavvio di tutte:
+pm2 restart padel-tour roma-buche control-room
 ```
 
 ---
@@ -79,7 +77,7 @@ Se hai modificato il codice di uno dei progetti:
 # Per Banana Padel Tour
 cd /home/ubuntu/Sito-Padel && npm run build && pm2 restart padel-tour
 
-# Per Roma-Buche
+# Per Roma-Buche (usa output standalone: build copia static/public automaticamente)
 cd /home/ubuntu/Roma-Buche && npm run build && pm2 restart roma-buche
 ```
 
@@ -89,8 +87,7 @@ cd /home/ubuntu/Roma-Buche && npm run build && pm2 restart roma-buche
 
 ```bash
 sudo systemctl start nginx
-cd /home/ubuntu/Sito-Padel && pm2 start ecosystem.config.js
-cd /home/ubuntu/Roma-Buche && pm2 start ecosystem.config.js
+pm2 start ~/ecosystem.config.js
 pm2 save
 pm2 status
 ```
@@ -131,7 +128,7 @@ Lo script copia **entrambe** le config e ricarica Nginx, evitando conflitti tra 
 
 ```bash
 pm2 status
-ss -tlnp | grep -E '3000|3001'
+ss -tlnp | grep -E '3000|3001|3005'
 curl http://localhost:3000/api/health
 curl http://localhost:3001/api/health
 ```

@@ -2,7 +2,7 @@
 
 > **Nota**: Questo file non è servito dal sito (non è in `/public`). È una guida operativa da aggiornare man mano che si effettuano modifiche.
 
-**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001)
+**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001) · matteroma.duckdns.org (:3005 Control Room)
 **Server**: VPS (OVH), IP pubblico 57.131.40.170
 **Utente**: ubuntu (con sudo)
 **SO**: Ubuntu 24.04 LTS
@@ -15,10 +15,11 @@
 
 ```
 Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → server.js (Next.js + Socket.io) :3000 → SQLite
-                                     └→ ibuche           → Next.js :3001 → SQLite
+                                     ├→ ibuche           → Next.js standalone :3001 → SQLite
+                                     └→ matteroma        → Control Room (Express) :3005
 ```
 
-**Stack server attuale** (aggiornato 28 febbraio 2026):
+**Stack server attuale** (aggiornato 10 marzo 2026):
 
 | Componente | Versione | Note |
 |-----------|----------|------|
@@ -156,7 +157,7 @@ I log PM2 non cresceranno oltre 70 MB totali (7 file × 10 MB).
 | PM2/padel-tour | Non avviato       | `pm2 start ecosystem.config.js`          |
 | Porta 3000     | Non in ascolto    | Avviata con PM2                          |
 | DNS DuckDNS    | OK                | Risolve a 57.131.40.170                  |
-| Certificato SSL| Valido            | Let's Encrypt, scadenza 1 maggio 2026    |
+| Certificato SSL| Valido            | Let's Encrypt, rinnovo automatico        |
 | Database       | Presente          | `/home/ubuntu/Sito-Padel/data/padel.db`  |
 
 **Comandi eseguiti**:
@@ -301,6 +302,25 @@ Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REP
 
 ---
 
+### 14. Ottimizzazione server (10 marzo 2026)
+
+**Modifiche effettuate**:
+
+| Area | Modifica |
+|------|----------|
+| **PM2** | Configurazione centralizzata in `~/ecosystem.config.js` (non più per-app). Limiti memoria: padel-tour 512M, roma-buche 768M, control-room 256M |
+| **Roma-Buche** | Output `standalone` in Next.js; PM2 avvia `server.js` da `.next/standalone/`. Build copia automaticamente `.next/static` e `public` |
+| **Sito-Padel** | Nessun standalone (custom server + Socket.io incompatibile). SQLite: PRAGMA `synchronous=NORMAL`, `cache_size=-20000`, `busy_timeout=5000` |
+| **Nginx** | `worker_rlimit_nofile 65535`, `worker_connections 1024`, gzip completo, rate limiting su `/api/`, `location = /sw.js` no-cache per Ibuche (PWA), upstream keepalive per Control Room |
+| **Kernel** | sysctl: somaxconn, tcp_tw_reuse, tcp_fin_timeout, tcp_rmem/wmem, file-max. limits.conf: nofile 65535 per ubuntu |
+| **pm2-logrotate** | retain 7, workerInterval 30 |
+| **Health check** | Cron `*/5 * * * *` esegue `~/scripts/health-check.sh` (verifica padel e buche, riavvia se non rispondono). Log: `/var/log/health-check.log` |
+| **Backup SQLite** | Cron 03:00 backup `padel.db` in `~/backups/`, 04:00 elimina backup >7 giorni |
+
+**Avvio PM2**: `pm2 start ~/ecosystem.config.js` (non più da singole directory).
+
+---
+
 ## Pacchetti/servizi installati (ordine indicativo)
 
 1. **nvm** – gestione versioni Node.js
@@ -320,7 +340,8 @@ Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REP
 |-----------------------------|-----------------------------------------|
 | `/etc/nginx/sites-available/padel-tour` | Config Nginx per bananapadeltour |
 | `/etc/nginx/sites-available/ibuche` | Config Nginx per ibuche |
-| `ecosystem.config.js`       | Config PM2 (nome app, porta, path, limiti memoria) |
+| `/etc/nginx/sites-available/matteroma.duckdns.conf` | Config Nginx per Control Room |
+| `~/ecosystem.config.js`     | **Config PM2 centralizzata** (padel-tour, roma-buche, control-room) |
 | `server.js`                 | Custom server Node (Next.js + Socket.io) |
 | `.env`                      | Variabili d'ambiente (non in git) |
 | `.env.example`              | Template variabili d'ambiente |
@@ -336,6 +357,7 @@ Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REP
 
 - **Backup completo**: Impostazioni → Strumenti → **Scarica backup completo**. Scarica un ZIP con database, avatar e galleria. Conservare il file fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** (file `.db`).
+- **Backup automatico**: cron giornaliero alle 03:00 copia `data/padel.db` in `~/backups/padel-YYYYMMDD.db`. Retention 7 giorni (cleanup alle 04:00).
 
 **Ripristino su nuovo server** (dopo crash o migrazione):
 
@@ -394,7 +416,7 @@ sudo certbot certificates
 ## Risoluzione problemi
 
 - **Sito non risponde dopo riavvio**
-  PM2 dovrebbe riavviare le app automaticamente (servizio `pm2-ubuntu.service`). Se non funziona, seguire [AVVIO.md](AVVIO.md): `sudo systemctl start nginx`, poi `pm2 start ecosystem.config.js` o `pm2 restart padel-tour`, infine `pm2 save`.
+  PM2 dovrebbe riavviare le app automaticamente (servizio `pm2-ubuntu.service`). Se non funziona, seguire [AVVIO.md](AVVIO.md): `sudo systemctl start nginx`, poi `pm2 start ~/ecosystem.config.js` o `pm2 restart padel-tour roma-buche control-room`, infine `pm2 save`.
 
 - **Errore "Could not find a production build" o "MODULE_NOT_FOUND" nei log PM2**
   Build mancante o corrotta. In `/home/ubuntu/Sito-Padel` eseguire `npm run build`, poi `pm2 restart padel-tour`.
