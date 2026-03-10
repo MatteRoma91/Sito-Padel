@@ -69,3 +69,5 @@ git status       # Stai committando solo file del progetto giusto?
 - Sito-Padel: https://github.com/MatteRoma91/Sito-Padel
 - Roma-Buche: https://github.com/MatteRoma91/Ibuche
 - control-room: https://github.com/MatteRoma91/Control-Room
+
+*Ultimo aggiornamento: 10 marzo 2026*

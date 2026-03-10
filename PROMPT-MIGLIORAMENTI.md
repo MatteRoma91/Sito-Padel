@@ -1,6 +1,6 @@
 # Prompt per l'agente: Miglioramenti webapp Banana Padel Tour
 
-Sei un senior full-stack developer. Devi apportare le seguenti 8 modifiche alla webapp Next.js 14 "Banana Padel Tour" (gestione tornei di padel). Il progetto usa App Router, TypeScript strict, Tailwind CSS, SQLite (better-sqlite3), Socket.io, iron-session. Leggi attentamente ogni punto, i file coinvolti e le istruzioni specifiche.
+Sei un senior full-stack developer. Devi apportare le seguenti 8 modifiche alla webapp Next.js 15 "Banana Padel Tour" (gestione tornei di padel). Il progetto usa App Router, TypeScript strict, Tailwind CSS, SQLite (better-sqlite3), Socket.io, iron-session. Leggi attentamente ogni punto, i file coinvolti e le istruzioni specifiche.
 
 ---
 
