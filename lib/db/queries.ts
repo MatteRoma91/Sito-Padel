@@ -235,7 +235,8 @@ export function deleteUser(id: string): void {
 
 export function incrementLoginCount(userId: string): void {
   ensureDb();
-  getDb().prepare('UPDATE users SET login_count = login_count + 1 WHERE id = ?').run(userId);
+  const now = new Date().toISOString();
+  getDb().prepare('UPDATE users SET login_count = login_count + 1, last_login_at = ? WHERE id = ?').run(now, userId);
 }
 
 export interface UserWithLoginCount {
@@ -244,12 +245,15 @@ export interface UserWithLoginCount {
   full_name: string | null;
   nickname: string | null;
   login_count: number;
+  last_login_at: string | null;
 }
 
 export function getUsersWithLoginCounts(): UserWithLoginCount[] {
   ensureDb();
   return getDb().prepare(
-    'SELECT id, username, full_name, nickname, COALESCE(login_count, 0) AS login_count FROM users ORDER BY login_count DESC, full_name'
+    `SELECT id, username, full_name, nickname, COALESCE(login_count, 0) AS login_count, last_login_at
+     FROM users
+     ORDER BY (last_login_at IS NOT NULL) DESC, last_login_at DESC, full_name`
   ).all() as UserWithLoginCount[];
 }
 

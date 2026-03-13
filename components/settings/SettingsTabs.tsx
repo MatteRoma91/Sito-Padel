@@ -23,6 +23,7 @@ interface UserWithLoginCount {
   full_name: string | null;
   nickname: string | null;
   login_count: number;
+  last_login_at: string | null;
 }
 
 interface SettingsTabsProps {

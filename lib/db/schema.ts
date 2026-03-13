@@ -136,6 +136,11 @@ export function initSchema() {
     // Column already exists
   }
   try {
+    db.exec(`ALTER TABLE users ADD COLUMN last_login_at TEXT`);
+  } catch {
+    // Column already exists
+  }
+  try {
     db.exec(`ALTER TABLE users ADD COLUMN birth_date TEXT`);
   } catch {
     // Column already exists

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Activity, ShieldAlert, Unlock } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 
@@ -10,6 +10,7 @@ interface UserWithLoginCount {
   full_name: string | null;
   nickname: string | null;
   login_count: number;
+  last_login_at: string | null;
 }
 
 interface BlockedAttempt {
@@ -23,18 +24,24 @@ interface AccessiTabProps {
   usersWithLoginCounts: UserWithLoginCount[];
 }
 
-function formatCount(n: number): string {
-  return n.toLocaleString('it-IT');
+function formatLastLogin(iso: string | null): string {
+  if (!iso) return 'Mai';
+  const d = new Date(iso);
+  return d.toLocaleString('it-IT', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
   const [blockedAttempts, setBlockedAttempts] = useState<BlockedAttempt[]>([]);
   const [unlocking, setUnlocking] = useState<string | null>(null);
 
-  const sortedByLogins = useMemo(
-    () => [...usersWithLoginCounts].sort((a, b) => (b.login_count ?? 0) - (a.login_count ?? 0)),
-    [usersWithLoginCounts]
-  );
+  // Ordine già dalla query: last_login_at DESC (ultimo primo)
+  const sortedUsers = usersWithLoginCounts;
 
   useEffect(() => {
     async function fetchBlocked() {
@@ -87,16 +94,16 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Statistiche accessi</h2>
         </div>
         <p className="p-4 pt-0 text-sm text-slate-700 dark:text-slate-300">
-          Numero di volte che ogni giocatore ha effettuato il login nel sito.
+          Ultimo accesso di ogni utente, ordinato dal più recente al più vecchio.
         </p>
         <div className="divide-y divide-primary-100 dark:divide-primary-300/50">
-          {sortedByLogins.length === 0 ? (
+          {sortedUsers.length === 0 ? (
             <div className="p-8 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
               <Activity className="w-10 h-10 mb-2 opacity-50" />
               <p className="text-sm">Nessun dato disponibile.</p>
             </div>
           ) : (
-            sortedByLogins.map((u) => (
+            sortedUsers.map((u) => (
               <div
                 key={u.id}
                 className="flex items-center justify-between p-4 hover:bg-primary-50 dark:hover:bg-surface-primary/50 transition"
@@ -107,7 +114,7 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-300">@{u.username}</p>
                 </div>
-                <span className="font-bold text-accent-500 text-lg">{formatCount(u.login_count ?? 0)}</span>
+                <span className="text-accent-500 font-medium tabular-nums">{formatLastLogin(u.last_login_at)}</span>
               </div>
             ))
           )}
