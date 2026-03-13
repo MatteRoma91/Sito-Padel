@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { KeyRound, Trash2, Edit2, Eye, EyeOff, X, MoreVertical } from 'lucide-react';
@@ -48,7 +49,13 @@ export function UsersTab({ users }: UsersTabProps) {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('tutti');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
   const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  function closeMenu() {
+    setOpenMenuId(null);
+    setMenuAnchorRect(null);
+  }
 
   async function handleResetPassword(userId: string, password: string) {
     setLoadingId(userId);
@@ -261,62 +268,26 @@ export function UsersTab({ users }: UsersTabProps) {
                   <div className="relative sm:hidden">
                     <button
                       type="button"
-                      onClick={() => setOpenMenuId(openMenuId === u.id ? null : u.id)}
+                      onClick={(e) => {
+                        if (openMenuId === u.id) {
+                          closeMenu();
+                          return;
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuAnchorRect({
+                          top: rect.top,
+                          right: rect.right,
+                          bottom: rect.bottom,
+                          left: rect.left,
+                        });
+                        setOpenMenuId(u.id);
+                      }}
                       className="min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/50 text-slate-600 dark:text-slate-400"
                       aria-expanded={openMenuId === u.id}
                       aria-haspopup="true"
                     >
                       <MoreVertical className="w-5 h-5" />
                     </button>
-                    {openMenuId === u.id && (
-                      <>
-                        <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpenMenuId(null)} />
-                        <div className="absolute right-0 top-full mt-1 z-50 py-1 rounded-lg border border-primary-200 dark:border-primary-600 bg-white dark:bg-slate-900 shadow-lg min-w-[180px]">
-                          <button
-                            type="button"
-                            onClick={() => { handleToggleHidden(u.id, u.is_hidden); setOpenMenuId(null); }}
-                            disabled={!!loadingId}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 disabled:opacity-50"
-                          >
-                            {u.is_hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                            {u.is_hidden ? 'Mostra' : 'Nascondi'}
-                          </button>
-                          <Link
-                            href={`/profiles/${u.id}`}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50"
-                            onClick={() => setOpenMenuId(null)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            Profilo
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setResetModalUserId(u.id);
-                              setResetModalPassword('');
-                              setError(null);
-                              setOpenMenuId(null);
-                            }}
-                            disabled={!!loadingId}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 disabled:opacity-50"
-                          >
-                            <KeyRound className="w-4 h-4" />
-                            Reset password
-                          </button>
-                          {u.role !== 'admin' && (
-                            <button
-                              type="button"
-                              onClick={() => { handleDelete(u.id, u.nickname || u.username); setOpenMenuId(null); }}
-                              disabled={!!loadingId}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Elimina
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -324,6 +295,88 @@ export function UsersTab({ users }: UsersTabProps) {
           )}
         </div>
       </Card>
+
+      {openMenuId &&
+        menuAnchorRect &&
+        typeof document !== 'undefined' &&
+        (() => {
+          const openUser = filteredUsers.find((f) => f.id === openMenuId);
+          if (!openUser) return null;
+          const DROPDOWN_WIDTH = 180;
+          const PAD = 8;
+          const spaceBelow = window.innerHeight - menuAnchorRect.bottom;
+          const openUp = spaceBelow < 220;
+
+          // Evita che il menu esca a sinistra: se il bottone è a sinistra, allinea il menu a sinistra
+          const wouldOverflowLeft = menuAnchorRect.right < DROPDOWN_WIDTH + PAD;
+          const horizontalStyle = wouldOverflowLeft
+            ? { left: Math.max(PAD, menuAnchorRect.left) }
+            : { right: window.innerWidth - menuAnchorRect.right };
+
+          return createPortal(
+            <>
+              <div className="fixed inset-0 z-40" aria-hidden onClick={closeMenu} />
+              <div
+                className="fixed z-50 py-1 rounded-lg border border-primary-200 dark:border-primary-600 bg-white dark:bg-slate-900 shadow-lg min-w-[180px]"
+                style={{
+                  ...(openUp
+                    ? { bottom: window.innerHeight - menuAnchorRect.top + 4, ...horizontalStyle }
+                    : { top: menuAnchorRect.bottom + 4, ...horizontalStyle }),
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleToggleHidden(openUser.id, openUser.is_hidden);
+                    closeMenu();
+                  }}
+                  disabled={!!loadingId}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 disabled:opacity-50"
+                >
+                  {openUser.is_hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {openUser.is_hidden ? 'Mostra' : 'Nascondi'}
+                </button>
+                <Link
+                  href={`/profiles/${openUser.id}`}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50"
+                  onClick={closeMenu}
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Profilo
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetModalUserId(openUser.id);
+                    setResetModalPassword('');
+                    setError(null);
+                    closeMenu();
+                  }}
+                  disabled={!!loadingId}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-800/50 disabled:opacity-50"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  Reset password
+                </button>
+                {openUser.role !== 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDelete(openUser.id, openUser.nickname || openUser.username);
+                      closeMenu();
+                    }}
+                    disabled={!!loadingId}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Elimina
+                  </button>
+                )}
+              </div>
+            </>,
+            document.body
+          );
+        })()}
 
       {resetModalUserId && resetUser && (
         <div
