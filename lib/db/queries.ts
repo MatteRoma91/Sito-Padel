@@ -896,6 +896,51 @@ export function deletePair(pairId: string): void {
   getDb().prepare('DELETE FROM pairs WHERE id = ?').run(pairId);
 }
 
+/**
+ * Restituisce le coppie (player1_id, player2_id) dai tornei più recenti già disputati,
+ * escludendo il torneo indicato. Usato per evitare di ripetere le stesse coppie.
+ * Considera solo tornei con data < data del torneo corrente (tornei passati).
+ * @param excludeTournamentId ID del torneo da escludere (es. quello in corso di estrazione)
+ * @param lastN numero di tornei da considerare (default 5)
+ */
+export function getRecentPartnerPairs(
+  excludeTournamentId: string,
+  lastN = 5
+): Map<string, Set<string>> {
+  ensureDb();
+  const db = getDb();
+  const current = db.prepare('SELECT date FROM tournaments WHERE id = ?').get(excludeTournamentId) as { date: string } | undefined;
+  const currentDate = current?.date ?? '9999-12-31';
+  const tournamentIds = db
+    .prepare(
+      `SELECT id FROM tournaments WHERE id != ? AND date < ? ORDER BY date DESC LIMIT ?`
+    )
+    .all(excludeTournamentId, currentDate, lastN) as { id: string }[];
+
+  if (tournamentIds.length === 0) {
+    return new Map();
+  }
+
+  const placeholders = tournamentIds.map(() => '?').join(',');
+  const ids = tournamentIds.map((t) => t.id);
+  const rows = db
+    .prepare(
+      `SELECT player1_id, player2_id FROM pairs WHERE tournament_id IN (${placeholders})`
+    )
+    .all(...ids) as { player1_id: string; player2_id: string }[];
+
+  const partnerMap = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const a = row.player1_id;
+    const b = row.player2_id;
+    if (!partnerMap.has(a)) partnerMap.set(a, new Set());
+    if (!partnerMap.has(b)) partnerMap.set(b, new Set());
+    partnerMap.get(a)!.add(b);
+    partnerMap.get(b)!.add(a);
+  }
+  return partnerMap;
+}
+
 // ============ MATCHES ============
 
 export function getMatches(tournamentId: string): Match[] {

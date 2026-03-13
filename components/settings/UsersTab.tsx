@@ -109,7 +109,7 @@ export function UsersTab({ users }: UsersTabProps) {
       const res = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_hidden: currentHidden ? 0 : 1 }),
+        body: JSON.stringify({ is_hidden: !currentHidden }),
       });
       const data = await res.json();
       if (data.success) {

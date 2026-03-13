@@ -5,6 +5,7 @@ import {
   getTournamentParticipants, 
   getCumulativeRankings,
   getUsersByIds,
+  getRecentPartnerPairs,
   deletePairs,
   deleteMatches,
   deleteTournamentRankings,
@@ -56,10 +57,12 @@ export async function POST(
     const skillLevelMap = new Map(users.map(u => [u.id, u.skill_level]));
     const overallScoreMap = new Map(users.map(u => [u.id, u.overall_score ?? 50]));
 
+    const recentPartners = getRecentPartnerPairs(tournamentId, 5);
+
     const extractedPairs =
       expectedPlayers === 8
-        ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap)
-        : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap);
+        ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners)
+        : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners);
 
     // Delete existing pairs, matches, and rankings
     deleteMatches(tournamentId);
