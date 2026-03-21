@@ -342,6 +342,7 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 | `/etc/nginx/sites-available/ibuche` | Config Nginx per ibuche |
 | `/etc/nginx/sites-available/matteroma.duckdns.conf` | Config Nginx per Control Room |
 | `~/ecosystem.config.js`     | **Config PM2 centralizzata** (padel-tour, roma-buche, control-room) |
+| `/home/ubuntu/control-room/settings.json` | Runtime Control Room (webhook/notifiche, **filtri notifiche per processo PM2**, whitelist IP, 2FA; non committare segreti). Documentazione: `control-room/README.md` |
 | `server.js`                 | Custom server Node (Next.js + Socket.io) |
 | `.env`                      | Variabili d'ambiente (non in git) |
 | `.env.example`              | Template variabili d'ambiente |
