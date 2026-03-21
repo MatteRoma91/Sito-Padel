@@ -62,7 +62,7 @@ export function CreateUserForm() {
 
       {open && (
         <form onSubmit={handleSubmit} className="p-4 pt-0 space-y-4">
-          <div className="p-3 rounded-lg bg-primary-50 text-[#202ca1] text-sm">
+          <div className="p-3 rounded-lg bg-primary-100/70 dark:bg-surface-dark/30 text-slate-700 dark:text-slate-300 text-sm">
             La password predefinita è <strong>Padel123</strong>. Il giocatore dovrà cambiarla al primo accesso.
           </div>
           

@@ -336,14 +336,14 @@ export function PairsManager({
 
       {/* Extraction confirmation */}
       {showConfirmExtract && (
-        <div className="p-4 bg-accent-50 border-b border-[#e5ff99]">
+        <div className="p-4 bg-primary-100/70 dark:bg-surface-dark/30 border-b border-primary-100 dark:border-primary-300/50">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-[#B2FF00] shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-[#629900]">
+              <p className="font-medium text-slate-800 dark:text-slate-100">
                 Conferma estrazione automatica
               </p>
-              <p className="text-sm text-[#76b300] mt-1">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
                 Questa azione eliminerà tutte le coppie esistenti e ne creerà 8 nuove basate sul livello dei giocatori.
               </p>
               <div className="flex gap-2 mt-3">
@@ -368,7 +368,7 @@ export function PairsManager({
 
       {/* Manual pair form */}
       {showManualForm && (
-        <div className="p-4 bg-primary-50 border-b border-primary-100">
+        <div className="p-4 bg-primary-100/70 dark:bg-surface-dark/30 border-b border-primary-100 dark:border-primary-300/50">
           <p className="font-medium text-slate-800 dark:text-slate-100 mb-3">
             Aggiungi Coppia Manuale
           </p>

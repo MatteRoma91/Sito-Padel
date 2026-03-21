@@ -73,28 +73,28 @@ export function StatisticheTab() {
           <h2 className="font-semibold text-slate-800 dark:text-slate-100">Panoramica</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4">
-          <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+          <div className="p-4 rounded-lg bg-primary-100/70 dark:bg-surface-dark/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Eye className="w-4 h-4" />
               Visualizzazioni totali
             </div>
             <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.totalViews)}</p>
           </div>
-          <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+          <div className="p-4 rounded-lg bg-primary-100/70 dark:bg-surface-dark/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Users className="w-4 h-4" />
               Utenti
             </div>
             <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.usersCount)}</p>
           </div>
-          <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+          <div className="p-4 rounded-lg bg-primary-100/70 dark:bg-surface-dark/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Trophy className="w-4 h-4" />
               Tornei totali
             </div>
             <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{formatNum(data.tournamentsCount)}</p>
           </div>
-          <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/30">
+          <div className="p-4 rounded-lg bg-primary-100/70 dark:bg-surface-dark/30">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-1">
               <Trophy className="w-4 h-4" />
               Tornei completati

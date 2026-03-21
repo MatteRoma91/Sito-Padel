@@ -80,7 +80,7 @@ export function ParticipantsManager({
 
       {/* Add participant dropdown */}
       {showAdd && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-primary-50">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-primary-100/70 dark:bg-surface-dark/30">
           <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Seleziona un giocatore da aggiungere:</p>
           <div className="flex flex-wrap gap-2">
             {availableUsers.map(user => (

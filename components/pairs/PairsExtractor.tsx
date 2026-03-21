@@ -60,14 +60,14 @@ export function PairsExtractor({ tournamentId, hasExistingPairs }: PairsExtracto
 
   if (showConfirm) {
     return (
-      <div className="card p-4 border-[#e5ff99] bg-accent-50">
+      <div className="card p-4 border-primary-100 dark:border-primary-300/50 bg-primary-100/70 dark:bg-surface-dark/30">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-6 h-6 text-accent-500 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-medium text-[#629900]">
+            <p className="font-medium text-slate-800 dark:text-slate-100">
               Conferma rigenerazione coppie
             </p>
-            <p className="text-sm text-[#76b300] mt-1">
+            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
               Questa azione eliminerà le coppie esistenti e ne creerà di nuove. 
               Tutti i match e i risultati associati verranno persi.
             </p>

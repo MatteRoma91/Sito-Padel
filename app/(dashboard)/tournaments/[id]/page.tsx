@@ -227,14 +227,14 @@ export default async function TournamentDetailPage({
 
       {/* Navigation: Go to bracket page when expected pairs formed */}
       {pairs.length === expectedPairs && matches.length === 0 && (
-        <div className="card p-6 bg-primary-50 border-primary-100">
+        <div className="card p-6 bg-primary-100/70 dark:bg-surface-dark/30 border-primary-100 dark:border-primary-300/50">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-[#202ca1] flex items-center gap-2">
                 <Grid3X3 className="w-5 h-5" />
                 Coppie pronte!
               </p>
-              <p className="text-sm text-[#9ee600] dark:text-[#c4ff33]">
+              <p className="text-sm text-slate-700 dark:text-slate-300">
                 Le {expectedPairs} coppie sono state formate. {isAdmin ? 'Procedi al tabellone.' : 'In attesa della generazione del tabellone.'}
               </p>
             </div>

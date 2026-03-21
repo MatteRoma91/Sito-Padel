@@ -46,7 +46,7 @@ export function ReopenTournamentButton({ tournamentId }: ReopenTournamentButtonP
   }
 
   return (
-    <div className="card p-4 border-[#e5ff99] bg-accent-50">
+    <div className="card p-4 border-primary-100 dark:border-primary-300/50 bg-primary-100/70 dark:bg-surface-dark/30">
       <ConfirmDialog
         open={showConfirm}
         title="Riapri torneo"
@@ -58,10 +58,10 @@ export function ReopenTournamentButton({ tournamentId }: ReopenTournamentButtonP
       />
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-medium text-[#629900]">
+          <p className="font-medium text-slate-800 dark:text-slate-100">
             Torneo Completato
           </p>
-          <p className="text-sm text-[#76b300]">
+          <p className="text-sm text-slate-700 dark:text-slate-300">
             Riapri per modificare risultati o coppie.
           </p>
           {error && <p className="text-sm text-red-600 mt-1">{error}</p>}

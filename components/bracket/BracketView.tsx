@@ -566,13 +566,13 @@ export function BracketView({
         
         {/* Editing quarterfinals banner */}
         {editingQuarterfinals && (
-          <div className="p-4 bg-primary-50 border-b border-primary-100">
+          <div className="p-4 bg-primary-100/70 dark:bg-surface-dark/30 border-b border-primary-100 dark:border-primary-300/50">
             <div className="flex items-center justify-between mb-2">
               <p className="font-medium text-[#202ca1]">
                 Modalità Modifica Coppie
               </p>
             </div>
-            <p className="text-sm text-[#76b300] mb-3">
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
               Seleziona le coppie per ogni quarto di finale, poi clicca &quot;Salva Tutto&quot;.
             </p>
             <div className="flex gap-2">
