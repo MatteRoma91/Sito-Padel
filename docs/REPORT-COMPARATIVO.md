@@ -2,7 +2,7 @@
 
 **Data:** 20 Febbraio 2026 (iniziale), aggiornato 28 Febbraio 2026
 **Stack attuale:** Next.js 15 · React 19 · Node.js 22 LTS
-**Riferimenti:** [baseline-report](baseline-report.md) | [optimization-report](optimization-report.md) | [SECURITY-REPORT](SECURITY-REPORT.md)
+**Riferimenti:** [SECURITY-REPORT](SECURITY-REPORT.md) | [LIGHTHOUSE](LIGHTHOUSE.md) | [archive/baseline-report](archive/baseline-report.md) | [archive/optimization-report](archive/optimization-report.md)
 
 ---
 

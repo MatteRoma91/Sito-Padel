@@ -21,20 +21,16 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 | File | Contenuto |
 |------|-----------|
-| **[AVVIO.md](AVVIO.md)** | Comandi da eseguire all'avvio del server (Nginx, build, PM2) |
 | **[GUIDA-SERVER.md](GUIDA-SERVER.md)** | Guida operativa server: architettura, cronologia interventi, backup, PWA, troubleshooting |
 | **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
-| **[docs/GUIDA-GIT-REPOS.md](docs/GUIDA-GIT-REPOS.md)** | Ripristino e gestione repo Git separate per le 3 webapp |
 | **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
 | **[docs/CENTRO-SPORTIVO.md](docs/CENTRO-SPORTIVO.md)** | Centro sportivo: campi, prenotazioni, slot chiusura, pagina partita, API e Impostazioni |
 | **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
 | **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Sicurezza: indici DB, rate limit, validazione Zod, sessioni, firewall, password hashing |
-| **[docs/baseline-report.md](docs/baseline-report.md)** | Misure iniziali di bundle, tempi risposta e dimensione `.next` |
-| **[docs/optimization-report.md](docs/optimization-report.md)** | Dettaglio delle ottimizzazioni frontend e impatto sui bundle |
 | **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
 | **[docs/LIGHTHOUSE.md](docs/LIGHTHOUSE.md)** | Come eseguire Lighthouse e aggiornare i report in `docs/reports/` |
-| **[docs/reports/README.md](docs/reports/README.md)** | Formato dei report Lighthouse JSON |
 | **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Piano notifiche push Web Push (futuro) |
+| **[docs/archive/](docs/archive/)** | Documenti storici e materiali non operativi correnti |
 
 ---
 
@@ -271,7 +267,7 @@ curl http://localhost:3000/api/health
 ## Risoluzione problemi
 
 - **Il sito non risponde dopo un riavvio**
-  Segui i comandi in [AVVIO.md](AVVIO.md): avvia Nginx, poi `pm2 start ~/ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
+  In [GUIDA-SERVER.md](GUIDA-SERVER.md) trovi la procedura operativa: avvia Nginx, poi `pm2 start ~/ecosystem.config.js` (o `pm2 restart padel-tour`) e `pm2 save`.
 
 - **Errore "Could not find a production build" o "MODULE_NOT_FOUND"**
   La build in `.next` è mancante o corrotta. Esegui `npm run build` nella root del progetto, poi `pm2 restart padel-tour`.
@@ -281,3 +277,7 @@ curl http://localhost:3000/api/health
 
 - **Health check**
   `curl http://localhost:3000/api/health` → atteso `{"status":"ok","timestamp":"..."}`. Se ritorna `503`, il database non è raggiungibile.
+
+## Credits
+
+Progetto creato da Matteo Di Benedetto.

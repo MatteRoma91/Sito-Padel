@@ -7,7 +7,7 @@
 **Utente**: ubuntu (con sudo)
 **SO**: Ubuntu 24.04 LTS
 
-**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · **[AVVIO.md](AVVIO.md)** (comandi da lanciare all'avvio del server) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push)
+**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push) · [docs/archive/](docs/archive/) (storico)
 
 ---
 
@@ -45,10 +45,10 @@ PM2 è configurato con `pm2 startup` (servizio systemd `pm2-ubuntu.service`): al
 Se il riavvio automatico non funziona:
 
 1. **Nginx**: `sudo systemctl start nginx` (o `restart`)
-2. **Entrambe le app**: vedi **[AVVIO.md](AVVIO.md)** per i comandi completi
+2. **Entrambe le app**: avvia PM2 dalla config centralizzata (`pm2 start ~/ecosystem.config.js`)
 3. **Salva PM2**: `pm2 save`
 
-Elenco completo e blocchi copia-incolla: **[AVVIO.md](AVVIO.md)**.
+I passaggi sopra sostituiscono il vecchio runbook separato.
 
 ---
 
@@ -219,7 +219,7 @@ Dettagli: [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md).
 
 Dynamic import, code splitting, bundle analyzer, immagini AVIF/WebP.
 
-Dettagli: [docs/optimization-report.md](docs/optimization-report.md) e [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
+Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 
 ---
 
@@ -416,7 +416,7 @@ sudo certbot certificates
 ## Risoluzione problemi
 
 - **Sito non risponde dopo riavvio**
-  PM2 dovrebbe riavviare le app automaticamente (servizio `pm2-ubuntu.service`). Se non funziona, seguire [AVVIO.md](AVVIO.md): `sudo systemctl start nginx`, poi `pm2 start ~/ecosystem.config.js` o `pm2 restart padel-tour roma-buche control-room`, infine `pm2 save`.
+  PM2 dovrebbe riavviare le app automaticamente (servizio `pm2-ubuntu.service`). Se non funziona: `sudo systemctl start nginx`, poi `pm2 start ~/ecosystem.config.js` o `pm2 restart padel-tour roma-buche control-room`, infine `pm2 save`.
 
 - **Errore "Could not find a production build" o "MODULE_NOT_FOUND" nei log PM2**
   Build mancante o corrotta. In `/home/ubuntu/Sito-Padel` eseguire `npm run build`, poi `pm2 restart padel-tour`.
