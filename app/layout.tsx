@@ -105,12 +105,15 @@ export default async function RootLayout({
   return (
     <html lang="it" className="dark">
       <body className={`${inter.className} antialiased min-h-screen bg-[var(--background)]`}>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-black">
+          Vai al contenuto principale
+        </a>
         <JsonLdSchema baseUrl={baseUrl} tourName={tourName} />
         {configCss && (
           <style dangerouslySetInnerHTML={{ __html: configCss }} />
         )}
         <ClientProviders>
-          {children}
+          <main id="main-content">{children}</main>
           <RegisterPWA />
           <InstallPrompt />
         </ClientProviders>

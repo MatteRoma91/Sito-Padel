@@ -8,6 +8,9 @@ const AUTH_MAX = 20;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 const store = new Map<string, { count: number; resetAt: number }>();
 const authStore = new Map<string, { count: number; resetAt: number }>();
+const REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
+const REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const REDIS_PREFIX = process.env.RATE_LIMIT_PREFIX || 'padel:rl:';
 
 setInterval(() => {
   const now = Date.now();
@@ -54,6 +57,31 @@ function checkAuthRateLimit(req: NextRequest): boolean {
   return entry.count <= AUTH_MAX;
 }
 
+async function incrementRedisCounter(key: string, windowMs: number): Promise<number | null> {
+  if (!REDIS_REST_URL || !REDIS_REST_TOKEN) return null;
+  try {
+    const encodedKey = encodeURIComponent(`${REDIS_PREFIX}${key}`);
+    const authHeader = { Authorization: `Bearer ${REDIS_REST_TOKEN}` };
+    const incrRes = await fetch(`${REDIS_REST_URL}/incr/${encodedKey}`, { headers: authHeader, cache: 'no-store' });
+    if (!incrRes.ok) return null;
+    const incrJson = await incrRes.json();
+    const count = Number(incrJson?.result ?? 0);
+    if (count === 1) {
+      const ttlSeconds = Math.ceil(windowMs / 1000);
+      await fetch(`${REDIS_REST_URL}/expire/${encodedKey}/${ttlSeconds}`, { headers: authHeader, cache: 'no-store' });
+    }
+    return count;
+  } catch {
+    return null;
+  }
+}
+
+async function allowOrReject(req: NextRequest, key: string, max: number, windowMs: number): Promise<boolean> {
+  const redisCount = await incrementRedisCounter(key, windowMs);
+  if (redisCount !== null) return redisCount <= max;
+  return key.startsWith('auth:') ? checkAuthRateLimit(req) : checkApiRateLimit(req);
+}
+
 setInterval(() => {
   const now = Date.now();
   authStore.forEach((entry, key) => {
@@ -76,7 +104,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth')
   ) {
     if (pathname === '/api/auth/login') {
-      if (!checkAuthRateLimit(request)) {
+      const ip = getClientIp(request);
+      if (!(await allowOrReject(request, `auth:${ip}`, AUTH_MAX, AUTH_WINDOW_MS))) {
         return NextResponse.json(
           { error: 'Troppi tentativi. Riprova tra 5 minuti.' },
           { status: 429 }
@@ -88,7 +117,8 @@ export async function middleware(request: NextRequest) {
 
   // Rate limit sulle API (tranne auth che ha già rate limit login)
   if (pathname.startsWith('/api/')) {
-    if (!checkApiRateLimit(request)) {
+    const ip = getClientIp(request);
+    if (!(await allowOrReject(request, `api:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS))) {
       return NextResponse.json(
         { error: 'Troppe richieste. Riprova tra un minuto.' },
         { status: 429 }
