@@ -262,13 +262,24 @@ export default async function TournamentDetailPage({
                 {matches.filter(m => m.winner_pair_id).length} di {matches.length} partite completate
               </p>
             </div>
-            <Link
-              href={`/tournaments/${tournament.id}/bracket`}
-              className="btn btn-primary flex items-center gap-2"
-            >
-              Visualizza Tabellone
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-2">
+              {isAdmin && userCanEdit && (
+                <Link
+                  href={`/tournaments/${tournament.id}/pairs`}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  Gestisci Coppie
+                  <Shuffle className="w-4 h-4" />
+                </Link>
+              )}
+              <Link
+                href={`/tournaments/${tournament.id}/bracket`}
+                className="btn btn-primary flex items-center gap-2"
+              >
+                Visualizza Tabellone
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       )}

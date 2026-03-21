@@ -38,11 +38,6 @@ export default async function TournamentPairsPage({
   const matches = getMatches(tournament.id);
   const cumulativeRankings = getCumulativeRankings();
 
-  // If matches already exist, redirect to bracket page
-  if (matches.length > 0) {
-    redirect(`/tournaments/${id}/bracket`);
-  }
-
   // Build maps
   const userMap = new Map(allUsers.map(u => [u.id, u]));
   const rankingMap = new Map(cumulativeRankings.map(r => [r.user_id, r.total_points]));
@@ -68,7 +63,7 @@ export default async function TournamentPairsPage({
         <div className="flex items-center gap-3 mb-2">
           <Shuffle className="w-6 h-6 text-accent-500" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            Estrazione Coppie
+            Gestione Coppie
           </h1>
         </div>
         <p className="text-slate-700 dark:text-slate-300">
@@ -84,7 +79,7 @@ export default async function TournamentPairsPage({
         participatingUserIds={participatingUserIds}
         userMap={userMap}
         rankingMap={rankingMap}
-        hasMatches={false}
+        hasMatches={matches.length > 0}
       />
 
       {/* Proceed to bracket button */}

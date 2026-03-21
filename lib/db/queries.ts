@@ -879,6 +879,39 @@ export function updatePairPlayers(pairId: string, player1Id: string, player2Id: 
   getDb().prepare('UPDATE pairs SET player1_id = ?, player2_id = ? WHERE id = ?').run(player1Id, player2Id, pairId);
 }
 
+export function updatePairsPlayersBatch(
+  updates: { pairId: string; player1Id: string; player2Id: string }[]
+): void {
+  ensureDb();
+  if (updates.length === 0) return;
+
+  const db = getDb();
+  const stmt = db.prepare('UPDATE pairs SET player1_id = ?, player2_id = ? WHERE id = ?');
+  const tx = db.transaction((rows: { pairId: string; player1Id: string; player2Id: string }[]) => {
+    for (const row of rows) {
+      stmt.run(row.player1Id, row.player2Id, row.pairId);
+    }
+  });
+  tx(updates);
+}
+
+export function getDecidedMatchCountByPair(tournamentId: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  const matches = getMatches(tournamentId);
+
+  for (const match of matches) {
+    if (!match.winner_pair_id) continue;
+    if (match.pair1_id) {
+      counts.set(match.pair1_id, (counts.get(match.pair1_id) || 0) + 1);
+    }
+    if (match.pair2_id) {
+      counts.set(match.pair2_id, (counts.get(match.pair2_id) || 0) + 1);
+    }
+  }
+
+  return counts;
+}
+
 export function getNextPairSeed(tournamentId: string): number {
   ensureDb();
   const result = getDb().prepare('SELECT MAX(seed) as maxSeed FROM pairs WHERE tournament_id = ?').get(tournamentId) as { maxSeed: number | null };

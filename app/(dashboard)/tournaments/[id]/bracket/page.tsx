@@ -11,7 +11,7 @@ import {
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, Grid3X3 } from 'lucide-react';
+import { ArrowLeft, Grid3X3, Shuffle } from 'lucide-react';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
 import { ExportPdfButtonLazy as ExportPdfButton } from '@/components/tournaments/ExportPdfButtonLazy';
@@ -77,13 +77,24 @@ export default async function TournamentBracketPage({
   return (
     <div className="max-w-6xl w-full mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <Link 
-          href={`/tournaments/${tournament.id}`} 
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Torna al torneo
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href={`/tournaments/${tournament.id}`} 
+            className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Torna al torneo
+          </Link>
+          {isAdmin && userCanEdit && (
+            <Link
+              href={`/tournaments/${tournament.id}/pairs`}
+              className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-accent-500 dark:hover:text-accent-400 transition"
+            >
+              <Shuffle className="w-4 h-4" />
+              Modifica coppie
+            </Link>
+          )}
+        </div>
         
         {(pairs.length > 0 || matches.length > 0 || rankings.length > 0) && (
           <ExportPdfButton
