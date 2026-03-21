@@ -54,10 +54,10 @@ export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: C
       <div className="card p-6 hover:border-accent-500 hover:shadow-lg transition-all">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-6 h-6 text-accent-500" />
-          <h2 className="font-bold text-slate-800 text-lg">Countdown al prossimo Broccoburgher</h2>
+          <h2 className="font-bold text-accent-500 text-lg">Countdown al prossimo Broccoburgher</h2>
         </div>
-        <p className="font-semibold text-slate-800 mb-1">{tournamentName}</p>
-        <p className="text-sm text-slate-600 flex items-center gap-1 mb-4">
+        <p className="font-semibold text-accent-500 mb-1">{tournamentName}</p>
+        <p className="text-sm text-accent-500 flex items-center gap-1 mb-4">
           <Calendar className="w-4 h-4" />
           {targetDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
