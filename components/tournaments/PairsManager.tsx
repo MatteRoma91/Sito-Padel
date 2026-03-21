@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shuffle, Plus, Trash2, AlertTriangle, Pencil } from 'lucide-react';
+import { Shuffle, Plus, Trash2, AlertTriangle, Pencil, Save, Undo2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { User, Pair } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
@@ -34,9 +34,8 @@ export function PairsManager({
   const [showManualForm, setShowManualForm] = useState(false);
   const [player1Id, setPlayer1Id] = useState('');
   const [player2Id, setPlayer2Id] = useState('');
-  const [editingPair, setEditingPair] = useState<Pair | null>(null);
-  const [editPlayer1Id, setEditPlayer1Id] = useState('');
-  const [editPlayer2Id, setEditPlayer2Id] = useState('');
+  const [editingPairIds, setEditingPairIds] = useState<Set<string>>(new Set());
+  const [draftEdits, setDraftEdits] = useState<Record<string, { player1_id: string; player2_id: string }>>({});
   const [showPlayedAck, setShowPlayedAck] = useState(false);
 
   // Get players already in pairs
@@ -54,29 +53,70 @@ export function PairsManager({
 
   // Check if we have enough players for extraction
   const canExtract = participatingUserIds.length === expectedPlayers;
-
-  function closeEditModal() {
-    setEditingPair(null);
-    setEditPlayer1Id('');
-    setEditPlayer2Id('');
-    setShowPlayedAck(false);
-  }
+  const pendingUpdates = pairs
+    .map((pair) => {
+      const draft = draftEdits[pair.id];
+      if (!draft) return null;
+      if (draft.player1_id === pair.player1_id && draft.player2_id === pair.player2_id) return null;
+      return {
+        pair_id: pair.id,
+        player1_id: draft.player1_id,
+        player2_id: draft.player2_id,
+      };
+    })
+    .filter((update): update is { pair_id: string; player1_id: string; player2_id: string } => !!update);
 
   function startEditPair(pair: Pair) {
     setError('');
-    setEditingPair(pair);
-    setEditPlayer1Id(pair.player1_id);
-    setEditPlayer2Id(pair.player2_id);
+    setEditingPairIds((prev) => {
+      const next = new Set(prev);
+      next.add(pair.id);
+      return next;
+    });
+    setDraftEdits((prev) => ({
+      ...prev,
+      [pair.id]: prev[pair.id] || { player1_id: pair.player1_id, player2_id: pair.player2_id },
+    }));
   }
 
-  async function savePairComposition(acknowledgePlayedMatches: boolean) {
-    if (!editingPair || !editPlayer1Id || !editPlayer2Id) {
-      setError('Seleziona entrambi i giocatori');
+  function cancelEditPair(pair: Pair) {
+    setEditingPairIds((prev) => {
+      const next = new Set(prev);
+      next.delete(pair.id);
+      return next;
+    });
+    setDraftEdits((prev) => {
+      const next = { ...prev };
+      delete next[pair.id];
+      return next;
+    });
+  }
+
+  function updateDraftPlayer(pairId: string, slot: 'player1_id' | 'player2_id', value: string) {
+    setDraftEdits((prev) => ({
+      ...prev,
+      [pairId]: {
+        player1_id: prev[pairId]?.player1_id || '',
+        player2_id: prev[pairId]?.player2_id || '',
+        [slot]: value,
+      },
+    }));
+  }
+
+  async function saveAllPairCompositions(acknowledgePlayedMatches: boolean) {
+    if (pendingUpdates.length === 0) {
+      setError('Non ci sono modifiche da salvare');
       return;
     }
-    if (editPlayer1Id === editPlayer2Id) {
-      setError('I due giocatori della coppia devono essere diversi');
-      return;
+    for (const update of pendingUpdates) {
+      if (!update.player1_id || !update.player2_id) {
+        setError('Seleziona entrambi i giocatori per tutte le coppie modificate');
+        return;
+      }
+      if (update.player1_id === update.player2_id) {
+        setError('I due giocatori della stessa coppia devono essere diversi');
+        return;
+      }
     }
 
     setLoading(true);
@@ -87,20 +127,16 @@ export function PairsManager({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          updates: [
-            {
-              pair_id: editingPair.id,
-              player1_id: editPlayer1Id,
-              player2_id: editPlayer2Id,
-            },
-          ],
+          updates: pendingUpdates,
           acknowledge_played_matches: acknowledgePlayedMatches,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        closeEditModal();
+        setShowPlayedAck(false);
+        setEditingPairIds(new Set());
+        setDraftEdits({});
         router.refresh();
         return;
       }
@@ -110,7 +146,7 @@ export function PairsManager({
         return;
       }
 
-      setError(data.error || 'Errore durante la modifica della coppia');
+      setError(data.error || 'Errore durante il salvataggio delle coppie');
     } catch {
       setError('Errore di connessione');
     } finally {
@@ -230,12 +266,12 @@ export function PairsManager({
       />
       <ConfirmDialog
         open={showPlayedAck}
-        title="Conferma modifica su coppia già giocata"
-        message="Questa coppia compare in partite già completate. Continuando aggiorni i nomi nel tabellone storico. Vuoi procedere?"
-        confirmLabel="Conferma modifica"
+        title="Conferma modifiche su coppie già giocate"
+        message="Almeno una coppia modificata compare in partite già completate. Continuando aggiorni i nomi nel tabellone storico. Vuoi procedere con tutto il batch?"
+        confirmLabel="Conferma e salva tutto"
         cancelLabel="Annulla"
         variant="danger"
-        onConfirm={() => savePairComposition(true)}
+        onConfirm={() => saveAllPairCompositions(true)}
         onCancel={() => setShowPlayedAck(false)}
       />
       <div className="p-4 border-b border-slate-200 dark:border-slate-700">
@@ -252,6 +288,17 @@ export function PairsManager({
           </div>
           
           <div className="flex gap-2">
+            {pendingUpdates.length > 0 && (
+              <button
+                onClick={() => saveAllPairCompositions(false)}
+                disabled={loading}
+                className="btn btn-primary flex items-center gap-2"
+                aria-label="Salva tutte le modifiche alle coppie"
+              >
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">Salva tutte ({pendingUpdates.length})</span>
+              </button>
+            )}
             {/* Manual pair button */}
             {availablePlayers.length >= 2 && !hasMatches && (
               <button
@@ -410,10 +457,15 @@ export function PairsManager({
           </div>
         ) : (
           pairs.map(pair => {
-            const player1 = userMap.get(pair.player1_id);
-            const player2 = userMap.get(pair.player2_id);
-            const points1 = rankingMap.get(pair.player1_id) || 0;
-            const points2 = rankingMap.get(pair.player2_id) || 0;
+            const isEditing = editingPairIds.has(pair.id);
+            const draft = draftEdits[pair.id] || { player1_id: pair.player1_id, player2_id: pair.player2_id };
+            const selectedPlayer1Id = draft.player1_id;
+            const selectedPlayer2Id = draft.player2_id;
+            const player1 = userMap.get(selectedPlayer1Id);
+            const player2 = userMap.get(selectedPlayer2Id);
+            const points1 = rankingMap.get(selectedPlayer1Id) || 0;
+            const points2 = rankingMap.get(selectedPlayer2Id) || 0;
+            const rowChanged = selectedPlayer1Id !== pair.player1_id || selectedPlayer2Id !== pair.player2_id;
 
             return (
               <div key={pair.id} className="p-4">
@@ -426,13 +478,13 @@ export function PairsManager({
                       Tot: {points1 + points2} pt
                     </span>
                     <button
-                      onClick={() => startEditPair(pair)}
+                      onClick={() => (isEditing ? cancelEditPair(pair) : startEditPair(pair))}
                       disabled={loading}
                       className="p-1.5 rounded hover:bg-primary-100 dark:hover:bg-primary-900/30 text-[#202ca1] transition"
-                      title="Modifica composizione coppia"
-                      aria-label="Modifica composizione coppia"
+                      title={isEditing ? 'Annulla modifica riga' : 'Modifica composizione coppia'}
+                      aria-label={isEditing ? 'Annulla modifica riga' : 'Modifica composizione coppia'}
                     >
-                      <Pencil className="w-4 h-4" />
+                      {isEditing ? <Undo2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
                     </button>
                     {!hasMatches && (
                       <button
@@ -447,30 +499,69 @@ export function PairsManager({
                     )}
                   </div>
                 </div>
+                {rowChanged && (
+                  <p className="mb-2 text-xs text-amber-600 dark:text-amber-300">
+                    Modifica in bozza non ancora salvata
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
                     <Avatar 
-                      src={player1?.avatar || null} 
-                      name={getUserName(pair.player1_id)} 
+                      src={player1?.avatar || null}
+                      name={getUserName(selectedPlayer1Id)}
                       size="md" 
                     />
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-100">
-                        {getUserName(pair.player1_id)}
-                      </p>
+                      {isEditing ? (
+                        <select
+                          value={selectedPlayer1Id}
+                          onChange={(e) => updateDraftPlayer(pair.id, 'player1_id', e.target.value)}
+                          className="input"
+                        >
+                          {participatingUserIds.map((id) => {
+                            const score = rankingMap.get(id) || 0;
+                            return (
+                              <option key={id} value={id}>
+                                {getUserName(id)} ({score} pt)
+                              </option>
+                            );
+                          })}
+                        </select>
+                      ) : (
+                        <p className="font-medium text-slate-800 dark:text-slate-100">
+                          {getUserName(selectedPlayer1Id)}
+                        </p>
+                      )}
                       <p className="text-sm text-green-600">{points1} pt</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Avatar 
-                      src={player2?.avatar || null} 
-                      name={getUserName(pair.player2_id)} 
+                      src={player2?.avatar || null}
+                      name={getUserName(selectedPlayer2Id)}
                       size="md" 
                     />
                     <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-100">
-                        {getUserName(pair.player2_id)}
-                      </p>
+                      {isEditing ? (
+                        <select
+                          value={selectedPlayer2Id}
+                          onChange={(e) => updateDraftPlayer(pair.id, 'player2_id', e.target.value)}
+                          className="input"
+                        >
+                          {participatingUserIds.map((id) => {
+                            const score = rankingMap.get(id) || 0;
+                            return (
+                              <option key={id} value={id}>
+                                {getUserName(id)} ({score} pt)
+                              </option>
+                            );
+                          })}
+                        </select>
+                      ) : (
+                        <p className="font-medium text-slate-800 dark:text-slate-100">
+                          {getUserName(selectedPlayer2Id)}
+                        </p>
+                      )}
                       <p className="text-sm text-[#B2FF00]">{points2} pt</p>
                     </div>
                   </div>
@@ -480,65 +571,6 @@ export function PairsManager({
           })
         )}
       </div>
-      {editingPair && (
-        <div className="p-4 bg-primary-50 border-t border-primary-100">
-          <p className="font-medium text-slate-800 dark:text-slate-100 mb-3">
-            Modifica Coppia {editingPair.seed}
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Giocatore 1
-              </label>
-              <select
-                value={editPlayer1Id}
-                onChange={(e) => setEditPlayer1Id(e.target.value)}
-                className="input"
-              >
-                {participatingUserIds.map((id) => {
-                  const points = rankingMap.get(id) || 0;
-                  return (
-                    <option key={id} value={id}>
-                      {getUserName(id)} ({points} pt)
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Giocatore 2
-              </label>
-              <select
-                value={editPlayer2Id}
-                onChange={(e) => setEditPlayer2Id(e.target.value)}
-                className="input"
-              >
-                {participatingUserIds.map((id) => {
-                  const points = rankingMap.get(id) || 0;
-                  return (
-                    <option key={id} value={id}>
-                      {getUserName(id)} ({points} pt)
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => savePairComposition(false)}
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              {loading ? 'Salvataggio...' : 'Salva composizione'}
-            </button>
-            <button onClick={closeEditModal} disabled={loading} className="btn btn-secondary">
-              Annulla
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   );

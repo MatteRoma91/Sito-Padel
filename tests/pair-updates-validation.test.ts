@@ -49,4 +49,35 @@ describe('validatePairUpdates', () => {
     expect(result.ok).toBe(false);
     expect(result.code).toBe('NEED_ACK_PLAYED_MATCHES');
   });
+
+  it('accepts partial multi-pair updates and returns normalized updates only for payload entries', () => {
+    const result = validatePairUpdates({
+      existingPairs: basePairs,
+      updates: [{ pair_id: 'p2', player1_id: 'u4', player2_id: 'u3' }],
+      participatingUserIds: ['u1', 'u2', 'u3', 'u4'],
+      decidedPairIds: new Set(),
+      acknowledgePlayedMatches: false,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.normalizedUpdates).toEqual([
+      { pair_id: 'p2', player1_id: 'u4', player2_id: 'u3' },
+    ]);
+  });
+
+  it('requires a single global ack when any edited pair is decided', () => {
+    const result = validatePairUpdates({
+      existingPairs: basePairs,
+      updates: [
+        { pair_id: 'p1', player1_id: 'u1', player2_id: 'u4' },
+        { pair_id: 'p2', player1_id: 'u3', player2_id: 'u2' },
+      ],
+      participatingUserIds: ['u1', 'u2', 'u3', 'u4'],
+      decidedPairIds: new Set(['p2']),
+      acknowledgePlayedMatches: false,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('NEED_ACK_PLAYED_MATCHES');
+  });
 });
