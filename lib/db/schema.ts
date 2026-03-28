@@ -540,6 +540,31 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_court_booking_matches_booking ON court_booking_matches(booking_id)`);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notification_sent (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      ref_id TEXT NOT NULL,
+      user_id TEXT,
+      sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(kind, ref_id, user_id)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_notification_sent_kind_ref ON notification_sent(kind, ref_id)`);
+
   // Seed 4 campi (2 coperti, 2 scoperti) se tabella vuota
   const courtsCount = (db.prepare('SELECT COUNT(*) as c FROM courts').get() as { c: number }).c;
   if (courtsCount === 0) {

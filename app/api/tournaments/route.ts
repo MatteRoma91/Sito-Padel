@@ -10,6 +10,7 @@ import {
   getSiteConfig,
 } from '@/lib/db/queries';
 import { createTournamentSchema, parseOrThrow, ValidationError } from '@/lib/validations';
+import { sendPushToAllPlayers } from '@/lib/notifications/push';
 
 function parseTime(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -110,6 +111,11 @@ export async function POST(request: Request) {
         slot_end,
         court_ids: courtIdsFiltered,
       });
+      void sendPushToAllPlayers({
+        title: 'Nuovo torneo',
+        body: `${name} — ${date}${time ? ` ore ${time}` : ''}`,
+        url: `/tournaments/${id}`,
+      }).catch(() => undefined);
       return NextResponse.json({ success: true, id });
     }
 
@@ -122,6 +128,12 @@ export async function POST(request: Request) {
       max_players: validMaxPlayers,
       created_by: user.id,
     });
+
+    void sendPushToAllPlayers({
+      title: 'Nuovo torneo',
+      body: `${name} — ${date}${time ? ` ore ${time}` : ''}`,
+      url: `/tournaments/${id}`,
+    }).catch(() => undefined);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {

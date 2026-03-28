@@ -6,6 +6,7 @@ import { getTournaments, getTournamentsFuture, getTournamentsPast, getUsers, get
 import { getVisibleUsers } from '@/lib/visibility';
 import { Trophy, Calendar, BarChart3, LayoutGrid, Images } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { PushNotificationsPrompt } from '@/components/notifications/PushNotificationsPrompt';
 
 const CountdownBroccoburgher = dynamic(() => import('@/components/home/CountdownBroccoburgher').then((m) => ({ default: m.CountdownBroccoburgher })));
 const MvpVoteCard = dynamic(() => import('@/components/home/MvpVoteCard').then((m) => ({ default: m.MvpVoteCard })));
@@ -77,6 +78,8 @@ export default async function HomePage() {
           </div>
         </div>
       </div>
+
+      {user && <PushNotificationsPrompt />}
 
       {/* Griglia: Il Mio Profilo, Prenota un campo, Calendario, Classifiche, Galleria */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

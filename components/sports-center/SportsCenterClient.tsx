@@ -37,8 +37,22 @@ interface SportsCenterClientProps {
   allowedDurations: number[];
 }
 
+function addDays(isoDate: string, delta: number): string {
+  const d = new Date(isoDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
 export function SportsCenterClient({ courts, users, user, allowedDurations }: SportsCenterClientProps) {
+  const [weekStart, setWeekStart] = useState(() => {
+    const t = new Date();
+    const day = t.getDay();
+    const diff = (day + 6) % 7;
+    t.setDate(t.getDate() - diff);
+    return t.toISOString().slice(0, 10);
+  });
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [weekMode, setWeekMode] = useState(false);
   const [availability, setAvailability] = useState<{ courts: AvailabilityCourt[] } | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,28 +63,41 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
   const isAdmin = user.role === 'admin';
 
   const fetchData = useCallback(async () => {
-    if (!date) return;
+    const targetDate = weekMode ? weekStart : date;
+    if (!targetDate) return;
     setLoading(true);
     try {
-      const [avRes, bookRes] = await Promise.all([
-        fetch(`/api/sports-center/availability?date=${date}`),
-        fetch(`/api/sports-center/bookings?date=${date}`),
-      ]);
-      if (avRes.ok) {
-        const av = await avRes.json();
-        setAvailability(av);
-      } else setAvailability(null);
-      if (bookRes.ok) {
-        const data = await bookRes.json();
-        setBookings(data.bookings ?? []);
-      } else setBookings([]);
+      if (!weekMode) {
+        const [avRes, bookRes] = await Promise.all([
+          fetch(`/api/sports-center/availability?date=${date}`),
+          fetch(`/api/sports-center/bookings?date=${date}`),
+        ]);
+        if (avRes.ok) {
+          const av = await avRes.json();
+          setAvailability(av);
+        } else setAvailability(null);
+        if (bookRes.ok) {
+          const data = await bookRes.json();
+          setBookings(data.bookings ?? []);
+        } else setBookings([]);
+      } else {
+        const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+        const bookResults = await Promise.all(
+          days.map((d) => fetch(`/api/sports-center/bookings?date=${d}`).then((r) => (r.ok ? r.json() : { bookings: [] })))
+        );
+        const merged = bookResults.flatMap((b) => b.bookings ?? []);
+        setBookings(merged);
+        const avRes = await fetch(`/api/sports-center/availability?date=${weekStart}`);
+        if (avRes.ok) setAvailability(await avRes.json());
+        else setAvailability(null);
+      }
     } catch {
       setAvailability(null);
       setBookings([]);
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [date, weekMode, weekStart]);
 
   useEffect(() => {
     fetchData();
@@ -158,13 +185,50 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
             Oggi
           </button>
         )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={`btn border ${!weekMode ? 'border-accent-500 bg-accent-500/10' : 'border-slate-300 dark:border-slate-600'}`}
+            onClick={() => setWeekMode(false)}
+          >
+            Giorno
+          </button>
+          <button
+            type="button"
+            className={`btn border ${weekMode ? 'border-accent-500 bg-accent-500/10' : 'border-slate-300 dark:border-slate-600'}`}
+            onClick={() => setWeekMode(true)}
+          >
+            Settimana
+          </button>
+        </div>
+        {weekMode && (
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+              onClick={() => setWeekStart(addDays(weekStart, -7))}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span>
+              {weekStart} → {addDays(weekStart, 6)}
+            </span>
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+              onClick={() => setWeekStart(addDays(weekStart, 7))}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div className="card p-8 text-center text-slate-600 dark:text-slate-400">
           Caricamento...
         </div>
-      ) : availability?.courts?.length ? (
+      ) : availability?.courts?.length && !weekMode ? (
         <>
           <CourtGrid
             courts={availability.courts}
@@ -184,6 +248,16 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
             onCancel={handleCancelBooking}
           />
         </>
+      ) : weekMode ? (
+        <BookingsList
+          bookings={bookings}
+          courts={courts}
+          users={users}
+          currentUserId={user.id}
+          isAdmin={isAdmin}
+          canEdit={!isGuest}
+          onCancel={handleCancelBooking}
+        />
       ) : (
         <div className="card p-8 text-center text-slate-600 dark:text-slate-400">
           Nessun campo configurato o dati non disponibili.

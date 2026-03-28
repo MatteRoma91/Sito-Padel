@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournamentById, updateTournament, deleteTournament } from '@/lib/db/queries';
+import { sendPushToAllPlayers } from '@/lib/notifications/push';
 import { updateTournamentSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 import type { TournamentStatus, TournamentCategory } from '@/lib/types';
 
@@ -51,6 +52,8 @@ export async function PATCH(
     }
     const { name, date, time, venue, status, category } = data;
 
+    const prev = getTournamentById(id);
+
     const updates: { name?: string; date?: string; time?: string | null; venue?: string | null; status?: TournamentStatus; category?: TournamentCategory } = {};
     if (name !== undefined) updates.name = name;
     if (date !== undefined) updates.date = date;
@@ -61,6 +64,17 @@ export async function PATCH(
 
     if (Object.keys(updates).length > 0) {
       updateTournament(id, updates);
+      if (
+        status === 'open' &&
+        prev &&
+        prev.status !== 'open'
+      ) {
+        void sendPushToAllPlayers({
+          title: 'Iscrizioni aperte',
+          body: `${prev.name} — ${prev.date}${prev.time ? ` ore ${prev.time}` : ''}`,
+          url: `/tournaments/${id}`,
+        }).catch(() => undefined);
+      }
     }
 
     return NextResponse.json({ success: true });

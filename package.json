@@ -1,5 +1,5 @@
 {
-  "name": "temp-padel",
+  "name": "banana-padel-tour",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -35,6 +35,7 @@
     "serwist": "^9.5.6",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -46,6 +47,7 @@
     "@types/node": "^20",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^4.3.4",
     "adm-zip": "^0.5.16",
     "eslint": "^8",

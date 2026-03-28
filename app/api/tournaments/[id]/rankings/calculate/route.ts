@@ -11,6 +11,7 @@ import {
   updateTournament
 } from '@/lib/db/queries';
 import { calculateTournamentRankings, isTournamentComplete } from '@/lib/rankings';
+import { sendPushToTournamentParticipants } from '@/lib/notifications/push';
 import type { TournamentCategory } from '@/lib/types';
 
 export async function POST(
@@ -68,6 +69,12 @@ export async function POST(
       status: 'completed',
       completed_at: new Date().toISOString(),
     });
+
+    void sendPushToTournamentParticipants(tournamentId, {
+      title: 'Torneo completato',
+      body: `${tournament.name}: classifica aggiornata.`,
+      url: `/tournaments/${tournamentId}`,
+    }).catch(() => undefined);
 
     return NextResponse.json({ success: true, rankings });
   } catch (error) {
