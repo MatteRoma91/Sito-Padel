@@ -30,7 +30,8 @@ const CHART_WIDTH = 600;
 const CHART_HEIGHT = 200;
 const PAD_LEFT = 40;
 const PAD_RIGHT = 20;
-const PAD_TOP = 22;
+/** Extra space so labels above topmost points stay inside the viewBox */
+const PAD_TOP = 28;
 const PAD_BOTTOM = 35;
 const PLOT_WIDTH = CHART_WIDTH - PAD_LEFT - PAD_RIGHT;
 const PLOT_HEIGHT = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
@@ -151,25 +152,28 @@ function SvgLineChart({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Dots + value labels */}
+        {/* Dots + value labels (foreignObject: Tailwind su <text> SVG spesso non applica fill in prod) */}
         {data.map((d, i) => {
           const x = PAD_LEFT + (i / Math.max(1, data.length - 1)) * PLOT_WIDTH;
           const y = PAD_TOP + PLOT_HEIGHT - ((d.value - vMin) / range) * PLOT_HEIGHT;
           const label = formatPointValue(d.value);
+          const fw = 52;
+          const fh = 18;
           return (
             <g key={i}>
               <circle cx={x} cy={y} r={4} fill={stroke} />
-              <text
-                x={x}
-                y={y - 9}
-                textAnchor="middle"
-                fontSize={10}
-                fontWeight={600}
-                className="fill-slate-800 dark:fill-slate-100 [paint-order:stroke_fill] stroke-white dark:stroke-slate-900"
-                strokeWidth={2.5}
+              <foreignObject
+                x={x - fw / 2}
+                y={y - fh - 8}
+                width={fw}
+                height={fh}
+                overflow="visible"
+                className="pointer-events-none"
               >
-                {label}
-              </text>
+                <div className="flex h-full w-full items-center justify-center text-[11px] font-bold tabular-nums leading-none text-slate-900 dark:text-slate-50 [text-shadow:0_0_2px_#fff,0_0_6px_#fff,0_1px_2px_rgb(0_0_0/0.2)] dark:[text-shadow:0_0_2px_#0f172a,0_0_6px_#0f172a,0_1px_2px_rgb(0_0_0/0.5)]">
+                  {label}
+                </div>
+              </foreignObject>
             </g>
           );
         })}
