@@ -3,6 +3,12 @@
 import { useMemo } from 'react';
 import type { OverallScoreHistoryEntry, PointsHistoryEntry } from '@/lib/db/queries';
 
+function formatPointValue(v: number): string {
+  if (Number.isInteger(v)) return String(v);
+  const r = Math.round(v * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
 function formatDate(dateStr: string): string {
   try {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('it-IT', {
@@ -24,7 +30,7 @@ const CHART_WIDTH = 600;
 const CHART_HEIGHT = 200;
 const PAD_LEFT = 40;
 const PAD_RIGHT = 20;
-const PAD_TOP = 10;
+const PAD_TOP = 22;
 const PAD_BOTTOM = 35;
 const PLOT_WIDTH = CHART_WIDTH - PAD_LEFT - PAD_RIGHT;
 const PLOT_HEIGHT = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
@@ -145,11 +151,27 @@ function SvgLineChart({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Dots */}
+        {/* Dots + value labels */}
         {data.map((d, i) => {
           const x = PAD_LEFT + (i / Math.max(1, data.length - 1)) * PLOT_WIDTH;
           const y = PAD_TOP + PLOT_HEIGHT - ((d.value - vMin) / range) * PLOT_HEIGHT;
-          return <circle key={i} cx={x} cy={y} r={4} fill={stroke} />;
+          const label = formatPointValue(d.value);
+          return (
+            <g key={i}>
+              <circle cx={x} cy={y} r={4} fill={stroke} />
+              <text
+                x={x}
+                y={y - 9}
+                textAnchor="middle"
+                fontSize={10}
+                fontWeight={600}
+                className="fill-slate-800 dark:fill-slate-100 [paint-order:stroke_fill] stroke-white dark:stroke-slate-900"
+                strokeWidth={2.5}
+              >
+                {label}
+              </text>
+            </g>
+          );
         })}
       </svg>
     </div>
