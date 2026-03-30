@@ -8,7 +8,13 @@ Configurazione pronta per produzione con PM2, Nginx, SSL, security headers e hea
 
 ## 1. PM2 (configurazione centralizzata)
 
-Le 3 app (padel-tour, roma-buche, control-room) sono gestite da una **configurazione PM2 centralizzata** in `~/ecosystem.config.js`.
+Le app del server sono gestite da una **configurazione PM2 centralizzata** in `/home/ubuntu/ecosystem.config.js`:
+
+- `padel-tour` (3000)
+- `roma-buche` (3001)
+- `gestione-veicoli` (3002)
+- `scommesse` (3003)
+- `control-room` (3005)
 
 Il server padel-tour usa **`server.js`** (custom server Node + Socket.io) invece di `next start`. Per evitare problemi con le room WebSocket, PM2 usa **una sola istanza** per app (`instances: 1`).
 
@@ -16,7 +22,7 @@ Il server padel-tour usa **`server.js`** (custom server Node + Socket.io) invece
 ```bash
 cd /home/ubuntu/Sito-Padel
 npm run build
-pm2 start ~/ecosystem.config.js
+pm2 start /home/ubuntu/ecosystem.config.js
 pm2 save
 pm2 startup  # esegui il comando suggerito per avvio al boot
 ```
@@ -139,7 +145,7 @@ File `.env.example` incluso nel repository come template.
 
 | Componente        | Dettaglio                                              |
 |-------------------|--------------------------------------------------------|
-| PM2               | Config centralizzata `~/ecosystem.config.js`. `instances: 1` per app (WebSocket richiede processo singolo) |
+| PM2               | Config centralizzata `/home/ubuntu/ecosystem.config.js`. `instances: 1` per app (WebSocket richiede processo singolo) |
 | PM2 padel-tour    | `max_memory_restart: 512M`, `node_args: --max-old-space-size=512` |
 | PM2 roma-buche    | `max_memory_restart: 768M`, avvio da `.next/standalone/server.js` |
 | PM2 control-room  | `max_memory_restart: 256M` |
@@ -154,6 +160,6 @@ File `.env.example` incluso nel repository come template.
 | Swap               | 2 GB `/swapfile`                                       |
 | SSL                | Let's Encrypt, rinnovo automatico + reload hook        |
 | Node.js            | 22 LTS via nvm                                        |
-| Health check       | `/api/health` – verifica DB, JSON response. Cron `*/5` min: `~/scripts/health-check.sh` riavvia padel/buche se non rispondono |
+| Health check       | `/api/health` – verifica DB, JSON response. Script server: `/home/ubuntu/scripts/health-check.sh` (controlla tutte le webapp e riavvia solo se endpoint locale KO; notifiche lette da `control-room/settings.json`) |
 | SQLite (padel)     | PRAGMA: journal_mode=WAL, synchronous=NORMAL, cache_size=-20000, busy_timeout=5000 |
-| Backup SQLite      | Cron 03:00 copia in `~/backups/`, retention 7 giorni   |
+| Backup / rollback  | Snapshot consistenti (SQLite + upload/config) tramite `/home/ubuntu/scripts/backup-snapshot.py` e restore tramite `/home/ubuntu/scripts/restore-snapshot.sh` |

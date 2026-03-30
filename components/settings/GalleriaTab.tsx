@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Image as ImageIcon, HardDrive, Trash2, RefreshCw } from 'lucide-react';
+import { Image as ImageIcon, Trash2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import ConfirmModal from '@/components/ui/ConfirmModal';
@@ -43,7 +43,6 @@ export function GalleriaTab() {
   const fetchData = async (showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true);
     else setLoading(true);
-    setLoading(true);
     try {
       const [statsRes, listRes] = await Promise.all([
         fetch('/api/gallery/stats'),

@@ -195,7 +195,9 @@ Da **Impostazioni** (menu laterale, visibile solo agli admin) si gestiscono: col
 
 - **Backup completo** (database + avatar + galleria): da Impostazioni → Strumenti, usa **Scarica backup completo**. Si scarica un file ZIP (`padel-full-backup-YYYY-MM-DD.zip`) da conservare fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** per un singolo file `.db` (utile per backup rapidi).
-- **Backup automatico**: cron giornaliero (03:00) copia `data/padel.db` in `~/backups/padel-YYYYMMDD.db`, retention 7 giorni.
+- **Snapshot server (consigliato)**: per backup/rollback “a prova di WAL” e includendo anche upload/config, usare gli script cross-app:
+  - `python3 /home/ubuntu/scripts/backup-snapshot.py --app padel-tour --include-pm2-dump`
+  - `bash /home/ubuntu/scripts/restore-snapshot.sh --app padel-tour --stamp <STAMP> --dry-run` (verifica) / senza `--dry-run` (restore reale)
 
 **Ripristino su un nuovo server** (dopo crash o migrazione):
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy } from 'lucide-react';
@@ -105,7 +105,7 @@ export function BookingDetailClient({
   courts,
   initialParticipants,
   users,
-  canEdit,
+  canEdit: _canEdit,
   canReopen,
   canEditParticipants,
   isAdmin,
@@ -113,6 +113,7 @@ export function BookingDetailClient({
   canSaveResult,
 }: BookingDetailClientProps) {
   const router = useRouter();
+  void _canEdit;
   const [participants, setParticipants] = useState<ParticipantSlot[]>(
     () => normalizeInitial(initialParticipants)
   );
@@ -135,7 +136,7 @@ export function BookingDetailClient({
   const [showReopenConfirm, setShowReopenConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const initial = normalizeInitial(initialParticipants);
+  const initial = useMemo(() => normalizeInitial(initialParticipants), [initialParticipants]);
 
   useEffect(() => {
     setBookingName(booking.booking_name);
@@ -147,7 +148,7 @@ export function BookingDetailClient({
 
   useEffect(() => {
     setParticipants(normalizeInitial(initialParticipants));
-  }, [booking.id, JSON.stringify(initialParticipants)]);
+  }, [booking.id, initialParticipants]);
 
   const setSlot = (index: number, slot: ParticipantSlot) => {
     const next = [...participants];

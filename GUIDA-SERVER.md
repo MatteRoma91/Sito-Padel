@@ -2,7 +2,7 @@
 
 > **Nota**: Questo file non è servito dal sito (non è in `/public`). È una guida operativa da aggiornare man mano che si effettuano modifiche.
 
-**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001) · matteroma.duckdns.org (:3005 Control Room)
+**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001) · gestione-veicoli.duckdns.org (:3002) · scommesse.duckdns.org (:3003) · matteroma.duckdns.org (:3005 Control Room)
 **Server**: VPS (OVH), IP pubblico 57.131.40.170
 **Utente**: ubuntu (con sudo)
 **SO**: Ubuntu 24.04 LTS
@@ -14,9 +14,11 @@
 ## Architettura (entrambi i siti)
 
 ```
-Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour → server.js (Next.js + Socket.io) :3000 → SQLite
-                                     ├→ ibuche           → Next.js standalone :3001 → SQLite
-                                     └→ matteroma        → Control Room (Express) :3005
+Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour   → padel-tour (Next.js + Socket.io) :3000 → SQLite
+                                     ├→ ibuche           → roma-buche (Next.js standalone) :3001 → SQLite
+                                     ├→ gestione-veicoli → gestione-veicoli (Next.js) :3002 → SQLite + uploads
+                                     ├→ scommesse        → scommesse (Next.js) :3003 → SQLite + auth.json
+                                     └→ matteroma        → control-room (Express) :3005 → settings.json
 ```
 
 **Stack server attuale** (aggiornato 10 marzo 2026):
@@ -341,7 +343,7 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 | `/etc/nginx/sites-available/padel-tour` | Config Nginx per bananapadeltour |
 | `/etc/nginx/sites-available/ibuche` | Config Nginx per ibuche |
 | `/etc/nginx/sites-available/matteroma.duckdns.conf` | Config Nginx per Control Room |
-| `~/ecosystem.config.js`     | **Config PM2 centralizzata** (padel-tour, roma-buche, control-room) |
+| `/home/ubuntu/ecosystem.config.js` | **Config PM2 centralizzata** (padel-tour, roma-buche, gestione-veicoli, scommesse, control-room) |
 | `/home/ubuntu/control-room/settings.json` | Runtime Control Room (webhook/notifiche, **filtri notifiche per processo PM2**, whitelist IP, 2FA; non committare segreti). Documentazione: `control-room/README.md` |
 | `server.js`                 | Custom server Node (Next.js + Socket.io) |
 | `.env`                      | Variabili d'ambiente (non in git) |
@@ -351,6 +353,8 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 | `scripts/deploy.sh`         | Script di deploy |
 | `scripts/update-nginx.sh`   | Aggiornamento config Nginx entrambi i siti |
 | `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` | Hook rinnovo certificati |
+| `/home/ubuntu/scripts/backup-snapshot.py` | Snapshot consistenti (SQLite + upload/config) per app |
+| `/home/ubuntu/scripts/restore-snapshot.sh` | Restore/rollback da snapshot (supporta `--dry-run`) |
 
 ---
 
@@ -358,7 +362,9 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 
 - **Backup completo**: Impostazioni → Strumenti → **Scarica backup completo**. Scarica un ZIP con database, avatar e galleria. Conservare il file fuori dal server (PC, cloud).
 - **Backup solo database**: stesso menu, **Scarica backup** (file `.db`).
-- **Backup automatico**: cron giornaliero alle 03:00 copia `data/padel.db` in `~/backups/padel-YYYYMMDD.db`. Retention 7 giorni (cleanup alle 04:00).
+- **Snapshot server (consigliato)**: per backup/rollback coerente con WAL e includendo upload/config:
+  - `python3 /home/ubuntu/scripts/backup-snapshot.py --app all --include-pm2-dump`
+  - Restore singola app: `bash /home/ubuntu/scripts/restore-snapshot.sh --app <nome> --stamp <STAMP> --dry-run` (verifica) / senza `--dry-run` (restore reale)
 
 **Ripristino su nuovo server** (dopo crash o migrazione):
 
