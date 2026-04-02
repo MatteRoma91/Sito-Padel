@@ -13,7 +13,6 @@ Le app del server sono gestite da una **configurazione PM2 centralizzata** in `/
 - `padel-tour` (3000)
 - `roma-buche` (3001)
 - `gestione-veicoli` (3002)
-- `scommesse` (3003)
 - `control-room` (3005)
 
 Il server padel-tour usa **`server.js`** (custom server Node + Socket.io) invece di `next start`. Per evitare problemi con le room WebSocket, PM2 usa **una sola istanza** per app (`instances: 1`).

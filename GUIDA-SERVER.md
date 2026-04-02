@@ -2,7 +2,7 @@
 
 > **Nota**: Questo file non è servito dal sito (non è in `/public`). È una guida operativa da aggiornare man mano che si effettuano modifiche.
 
-**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001) · gestione-veicoli.duckdns.org (:3002) · scommesse.duckdns.org (:3003) · matteroma.duckdns.org (:3005 Control Room)
+**Siti sul server**: bananapadeltour.duckdns.org (:3000) · ibuche.duckdns.org (:3001) · gestione-veicoli.duckdns.org (:3002) · matteroma.duckdns.org (:3005 Control Room)
 **Server**: VPS (OVH), IP pubblico 57.131.40.170
 **Utente**: ubuntu (con sudo)
 **SO**: Ubuntu 24.04 LTS
@@ -17,7 +17,6 @@
 Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour   → padel-tour (Next.js + Socket.io) :3000 → SQLite
                                      ├→ ibuche           → roma-buche (Next.js standalone) :3001 → SQLite
                                      ├→ gestione-veicoli → gestione-veicoli (Next.js) :3002 → SQLite + uploads
-                                     ├→ scommesse        → scommesse (Next.js) :3003 → SQLite + auth.json
                                      └→ matteroma        → control-room (Express) :3005 → settings.json
 ```
 
@@ -343,7 +342,7 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 | `/etc/nginx/sites-available/padel-tour` | Config Nginx per bananapadeltour |
 | `/etc/nginx/sites-available/ibuche` | Config Nginx per ibuche |
 | `/etc/nginx/sites-available/matteroma.duckdns.conf` | Config Nginx per Control Room |
-| `/home/ubuntu/ecosystem.config.js` | **Config PM2 centralizzata** (padel-tour, roma-buche, gestione-veicoli, scommesse, control-room) |
+| `/home/ubuntu/ecosystem.config.js` | **Config PM2 centralizzata** (padel-tour, roma-buche, gestione-veicoli, control-room) |
 | `/home/ubuntu/control-room/settings.json` | Runtime Control Room (webhook/notifiche, **filtri notifiche per processo PM2**, whitelist IP, 2FA; non committare segreti). Documentazione: `control-room/README.md` |
 | `server.js`                 | Custom server Node (Next.js + Socket.io) |
 | `.env`                      | Variabili d'ambiente (non in git) |
