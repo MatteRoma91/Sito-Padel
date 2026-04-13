@@ -39,6 +39,7 @@ function formatLastLogin(iso: string | null): string {
 export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
   const [blockedAttempts, setBlockedAttempts] = useState<BlockedAttempt[]>([]);
   const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [blockedFetchError, setBlockedFetchError] = useState<string | null>(null);
 
   // Ordine già dalla query: last_login_at DESC (ultimo primo)
   const sortedUsers = usersWithLoginCounts;
@@ -46,13 +47,20 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
   useEffect(() => {
     async function fetchBlocked() {
       try {
-        const res = await fetch('/api/admin/blocked-ips');
+        const res = await fetch('/api/admin/blocked-ips', { credentials: 'same-origin' });
         if (res.ok) {
           const data = await res.json();
           setBlockedAttempts(data.blocked || []);
+          setBlockedFetchError(null);
+        } else {
+          setBlockedFetchError(
+            res.status === 403
+              ? 'Non autorizzato a vedere i blocchi.'
+              : `Impossibile caricare l’elenco (HTTP ${res.status}).`,
+          );
         }
       } catch {
-        // ignore
+        setBlockedFetchError('Errore di rete nel caricamento dei blocchi.');
       }
     }
     fetchBlocked();
@@ -130,7 +138,12 @@ export function AccessiTab({ usersWithLoginCounts }: AccessiTabProps) {
           Account bloccati per troppi tentativi di login errati (per IP + username). Puoi sbloccare anticipatamente. Lo stesso IP può accedere con un altro profilo.
         </p>
         <div className="divide-y divide-primary-100 dark:divide-primary-300/50">
-          {blockedAttempts.length === 0 ? (
+          {blockedFetchError ? (
+            <div className="p-8 flex flex-col items-center justify-center text-amber-700 dark:text-amber-300">
+              <ShieldAlert className="w-10 h-10 mb-2 opacity-70" />
+              <p className="text-sm text-center">{blockedFetchError}</p>
+            </div>
+          ) : blockedAttempts.length === 0 ? (
             <div className="p-8 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
               <ShieldAlert className="w-10 h-10 mb-2 opacity-50" />
               <p className="text-sm">Nessun account bloccato.</p>

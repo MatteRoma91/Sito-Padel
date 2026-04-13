@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   }),
 };
 
+/** Evita prerender statico in build (conflitto SSR su chunk Toast/React in Next 16). */
+export const dynamic = 'force-dynamic';
+
 export default function InstallPage() {
   const baseUrl = getBaseUrl();
 

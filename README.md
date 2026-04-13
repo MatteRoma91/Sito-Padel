@@ -53,10 +53,10 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 ## Tecnologie
 
-- Next.js 15 (App Router, Turbopack)
+- Next.js 16 (App Router, Turbopack)
 - React 19
 - TypeScript 5
-- Tailwind CSS 3
+- Tailwind CSS 4
 - SQLite (better-sqlite3, WAL mode)
 - Socket.io (WebSocket per chat e live score)
 - Serwist (PWA, Service Worker)

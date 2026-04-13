@@ -28,7 +28,7 @@ function getClientIp(req: NextRequest): string {
 function checkApiRateLimit(req: NextRequest): boolean {
   const ip = getClientIp(req);
   const now = Date.now();
-  let entry = store.get(ip);
+  const entry = store.get(ip);
   if (!entry) {
     store.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return true;
@@ -44,7 +44,7 @@ function checkApiRateLimit(req: NextRequest): boolean {
 function checkAuthRateLimit(req: NextRequest): boolean {
   const ip = getClientIp(req);
   const now = Date.now();
-  let entry = authStore.get(`auth:${ip}`);
+  const entry = authStore.get(`auth:${ip}`);
   if (!entry) {
     authStore.set(`auth:${ip}`, { count: 1, resetAt: now + AUTH_WINDOW_MS });
     return true;

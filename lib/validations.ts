@@ -2,7 +2,11 @@ import { z } from 'zod';
 
 // Common field constraints
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username richiesto').max(100),
+  username: z
+    .string()
+    .max(100)
+    .transform((s) => s.trim())
+    .refine((s) => s.length > 0, 'Username richiesto'),
   password: z.string().min(1, 'Password richiesta'),
 });
 

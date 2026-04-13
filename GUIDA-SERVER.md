@@ -27,7 +27,7 @@ Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour   → padel-to
 | Ubuntu | 24.04 LTS | kernel 6.8.0-101 |
 | Node.js | 22.22.0 LTS | via nvm, EOL aprile 2027 |
 | npm | 10.9.4 | |
-| Next.js | 15.5.12 | entrambe le app |
+| Next.js | 16.2.3 | Sito-Padel, Roma-Buche, Gestione-Veicoli, Gestione-Casa |
 | React | 19 | entrambe le app |
 | PM2 | 6.0.14 | con modulo pm2-logrotate |
 | Nginx | 1.24.0 | reverse proxy + gzip + SSL |
@@ -274,17 +274,28 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 | Kernel | 6.8.0-100 | 6.8.0-101 (attivato con reboot) |
 | Node.js | 20.20.0 | 22.22.0 LTS (via nvm) |
 | npm | 10.8.2 | 10.9.4 |
-| Next.js | 14.2.35 | 15.5.12 |
+| Next.js | 14.2.35 | 15.5.12 → 16.2.3 |
 | React | 18 | 19 |
 | react-leaflet (Roma-Buche) | 4.2.1 | 5.0.0 |
 | framer-motion | 11 | 12 |
-| eslint-config-next | 14.x | 15.x |
+| eslint-config-next | 14.x | 16.x |
+| Tailwind CSS | 3.x | 4.x |
+| ESLint | 8.x | 9.x (flat config) |
 
 **Adattamenti per Next.js 15**:
 
 - `ssr: false` con `next/dynamic` non è più consentito nei Server Components. Creati wrapper Client Component: `ExportPdfButtonLazy.tsx`, `ChatLayoutLazy.tsx`, `MapWithSearchLazy.tsx`.
 - Risolto naming conflict `dynamic` (export const vs import) in `profiles/[id]/page.tsx`.
 - Risolto errore "bind" in Sito-Padel (causato da bug in Next.js 14, risolto in 15).
+
+**Adattamenti per Next.js 16 + Tailwind 4 + ESLint 9 (apr 2026)**:
+
+- Rimossi `experimental.preloadEntriesOnStart` e `experimental.serverSourceMaps` (deprecati).
+- Aggiunto `turbopack: {}` in `next.config.mjs` per compatibilità con serwist webpack config.
+- Roma-Buche: build forzata con `--webpack` perché leaflet-defaulticon-compatibility usa la sintassi CSS `~` (webpack-only).
+- ESLint: `.eslintrc.json` sostituito da `eslint.config.mjs` con FlatCompat in tutte e 3 le app.
+- Tailwind: `tailwind.config.ts` eliminato; tema traslato in `@theme inline` dentro `globals.css`; `autoprefixer` rimosso (Gestione-Veicoli).
+- Fix build: in ambiente con `NODE_ENV=production` le devDependencies non vengono installate → usare `NODE_ENV=development npm install --include=dev`. La build di Sito-Padel richiedeva `unset DATABASE_PATH` per evitare che il processo leggesse il DB di scoutbet-pro dall'environment del server.
 
 ---
 

@@ -307,8 +307,9 @@ export function resetLoginAttempts(ip: string, username: string): boolean {
 export function getBlockedAttempts(): LoginAttempt[] {
   ensureDb();
   const now = new Date().toISOString();
+  // Usa stringa tra apici singoli: in SQLite "" è un identificatore, non una stringa vuota (la prepare falliva → admin vedeva sempre lista vuota).
   return getDb().prepare(
-    'SELECT ip, username, failed_count, locked_until FROM login_attempts WHERE locked_until != "" AND locked_until > ? ORDER BY locked_until DESC'
+    "SELECT ip, username, failed_count, locked_until FROM login_attempts WHERE locked_until != '' AND locked_until > ? ORDER BY locked_until DESC"
   ).all(now) as LoginAttempt[];
 }
 
