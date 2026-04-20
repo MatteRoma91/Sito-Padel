@@ -64,8 +64,19 @@ In `/home/ubuntu/Sito-Padel` è presente un file `.env` (non in git) con:
 | `PORT` | Porta su cui ascolta l'app (default: 3000) |
 | `NEXT_PUBLIC_SITE_URL` | URL pubblico (SEO, PWA) |
 | `NODE_ENV` | PM2 imposta `production` in `ecosystem.config.js` |
+| `CRON_SECRET` | (Opzionale ma consigliato se usi i cron HTTP) Segreto condiviso per chiamare gli endpoint sotto `/api/cron/*` con header `Authorization: Bearer <CRON_SECRET>` |
 
 Dopo aver modificato `.env`, riavviare l'app: `pm2 restart padel-tour`.
+
+### Cron HTTP (Sito-Padel)
+
+Gli endpoint in `app/api/cron/` richiedono `Authorization: Bearer $CRON_SECRET` (come `tournament-reminders`).
+
+- **Purge log di sicurezza** più vecchi di **6 mesi** (tabella `security_logs`):  
+  `GET /api/cron/security-logs-prune`  
+  Esempio (locale, dopo `export CRON_SECRET=...`):  
+  `curl -sS -H "Authorization: Bearer $CRON_SECRET" "http://127.0.0.1:3000/api/cron/security-logs-prune"`  
+  In produzione usare l’URL pubblico HTTPS e schedulare **cron** mensile o trimestrale (es. il giorno 1 alle 04:00).
 
 ---
 

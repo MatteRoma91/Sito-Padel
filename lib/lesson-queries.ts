@@ -212,6 +212,76 @@ export function listConsumptionsForEntitlement(entitlementId: string): LessonCon
     .all(entitlementId) as LessonConsumption[];
 }
 
+export type LessonConsumptionWithMaestro = LessonConsumption & {
+  maestro_display_name: string | null;
+};
+
+/** Consumi in ordine cronologico (primo bollino = prima lezione), con nome maestro per UI. */
+export function listConsumptionsForEntitlementForDisplay(entitlementId: string): LessonConsumptionWithMaestro[] {
+  ensureDb();
+  const rows = getDb()
+    .prepare(
+      `SELECT c.*,
+        TRIM(COALESCE(mu.nickname, mu.full_name, mu.username)) AS maestro_display_name
+       FROM lesson_consumptions c
+       LEFT JOIN users mu ON mu.id = c.maestro_user_id
+       WHERE c.entitlement_id = ?
+       ORDER BY c.consumed_at ASC, c.id ASC`
+    )
+    .all(entitlementId) as Record<string, unknown>[];
+  return rows.map((row) => {
+    const { maestro_display_name, ...rest } = row;
+    return {
+      ...(rest as unknown as LessonConsumption),
+      maestro_display_name: (maestro_display_name as string) || null,
+    };
+  });
+}
+
+const LESSON_NOTES_MAX = 1000;
+
+function normalizeLessonNotes(notes: string | null | undefined): string | null {
+  if (notes == null || notes === '') return null;
+  const t = notes.trim();
+  if (t.length > LESSON_NOTES_MAX) throw new Error(`Argomento: massimo ${LESSON_NOTES_MAX} caratteri`);
+  return t || null;
+}
+
+export function getLessonConsumptionById(id: string): LessonConsumption | undefined {
+  ensureDb();
+  return getDb().prepare('SELECT * FROM lesson_consumptions WHERE id = ?').get(id) as LessonConsumption | undefined;
+}
+
+/** Aggiorna `notes` (argomento). Consentito a primary/partner del carnet o staff lezioni. */
+export function updateLessonConsumptionNotes(params: {
+  consumptionId: string;
+  notes: string | null;
+  actorUserId: string;
+  actorRole: string;
+}): void {
+  ensureDb();
+  const normalized = params.notes === null || params.notes === '' ? null : normalizeLessonNotes(params.notes);
+  const row = getDb()
+    .prepare(
+      `SELECT c.id, e.primary_user_id, e.partner_user_id
+       FROM lesson_consumptions c
+       JOIN lesson_entitlements e ON e.id = c.entitlement_id
+       WHERE c.id = ?`
+    )
+    .get(params.consumptionId) as
+    | { id: string; primary_user_id: string; partner_user_id: string | null }
+    | undefined;
+  if (!row) throw new Error('Consumo non trovato');
+
+  const isStaff = params.actorRole === 'admin' || params.actorRole === 'maestro';
+  const isOwner =
+    params.actorUserId === row.primary_user_id ||
+    (row.partner_user_id != null && params.actorUserId === row.partner_user_id);
+  if (!isStaff && !isOwner) throw new Error('Non autorizzato');
+
+  getDb().prepare('UPDATE lesson_consumptions SET notes = ? WHERE id = ?').run(normalized, params.consumptionId);
+}
+
 export function createLessonRequest(data: {
   entitlementId: string;
   requesterUserId: string;
@@ -359,7 +429,7 @@ export function consumeLessonManual(params: {
     entitlementId: params.entitlementId,
     consumedAt: params.consumedAtIso,
     maestroUserId: params.maestroUserId,
-    notes: params.notes ?? null,
+    notes: normalizeLessonNotes(params.notes ?? null),
     courtBookingId: null,
     manualReason: params.manualReason.trim(),
   });
@@ -376,6 +446,8 @@ export function approveLessonRequest(params: {
   slotEnd: string;
   maestroUserId: string;
   reviewedByUserId: string;
+  /** Argomento lezione (opzionale), max 1000 caratteri */
+  notes?: string | null;
 }): { bookingId: string; consumptionId: string } {
   ensureDb();
   const req = getLessonRequestById(params.requestId);
@@ -417,7 +489,7 @@ export function approveLessonRequest(params: {
       entitlementId: ent.id,
       consumedAt,
       maestroUserId: params.maestroUserId,
-      notes: null,
+      notes: normalizeLessonNotes(params.notes ?? null),
       courtBookingId: bookingId,
       manualReason: null,
     });
@@ -453,6 +525,7 @@ export function createDirectLessonSession(params: {
   slotEnd: string;
   maestroUserId: string;
   createdByUserId: string;
+  notes?: string | null;
 }): { bookingId: string; consumptionId: string } {
   ensureDb();
   const ent = getLessonEntitlementById(params.entitlementId);
@@ -491,7 +564,7 @@ export function createDirectLessonSession(params: {
       entitlementId: ent.id,
       consumedAt,
       maestroUserId: params.maestroUserId,
-      notes: null,
+      notes: normalizeLessonNotes(params.notes ?? null),
       courtBookingId: bookingId,
       manualReason: null,
     });

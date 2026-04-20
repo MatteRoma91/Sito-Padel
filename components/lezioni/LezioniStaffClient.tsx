@@ -82,6 +82,9 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
   const [manualAt, setManualAt] = useState(() => new Date().toISOString().slice(0, 16));
   const [manualReason, setManualReason] = useState('');
   const [manualMaestro, setManualMaestro] = useState('');
+  const [appNotes, setAppNotes] = useState('');
+  const [dirNotes, setDirNotes] = useState('');
+  const [manualArgomento, setManualArgomento] = useState('');
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [undoId, setUndoId] = useState<string | null>(null);
@@ -165,11 +168,13 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
           date: appDate,
           slotStart: appSlot,
           maestroUserId: appMaestro,
+          notes: appNotes.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Errore');
       setApproveId(null);
+      setAppNotes('');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');
@@ -206,10 +211,12 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
           date: dirDate,
           slotStart: dirSlot,
           maestroUserId: dirMaestro,
+          notes: dirNotes.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Errore');
+      setDirNotes('');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');
@@ -231,11 +238,13 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
           consumedAt: iso,
           manualReason: manualReason.trim(),
           maestroUserId: manualMaestro || null,
+          notes: manualArgomento.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Errore');
       setManualReason('');
+      setManualArgomento('');
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore');
@@ -433,6 +442,16 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
           <button type="button" className="btn-primary" onClick={handleDirect} disabled={submitting}>
             Prenota lezione
           </button>
+          <label className="block text-sm text-slate-600 dark:text-slate-400 sm:col-span-2 lg:col-span-3">
+            Argomento (opzionale, max 1000)
+            <textarea
+              value={dirNotes}
+              onChange={(e) => setDirNotes(e.target.value)}
+              className="input w-full mt-1 min-h-[64px]"
+              maxLength={1000}
+              rows={2}
+            />
+          </label>
         </div>
       </Card>
 
@@ -475,6 +494,17 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
             placeholder="Motivo"
             className="input sm:col-span-2"
           />
+          <label className="block text-sm text-slate-600 dark:text-slate-400 sm:col-span-2">
+            Argomento lezione (opzionale)
+            <textarea
+              value={manualArgomento}
+              onChange={(e) => setManualArgomento(e.target.value)}
+              className="input w-full mt-1 min-h-[56px]"
+              maxLength={1000}
+              rows={2}
+              placeholder="Es. dritto, rovescio a una mano…"
+            />
+          </label>
           <button type="button" className="btn-primary w-fit" onClick={handleManual} disabled={submitting}>
             Registra consumo
           </button>
@@ -550,6 +580,16 @@ export function LezioniStaffClient({ isAdmin }: { isAdmin: boolean }) {
                 </option>
               ))}
             </select>
+            <label className="block text-sm text-slate-600 dark:text-slate-400">
+              Argomento (opzionale)
+              <textarea
+                value={appNotes}
+                onChange={(e) => setAppNotes(e.target.value)}
+                className="input w-full mt-1 min-h-[64px]"
+                maxLength={1000}
+                rows={2}
+              />
+            </label>
             <div className="flex gap-2 justify-end">
               <button type="button" className="btn-secondary" onClick={() => setApproveId(null)}>
                 Chiudi

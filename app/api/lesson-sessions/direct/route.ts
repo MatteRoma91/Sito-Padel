@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     const date = body.date as string;
     const slotStart = body.slotStart as string;
     const maestroUserId = body.maestroUserId as string;
+    const notes = typeof body.notes === 'string' ? body.notes : undefined;
     if (!entitlementId || !courtId || !date || !slotStart || !maestroUserId) {
       return NextResponse.json(
         { success: false, error: 'entitlementId, courtId, date, slotStart, maestroUserId richiesti' },
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       slotEnd,
       maestroUserId,
       createdByUserId: user.id,
+      notes,
     });
     logSecurityEvent({
       type: 'lesson_event',

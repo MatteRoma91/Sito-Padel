@@ -96,6 +96,11 @@ export const chatMessageSchema = z.object({
   body: z.string().min(1).max(2000).transform(s => s.trim()),
 });
 
+/** Argomento lezione (campo `notes` su lesson_consumptions) */
+export const lessonConsumptionNotesPatchSchema = z.object({
+  notes: z.string().max(1000).transform((s) => s.trim()),
+});
+
 export const createDmSchema = z.object({
   other_user_id: z.string().uuid().optional(),
   user_ids: z.array(z.string().uuid()).min(1).max(20).optional(),

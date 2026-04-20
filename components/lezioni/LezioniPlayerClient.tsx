@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { CarnetSchedaPlayer } from '@/components/lezioni/CarnetSchedaPlayer';
 
 type EntRow = {
   id: string;
@@ -85,21 +86,22 @@ export function LezioniPlayerClient() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-4 space-y-4">
+      <Card className="p-4 space-y-6">
         <h2 className="font-semibold text-slate-800 dark:text-slate-100">I tuoi carnet</h2>
         {entitlements.length > 0 ? (
-          <ul className="space-y-2 text-sm">
+          <div className="space-y-6">
             {entitlements.map((e) => (
-              <li key={e.id} className="flex flex-wrap gap-2 items-center">
-                <span>
-                  {e.kind === 'pair' ? 'Coppia' : 'Privato'} · {e.primary_name}
-                </span>
-                <span className="text-slate-500 dark:text-slate-400">
-                  {e.lessons_used}/{e.lessons_total} lezioni
-                </span>
-              </li>
+              <CarnetSchedaPlayer
+                key={e.id}
+                entitlement={{
+                  id: e.id,
+                  kind: e.kind,
+                  lessons_total: e.lessons_total,
+                  primary_name: e.primary_name,
+                }}
+              />
             ))}
-          </ul>
+          </div>
         ) : (
           <p className="text-sm text-slate-600 dark:text-slate-400">Nessun carnet.</p>
         )}

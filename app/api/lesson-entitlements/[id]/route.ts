@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { getClientIp } from '@/lib/auth';
 import { logSecurityEvent } from '@/lib/db/queries';
-import { getLessonEntitlementById, deleteLessonEntitlement, listConsumptionsForEntitlement } from '@/lib/lesson-queries';
+import { getLessonEntitlementById, deleteLessonEntitlement, listConsumptionsForEntitlementForDisplay } from '@/lib/lesson-queries';
 
 export async function GET(
   _request: Request,
@@ -22,7 +22,7 @@ export async function GET(
   if (!staff && !isOwner) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
   }
-  const consumptions = listConsumptionsForEntitlement(id);
+  const consumptions = listConsumptionsForEntitlementForDisplay(id);
   return NextResponse.json({ entitlement: ent, consumptions });
 }
 
