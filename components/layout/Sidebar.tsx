@@ -18,7 +18,8 @@ import {
   X,
   Smartphone,
   LayoutGrid,
-  Gamepad2
+  Gamepad2,
+  GraduationCap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
@@ -51,7 +52,11 @@ const navItems = [
 
 const settingsNavItem = { href: '/settings', label: 'Impostazioni', icon: Settings };
 
+const lessonNavItem = { href: '/lezioni', label: 'Lezioni', icon: GraduationCap };
+
 const canSeeSettings = (_username: string, role: string) => role === 'admin'; // guest e player non vedono Impostazioni
+
+const canSeeLessonMenu = (role: string) => role === 'admin' || role === 'maestro';
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
@@ -111,7 +116,7 @@ export function Sidebar({ user }: SidebarProps) {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-[var(--header-mobile-offset)] md:mt-0 pb-[env(safe-area-inset-bottom,0px)] md:pb-0">
           {navItems
             .filter((item) => {
-              if (item.href === '/partite' || item.href === '/sports-center') return user.role === 'admin';
+              if (item.href === '/partite') return user.role === 'admin';
               return true;
             })
             .map((item) => {
@@ -150,6 +155,24 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
+          {canSeeLessonMenu(user.role) && (() => {
+            const Icon = lessonNavItem.icon;
+            const isActive =
+              pathname === lessonNavItem.href || pathname.startsWith(lessonNavItem.href + '/');
+            return (
+              <Link
+                key={lessonNavItem.href}
+                href={lessonNavItem.href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 min-h-[2.75rem] rounded-lg transition ${
+                  isActive ? 'bg-accent-500 text-slate-900' : 'text-white hover:bg-primary-300'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{lessonNavItem.label}</span>
+              </Link>
+            );
+          })()}
           {canSeeSettings(user.username, user.role) && (
             <>
               <div className="my-2 border-t border-white/20" />

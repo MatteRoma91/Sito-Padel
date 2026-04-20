@@ -565,6 +565,60 @@ export function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_notification_sent_kind_ref ON notification_sent(kind, ref_id)`);
 
+  // Lezioni / carnet
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_entitlements (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK(kind IN ('private', 'pair')),
+      lessons_total INTEGER NOT NULL DEFAULT 5,
+      lessons_used INTEGER NOT NULL DEFAULT 0,
+      primary_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      partner_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      assigned_by_user_id TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_entitlements_primary ON lesson_entitlements(primary_user_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_entitlements_partner ON lesson_entitlements(partner_user_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_consumptions (
+      id TEXT PRIMARY KEY,
+      entitlement_id TEXT NOT NULL REFERENCES lesson_entitlements(id) ON DELETE CASCADE,
+      consumed_at TEXT NOT NULL,
+      maestro_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      notes TEXT,
+      court_booking_id TEXT REFERENCES court_bookings(id) ON DELETE SET NULL,
+      manual_reason TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_consumptions_entitlement ON lesson_consumptions(entitlement_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_consumptions_booking ON lesson_consumptions(court_booking_id)`);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_requests (
+      id TEXT PRIMARY KEY,
+      entitlement_id TEXT NOT NULL REFERENCES lesson_entitlements(id) ON DELETE CASCADE,
+      requester_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      preferred_start TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected', 'cancelled')),
+      court_booking_id TEXT REFERENCES court_bookings(id) ON DELETE SET NULL,
+      reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TEXT,
+      rejection_reason TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_requests_status ON lesson_requests(status)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_requests_entitlement ON lesson_requests(entitlement_id)`);
+
+  try {
+    db.exec(`ALTER TABLE court_bookings ADD COLUMN booking_kind TEXT NOT NULL DEFAULT 'standard'`);
+  } catch {
+    // Column already exists
+  }
+
   // Seed 4 campi (2 coperti, 2 scoperti) se tabella vuota
   const courtsCount = (db.prepare('SELECT COUNT(*) as c FROM courts').get() as { c: number }).c;
   if (courtsCount === 0) {
@@ -610,6 +664,67 @@ export function initSchema() {
       db.exec(`DROP TABLE users`);
       db.exec(`ALTER TABLE users_new RENAME TO users`);
       db.exec(`CREATE INDEX IF NOT EXISTS idx_users_full_name ON users(full_name)`);
+    }
+  } catch {
+    // Migration failed or already applied
+  }
+
+  // Migrazione: ruolo maestro
+  try {
+    const schemaRowMaestro = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get() as { sql: string } | undefined;
+    if (schemaRowMaestro && !schemaRowMaestro.sql.includes("'maestro'")) {
+      const userColsMaestro =
+        'id, username, password_hash, full_name, nickname, role, avatar, must_change_password, skill_level, bio, preferred_side, preferred_hand, created_at, login_count, birth_date, overall_score, is_hidden';
+      db.exec(`
+        CREATE TABLE users_maestro_new (
+          id TEXT PRIMARY KEY,
+          username TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          full_name TEXT,
+          nickname TEXT,
+          role TEXT NOT NULL DEFAULT 'player' CHECK(role IN ('admin', 'player', 'guest', 'maestro')),
+          avatar TEXT,
+          must_change_password INTEGER NOT NULL DEFAULT 0,
+          skill_level TEXT CHECK(skill_level IN ('A_GOLD', 'A_SILVER', 'B_GOLD', 'B_SILVER', 'C')),
+          bio TEXT,
+          preferred_side TEXT CHECK(preferred_side IN ('Destra', 'Sinistra')),
+          preferred_hand TEXT CHECK(preferred_hand IN ('Destra', 'Sinistra')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          login_count INTEGER NOT NULL DEFAULT 0,
+          birth_date TEXT,
+          overall_score INTEGER,
+          is_hidden INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+      db.exec(`INSERT INTO users_maestro_new (${userColsMaestro}) SELECT ${userColsMaestro} FROM users`);
+      db.exec(`DROP TABLE users`);
+      db.exec(`ALTER TABLE users_maestro_new RENAME TO users`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_users_full_name ON users(full_name)`);
+    }
+  } catch {
+    // Migration failed or already applied
+  }
+
+  // Migrazione: security_logs tipo lesson_event
+  try {
+    const slRow = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='security_logs'").get() as { sql: string } | undefined;
+    if (slRow && !slRow.sql.includes('lesson_event')) {
+      db.exec(`
+        CREATE TABLE security_logs_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL CHECK(type IN ('login_failed', 'auth_401', 'auth_403', 'admin_access', 'lesson_event')),
+          ip TEXT,
+          username TEXT,
+          path TEXT,
+          details TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      db.exec(`INSERT INTO security_logs_new (id, type, ip, username, path, details, created_at) SELECT id, type, ip, username, path, details, created_at FROM security_logs`);
+      db.exec(`DROP TABLE security_logs`);
+      db.exec(`ALTER TABLE security_logs_new RENAME TO security_logs`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at DESC)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_security_logs_type ON security_logs(type)`);
     }
   } catch {
     // Migration failed or already applied

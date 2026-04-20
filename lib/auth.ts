@@ -13,7 +13,7 @@ export interface SessionData {
   sessionCreatedAt?: number;
 }
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 2; // 2 ore
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 giorni
 
 function getSessionPassword(): string {
   const secret = process.env.SESSION_SECRET;
@@ -32,7 +32,8 @@ const sessionOptions: SessionOptions = {
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
+    path: '/',
     maxAge: SESSION_MAX_AGE_SECONDS,
   },
 };
@@ -52,7 +53,7 @@ export async function getCurrentUser(): Promise<User | null> {
   const session = await getSession();
   if (!session.isLoggedIn || !session.userId) return null;
 
-  // Verifica scadenza sessione (2 ore)
+  // Verifica scadenza sessione
   if (session.sessionCreatedAt) {
     const elapsed = Date.now() - session.sessionCreatedAt;
     if (elapsed > SESSION_MAX_AGE_SECONDS * 1000) {
@@ -60,7 +61,7 @@ export async function getCurrentUser(): Promise<User | null> {
       return null;
     }
   } else {
-    // Sessione legacy: imposta sessionCreatedAt per dare 2h dalla prima verifica
+    // Sessione legacy: inizializza timestamp di riferimento
     session.sessionCreatedAt = Date.now();
     await session.save();
   }
@@ -110,6 +111,16 @@ export async function logout(): Promise<void> {
 export async function isAdmin(): Promise<boolean> {
   const user = await getCurrentUser();
   return !!user && user.role === 'admin';
+}
+
+/** Admin o maestro (staff lezioni). */
+export function isLessonStaffRole(role: string | undefined): boolean {
+  return role === 'admin' || role === 'maestro';
+}
+
+export async function isLessonStaff(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return !!user && isLessonStaffRole(user.role);
 }
 
 export function isGuest(user: { role?: string } | null): boolean {

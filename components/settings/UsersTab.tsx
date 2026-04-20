@@ -22,7 +22,7 @@ interface UsersTabProps {
   users: UserRow[];
 }
 
-type RoleFilter = 'tutti' | 'nascosti' | 'admin' | 'guest';
+type RoleFilter = 'tutti' | 'nascosti' | 'admin' | 'guest' | 'maestro';
 
 function matchesSearch(u: UserRow, q: string): boolean {
   if (!q.trim()) return true;
@@ -37,6 +37,7 @@ function matchesRoleFilter(u: UserRow, filter: RoleFilter): boolean {
   if (filter === 'nascosti') return u.is_hidden === 1;
   if (filter === 'admin') return u.role === 'admin';
   if (filter === 'guest') return u.role === 'guest';
+  if (filter === 'maestro') return u.role === 'maestro';
   return true;
 }
 
@@ -177,6 +178,7 @@ export function UsersTab({ users }: UsersTabProps) {
               <option value="nascosti">Nascosti</option>
               <option value="admin">Admin</option>
               <option value="guest">Guest</option>
+              <option value="maestro">Maestro</option>
             </select>
           </div>
         </div>
@@ -215,6 +217,11 @@ export function UsersTab({ users }: UsersTabProps) {
                       {u.role === 'guest' && (
                         <span className="ml-2 px-2 py-0.5 text-xs rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                           Guest
+                        </span>
+                      )}
+                      {u.role === 'maestro' && (
+                        <span className="ml-2 px-2 py-0.5 text-xs rounded bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                          Maestro
                         </span>
                       )}
                     </p>

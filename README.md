@@ -25,6 +25,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 | **[docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md)** | Setup produzione con PM2, Nginx, SSL, log rotation e cache statici |
 | **[docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md)** | Chat interna, Live Score, server WebSocket/Socket.io e API REST correlate |
 | **[docs/CENTRO-SPORTIVO.md](docs/CENTRO-SPORTIVO.md)** | Centro sportivo: campi, prenotazioni, slot chiusura, pagina partita, API e Impostazioni |
+| **[docs/LEZIONI.md](docs/LEZIONI.md)** | Lezioni e carnet: ruoli maestro/admin, richieste, timetable, timbro manuale, API |
 | **[docs/SEO.md](docs/SEO.md)** | SEO tecnica: metadata, Open Graph, sitemap, robots, structured data |
 | **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Sicurezza: indici DB, rate limit, validazione Zod, sessioni, firewall, password hashing |
 | **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
@@ -36,7 +37,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 ## Funzionalità
 
-- **Autenticazione**: Login con username/password; ruoli **Admin**, **Giocatore** e **Guest** (sola lettura per demo/acquirenti)
+- **Autenticazione**: Login con username/password; ruoli **Admin**, **Maestro** (lezioni/carnet), **Giocatore** e **Guest** (sola lettura per demo/acquirenti)
 - **Giocatori**: Gestione profili giocatori
 - **Tornei**: Creazione e gestione tornei
 - **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
@@ -47,7 +48,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 - **Export PDF**: Esportazione tabellone e classifica
 - **Chat interna**: DM tra giocatori, chat di gruppo per torneo e chat broadcast; badge messaggi non letti e possibilità di eliminare messaggi (per admin)
 - **Galleria**: Caricamento e visualizzazione di immagini e video (tutti possono caricare, solo admin può eliminare); limite totale 20 GB; gestione e spazio in Impostazioni
-- **Centro sportivo**: Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot (30 min), prenotazioni 60 o 90 min con **nome prenotazione** e celle unificate; pagina partita con assegnazione di 4 partecipanti (utenti del sito); admin configura da Impostazioni orari apertura/chiusura, durate consentite (60/90 min) e **slot di chiusura** (fasce non prenotabili); gestione campi (aggiungi/modifica/elimina). Visibile ad admin, guest (sola lettura) e giocatori (prenotano per sé; admin può prenotare anche per ospiti)
+- **Centro sportivo**: Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot (30 min), prenotazioni 60 o 90 min con **nome prenotazione** e celle unificate; pagina partita con assegnazione di 4 partecipanti (utenti del sito); admin configura da Impostazioni orari apertura/chiusura, durate consentite (60/90 min) e **slot di chiusura** (fasce non prenotabili); gestione campi (aggiungi/modifica/elimina). Visibile ad admin, guest (sola lettura) e giocatori (prenotano per sé; admin può prenotare anche per ospiti). **Lezioni** (carnet, richieste, timetable): menu **Lezioni** solo per admin e maestro (`/lezioni`); i giocatori vedono carnet e richieste in **Prenota un campo** senza menu dedicato.
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
 - **Health Check**: Endpoint `/api/health` per monitoraggio esterno (verifica DB e risposta JSON)
 

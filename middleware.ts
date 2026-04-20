@@ -92,7 +92,7 @@ setInterval(() => {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Percorsi pubblici (login, cambio password, install, sitemap, robots)
+  // Percorsi pubblici (login, cambio password, install, sitemap, robots, PWA)
   if (
     pathname === '/login' ||
     pathname === '/change-password' ||
@@ -100,6 +100,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/install-file') ||
     pathname === '/sitemap.xml' ||
     pathname === '/robots.txt' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/site.webmanifest' ||
+    pathname === '/sw.js' ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth')
   ) {

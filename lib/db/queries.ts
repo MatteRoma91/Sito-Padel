@@ -439,14 +439,16 @@ export function createBooking(data: {
   guest_name?: string | null;
   guest_phone?: string | null;
   created_by?: string | null;
+  booking_kind?: 'standard' | 'lesson';
 }): string {
   ensureDb();
   const id = randomUUID();
   const name = (data.booking_name && data.booking_name.trim()) ? data.booking_name.trim() : 'Prenotazione';
+  const kind = data.booking_kind === 'lesson' ? 'lesson' : 'standard';
   getDb()
     .prepare(
-      `INSERT INTO court_bookings (id, court_id, date, slot_start, slot_end, booking_name, tournament_id, booked_by_user_id, guest_name, guest_phone, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO court_bookings (id, court_id, date, slot_start, slot_end, booking_name, tournament_id, booked_by_user_id, guest_name, guest_phone, created_by, booking_kind)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -459,7 +461,8 @@ export function createBooking(data: {
       data.booked_by_user_id ?? null,
       data.guest_name ?? null,
       data.guest_phone ?? null,
-      data.created_by ?? null
+      data.created_by ?? null,
+      kind
     );
   return id;
 }
@@ -510,6 +513,12 @@ export function updateBooking(
 export function cancelBooking(id: string): void {
   ensureDb();
   getDb().prepare('UPDATE court_bookings SET status = ? WHERE id = ?').run('cancelled', id);
+}
+
+/** Elimina fisicamente la prenotazione (es. undo lezione per liberare lo slot). */
+export function deleteCourtBookingById(id: string): void {
+  ensureDb();
+  getDb().prepare('DELETE FROM court_bookings WHERE id = ?').run(id);
 }
 
 export function getBookingParticipants(bookingId: string): CourtBookingParticipant[] {
@@ -1923,7 +1932,7 @@ export function getGalleryTotalSize(): number {
 
 // ============ SECURITY LOGS ============
 
-export type SecurityLogType = 'login_failed' | 'auth_401' | 'auth_403' | 'admin_access';
+export type SecurityLogType = 'login_failed' | 'auth_401' | 'auth_403' | 'admin_access' | 'lesson_event';
 
 export interface SecurityLog {
   id: number;

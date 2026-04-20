@@ -18,13 +18,13 @@ export const createUserSchema = z.object({
   username: z.string().min(1, 'Username richiesto').max(50).regex(/^[a-zA-Z0-9_.-]+$/, 'Username può contenere solo lettere, numeri, ., _, -'),
   full_name: z.string().max(200).optional(),
   nickname: z.string().max(100).optional(),
-  role: z.enum(['admin', 'player', 'guest']).optional().default('player'),
+  role: z.enum(['admin', 'player', 'guest', 'maestro']).optional().default('player'),
 });
 
 export const updateUserSchema = z.object({
   full_name: z.string().max(200).nullable().optional(),
   nickname: z.string().max(100).nullable().optional(),
-  role: z.enum(['admin', 'player', 'guest']).optional(),
+  role: z.enum(['admin', 'player', 'guest', 'maestro']).optional(),
   skill_level: z.enum(['A_GOLD', 'A_SILVER', 'B_GOLD', 'B_SILVER', 'C']).nullable().optional(),
   overall_score: z.number().min(0).max(100).nullable().optional(),
   bio: z.string().max(2000).nullable().optional(),

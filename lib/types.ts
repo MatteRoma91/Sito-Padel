@@ -1,6 +1,6 @@
 // Tipi condivisi
 
-export type UserRole = 'admin' | 'player' | 'guest';
+export type UserRole = 'admin' | 'player' | 'guest' | 'maestro';
 
 export type TournamentStatus = 'draft' | 'open' | 'in_progress' | 'completed';
 
@@ -230,6 +230,8 @@ export interface Court {
   display_order: number;
 }
 
+export type BookingKind = 'standard' | 'lesson';
+
 export interface CourtBooking {
   id: string;
   court_id: string;
@@ -244,6 +246,46 @@ export interface CourtBooking {
   status: BookingStatus;
   created_at: string;
   created_by: string | null;
+  booking_kind?: BookingKind | string;
+}
+
+export type LessonEntitlementKind = 'private' | 'pair';
+
+export interface LessonEntitlement {
+  id: string;
+  kind: LessonEntitlementKind;
+  lessons_total: number;
+  lessons_used: number;
+  primary_user_id: string;
+  partner_user_id: string | null;
+  assigned_by_user_id: string;
+  created_at: string;
+}
+
+export interface LessonConsumption {
+  id: string;
+  entitlement_id: string;
+  consumed_at: string;
+  maestro_user_id: string | null;
+  notes: string | null;
+  court_booking_id: string | null;
+  manual_reason: string | null;
+  created_at: string;
+}
+
+export type LessonRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+export interface LessonRequest {
+  id: string;
+  entitlement_id: string;
+  requester_user_id: string;
+  preferred_start: string;
+  status: LessonRequestStatus;
+  court_booking_id: string | null;
+  reviewed_by_user_id: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
 }
 
 export interface CourtBookingParticipant {

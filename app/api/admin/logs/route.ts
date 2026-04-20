@@ -9,7 +9,13 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = request.nextUrl;
-  const type = searchParams.get('type') as 'login_failed' | 'auth_401' | 'auth_403' | 'admin_access' | null;
+  const type = searchParams.get('type') as
+    | 'login_failed'
+    | 'auth_401'
+    | 'auth_403'
+    | 'admin_access'
+    | 'lesson_event'
+    | null;
   const limit = Math.min(parseInt(searchParams.get('limit') || '100', 10) || 100, 500);
   const offset = parseInt(searchParams.get('offset') || '0', 10) || 0;
   const since = searchParams.get('since') || undefined;

@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CourtGrid } from './CourtGrid';
 import { BookingsList } from './BookingsList';
 import { BookingForm } from './BookingForm';
+import { LessonsQuickPanel } from './LessonsQuickPanel';
 import type { Court } from '@/lib/types';
 
 type AvailabilityCourt = {
@@ -148,6 +149,7 @@ export function SportsCenterClient({ courts, users, user, allowedDurations }: Sp
         onConfirm={confirmCancelBooking}
         onCancel={() => setBookingToCancel(null)}
       />
+      <LessonsQuickPanel role={user.role} />
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1">
           <button

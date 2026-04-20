@@ -33,13 +33,22 @@ Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot, pre
 | **admin** | Visibile | Prenota per sé o per ospiti; modifica/elimina qualsiasi prenotazione; gestisce campi e slot chiusura in Impostazioni |
 | **player** | Visibile | Prenota solo per sé; modifica/elimina solo le proprie prenotazioni; può assegnare partecipanti alle proprie partite |
 | **guest** | Visibile (sola lettura) | Nessun pulsante Prenota/Modifica/Elimina; può aprire la pagina partita in sola lettura |
+| **maestro** | Come player per la griglia | Può gestire lezioni da `/lezioni` (non dalla sola griglia); vedi [LEZIONI.md](LEZIONI.md) |
+
+---
+
+## Lezioni e carnet (integrazione)
+
+- La voce di menu **Lezioni** (`/lezioni`) è visibile solo ad **admin** e **maestro** (vista completa: carnet, richieste, lezione diretta, timbro manuale).
+- I **giocatori** non hanno il menu Lezioni: in **Prenota un campo** vedono un pannello con **carnet attivi**, **richiesta lezione** e **annulla richiesta** (se pending), oltre al link per lo staff verso `/lezioni`.
+- Le lezioni approvate in griglia usano prenotazioni con `booking_kind = 'lesson'` (durata tipica 60 minuti). Dettaglio permessi e API: **[LEZIONI.md](LEZIONI.md)**.
 
 ---
 
 ## Modello dati
 
 - **courts**: `id`, `name`, `type` (indoor | outdoor), `display_order`
-- **court_bookings**: `id`, `court_id`, `date`, `slot_start`, `slot_end`, `booking_name`, `booked_by_user_id`, `guest_name`, `guest_phone`, `status` (confirmed | cancelled), `created_at`, `created_by`
+- **court_bookings**: `id`, `court_id`, `date`, `slot_start`, `slot_end`, `booking_name`, `booked_by_user_id`, `guest_name`, `guest_phone`, `status` (confirmed | cancelled), `created_at`, `created_by`, `booking_kind` (`standard` | `lesson`)
 - **court_booking_participants**: `id`, `booking_id`, `user_id`, `position` (1–4), UNIQUE(booking_id, position)
 - **center_closed_slots**: `id`, `day_of_week` (0=domenica … 6=sabato), `slot_start`, `slot_end`
 

@@ -86,7 +86,7 @@ export function LogsTab() {
         <h2 className="font-semibold text-slate-800 dark:text-slate-100">Log di sicurezza</h2>
       </div>
       <p className="p-4 pt-0 text-sm text-slate-700 dark:text-slate-300">
-        Login falliti, 401/403, accessi admin. Totale: {logsTotal}.
+        Login falliti, 401/403, accessi admin, eventi lezioni/carnet. Totale: {logsTotal}.
       </p>
       <div className="p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -101,6 +101,7 @@ export function LogsTab() {
             <option value="auth_401">401</option>
             <option value="auth_403">403</option>
             <option value="admin_access">Accesso admin</option>
+            <option value="lesson_event">Eventi lezioni/carnet</option>
           </select>
           <button
             type="button"

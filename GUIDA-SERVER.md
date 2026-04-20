@@ -7,7 +7,7 @@
 **Utente**: ubuntu (con sudo)
 **SO**: Ubuntu 24.04 LTS
 
-**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push) · [docs/archive/](docs/archive/) (storico)
+**Documentazione correlata**: [README.md](README.md) (overview, installazione, PWA) · [docs/DEPLOY-PRODUZIONE.md](docs/DEPLOY-PRODUZIONE.md) (setup completo produzione) · [docs/WEBSOCKET-CHAT.md](docs/WEBSOCKET-CHAT.md) (chat interna + Live Score) · [docs/CENTRO-SPORTIVO.md](docs/CENTRO-SPORTIVO.md) (centro sportivo) · [docs/LEZIONI.md](docs/LEZIONI.md) (lezioni e carnet) · [docs/SEO.md](docs/SEO.md) (SEO tecnica) · [docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md) (sicurezza backend/DB) · [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md) (ottimizzazione performance) · [NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md) (piano notifiche push) · [docs/archive/](docs/archive/) (storico)
 
 ---
 
