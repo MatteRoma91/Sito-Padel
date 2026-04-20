@@ -39,8 +39,9 @@ Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot, pre
 
 ## Lezioni e carnet (integrazione)
 
-- La voce di menu **Lezioni** (`/lezioni`) è visibile solo ad **admin** e **maestro** (vista completa: carnet, richieste, lezione diretta, timbro manuale).
-- I **giocatori** non hanno il menu Lezioni: in **Prenota un campo** vedono un pannello con **carnet attivi**, **richiesta lezione** e **annulla richiesta** (se pending), oltre al link per lo staff verso `/lezioni`.
+- **Admin e maestro**: menu **Lezioni** → `/lezioni` (vista completa); in **Prenota un campo** compare solo una **scorciatoia** testuale verso `/lezioni` (nessun blocco lezioni per i giocatori).
+- **Giocatori** con carnet assegnato: menu **Lezioni** → `/lezioni` con **solo i propri carnet** (coppia inclusa); **non** vedono lezioni nel centro sportivo.
+- **Giocatori senza carnet**: nessuna voce Lezioni.
 - Le lezioni approvate in griglia usano prenotazioni con `booking_kind = 'lesson'` (durata tipica 60 minuti). Dettaglio permessi e API: **[LEZIONI.md](LEZIONI.md)**.
 
 ---

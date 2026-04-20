@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { getCurrentUser, getSession } from '@/lib/auth';
+import { getCurrentUser, getSession, isLessonStaffRole } from '@/lib/auth';
+import { playerHasLessonEntitlement } from '@/lib/lesson-queries';
 import { buildMetadata, SITE_NAME } from '@/lib/seo';
 import { getSiteConfig } from '@/lib/db/queries';
 
@@ -34,6 +35,10 @@ export default async function DashboardLayout({
     redirect('/change-password');
   }
 
+  const showLessonMenu =
+    isLessonStaffRole(user.role) ||
+    (user.role === 'player' && playerHasLessonEntitlement(user.id));
+
   return (
     <div className="min-h-screen flex">
       <Sidebar 
@@ -45,6 +50,7 @@ export default async function DashboardLayout({
           nickname: user.nickname,
           avatar: user.avatar,
         }}
+        showLessonMenu={showLessonMenu}
       />
       <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 overflow-auto overflow-x-hidden pt-[var(--header-mobile-offset)] md:pt-6">
         {children}

@@ -1,5 +1,12 @@
 # Lezioni e carnet – Banana Padel Tour
 
+## Navigazione (menu)
+
+- **Admin e maestro**: menu **Lezioni** → `/lezioni` (vista completa staff).
+- **Giocatore** con almeno un carnet (titolare o partner su carnet coppia): menu **Lezioni** → `/lezioni` con **solo i propri carnet** e le richieste/annulli.
+- **Giocatore senza carnet** e **guest**: nessuna voce Lezioni.
+- **Prenota un campo**: per i giocatori **non** è mostrato il blocco lezioni; per **admin/maestro** resta una scorciatoia testuale verso `/lezioni`.
+
 ## Ruoli
 
 - **`maestro`**: staff lezioni (assegnazione carnet, convalida richieste, lezione diretta, timbro manuale). Stessi permessi generali dell’app dei giocatori salvo dove indicato.
@@ -12,7 +19,7 @@
 
 ## Richieste
 
-- I giocatori con carnet attivo possono **richiedere** data/ora da **Prenota un campo** (pannello Lezioni) o tramite `POST /api/lesson-requests` (senza scelta campo).
+- I giocatori con carnet attivo **richiedono** data/ora dalla pagina **`/lezioni`** (o tramite `POST /api/lesson-requests`, senza scelta campo in richiesta).
 - **Convalida**: maestro o admin scelgono **campo e fascia oraria** (lezione **60 minuti**) in `/lezioni` o approvando da flusso dedicato (`POST /api/lesson-requests/[id]/approve`).
 - L’utente può **annullare** una richiesta pending (`POST /api/lesson-requests/[id]/cancel`).
 

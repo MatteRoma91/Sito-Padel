@@ -192,6 +192,19 @@ export function listLessonEntitlementsForPlayer(userId: string): LessonEntitleme
   return rows.map(mapEntitlementRow);
 }
 
+/** True se il giocatore è titolare o partner su almeno un carnet (coppia inclusa). */
+export function playerHasLessonEntitlement(userId: string): boolean {
+  ensureDb();
+  const row = getDb()
+    .prepare(
+      `SELECT 1 AS ok FROM lesson_entitlements
+       WHERE primary_user_id = ? OR partner_user_id = ?
+       LIMIT 1`
+    )
+    .get(userId, userId) as { ok: number } | undefined;
+  return !!row;
+}
+
 export function listConsumptionsForEntitlement(entitlementId: string): LessonConsumption[] {
   ensureDb();
   return getDb()

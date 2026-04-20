@@ -34,6 +34,8 @@ interface SidebarProps {
     nickname: string | null;
     avatar: string | null;
   };
+  /** Staff lezioni o giocatore con almeno un carnet assegnato. */
+  showLessonMenu: boolean;
 }
 
 const navItems = [
@@ -56,9 +58,7 @@ const lessonNavItem = { href: '/lezioni', label: 'Lezioni', icon: GraduationCap 
 
 const canSeeSettings = (_username: string, role: string) => role === 'admin'; // guest e player non vedono Impostazioni
 
-const canSeeLessonMenu = (role: string) => role === 'admin' || role === 'maestro';
-
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, showLessonMenu }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -155,7 +155,7 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          {canSeeLessonMenu(user.role) && (() => {
+          {showLessonMenu && (() => {
             const Icon = lessonNavItem.icon;
             const isActive =
               pathname === lessonNavItem.href || pathname.startsWith(lessonNavItem.href + '/');
