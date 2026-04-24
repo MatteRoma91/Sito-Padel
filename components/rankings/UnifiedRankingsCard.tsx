@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Trophy, Medal, Award, BarChart2 } from 'lucide-react';
 import type { OverallLevel } from '@/lib/types';
 
@@ -49,6 +50,9 @@ function levelPositionStyle(level: OverallLevel) {
   if (level === 'C') return 'bg-amber-600 text-white dark:bg-amber-600 dark:text-white';
   return 'bg-primary-300 text-white dark:bg-primary-400 dark:text-white';
 }
+
+const profileNameLinkClass =
+  'font-medium text-slate-800 dark:text-slate-100 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded';
 
 export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRankingsCardProps) {
   const [activeView, setActiveView] = useState<'generale' | 'livello'>('generale');
@@ -105,9 +109,9 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                        <Link href={`/profiles/${r.user_id}`} className={profileNameLinkClass}>
                           {r.userName}
-                        </span>
+                        </Link>
                         {getMedal(i + 1)}
                       </div>
                       {(r.gold_medals > 0 || r.silver_medals > 0 || r.bronze_medals > 0 || r.wooden_spoons > 0 || (r.mvp_count ?? 0) > 0) && (
@@ -150,9 +154,9 @@ export function UnifiedRankingsCard({ generalRanking, levelRanking }: UnifiedRan
                       {i + 1}
                     </div>
                     <div>
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
+                      <Link href={`/profiles/${r.id}`} className={profileNameLinkClass}>
                         {r.userName}
-                      </span>
+                      </Link>
                       <p className="text-sm text-slate-600 dark:text-slate-400">{r.levelLabel}</p>
                     </div>
                   </div>

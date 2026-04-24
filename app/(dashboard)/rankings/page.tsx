@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { getUsers, getCumulativeRankings, getTournamentsPast, getTournamentRankings, getPairs } from '@/lib/db/queries';
 import { getVisibleUsers, canSeeHiddenUsers } from '@/lib/visibility';
@@ -101,8 +102,9 @@ export default async function RankingsPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {visibleRankings.slice(0, 4).map((r, i) => {
                       const pair = pairMap.get(r.pair_id);
-                      const p1 = pair ? userMap.get(pair.player1_id) : null;
-                      const p2 = pair ? userMap.get(pair.player2_id) : null;
+                      if (!pair) return null;
+                      const p1 = userMap.get(pair.player1_id);
+                      const p2 = userMap.get(pair.player2_id);
                       const name1 = p1?.nickname || p1?.full_name || '?';
                       const name2 = p2?.nickname || p2?.full_name || '?';
 
@@ -120,8 +122,20 @@ export default async function RankingsPage() {
                             }`}>
                               {r.position}°
                             </span>
-                            <span className="truncate text-slate-700 dark:text-slate-300">
-                              {name1} / {name2}
+                            <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-slate-700 dark:text-slate-300">
+                              <Link
+                                href={`/profiles/${pair.player1_id}`}
+                                className="min-w-0 truncate hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded"
+                              >
+                                {name1}
+                              </Link>
+                              <span className="shrink-0">/</span>
+                              <Link
+                                href={`/profiles/${pair.player2_id}`}
+                                className="min-w-0 truncate hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded"
+                              >
+                                {name2}
+                              </Link>
                             </span>
                           </div>
                           <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5">

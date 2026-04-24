@@ -5,6 +5,7 @@ import { FileText, Trash2 } from 'lucide-react';
 import { SimpleTable } from '@/components/ui/SimpleTable';
 import { Card } from '@/components/ui/Card';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { formatItalyDateTimeFromSqliteUtc } from '@/lib/datetime';
 
 interface SecurityLog {
   id: number;
@@ -152,14 +153,14 @@ export function LogsTab() {
                       {log.path ?? '-'}
                     </td>
                     <td className="py-2 px-2 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                      {new Date(log.created_at).toLocaleString('it-IT')}
+                      {formatItalyDateTimeFromSqliteUtc(log.created_at)}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <button
                         type="button"
                         onClick={() => setDeleteConfirm({ type: 'ids', ids: [log.id] })}
                         className="text-slate-500 hover:text-red-500 p-1"
-                        aria-label={`Elimina log del ${new Date(log.created_at).toLocaleString('it-IT')}`}
+                        aria-label={`Elimina log del ${formatItalyDateTimeFromSqliteUtc(log.created_at)}`}
                         title="Elimina"
                       >
                         <Trash2 className="w-4 h-4" />
