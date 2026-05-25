@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import {
   getTournaments,
   createTournament,
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Solo gli admin possono creare tornei' }, { status: 403 });
   }
 

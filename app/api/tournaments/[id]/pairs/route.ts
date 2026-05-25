@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import { 
   getTournamentById,
   getPairs,
@@ -11,7 +11,11 @@ import {
   getDecidedMatchCountByPair
 } from '@/lib/db/queries';
 import { validatePairUpdates, type PairUpdateInput } from '@/lib/tournaments/pair-updates';
-import { getPairEditBlockReason, afterPairsOrExtractMutation } from '@/lib/tournaments/tournament-side-effects';
+import {
+  getPairEditBlockReason,
+  afterPairsOrExtractMutation,
+  unlockTournamentForAdminPairMutations,
+} from '@/lib/tournaments/tournament-side-effects';
 
 export async function POST(
   request: Request,
@@ -26,7 +30,7 @@ export async function POST(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -36,6 +40,7 @@ export async function POST(
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
   }
 
+  unlockTournamentForAdminPairMutations(tournamentId);
   const block = getPairEditBlockReason(tournamentId);
   if (block) {
     return NextResponse.json({ success: false, error: block }, { status: 409 });
@@ -117,7 +122,7 @@ export async function PATCH(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -126,6 +131,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
   }
 
+  unlockTournamentForAdminPairMutations(tournamentId);
   const block = getPairEditBlockReason(tournamentId);
   if (block) {
     return NextResponse.json({ success: false, error: block }, { status: 409 });
@@ -134,7 +140,8 @@ export async function PATCH(
   try {
     const body = await request.json();
     const updates = (body?.updates ?? []) as PairUpdateInput[];
-    const acknowledgePlayedMatches = Boolean(body?.acknowledge_played_matches);
+    const acknowledgePlayedMatches =
+      Boolean(body?.acknowledge_played_matches) || isAppAdmin(user);
 
     const existingPairs = getPairs(tournamentId);
     const participants = getTournamentParticipants(tournamentId);

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import { 
   getTournamentById, 
   getTournamentParticipants, 
@@ -48,7 +48,7 @@ export default async function TournamentDetailPage({
     notFound();
   }
   const currentUser = await getCurrentUser();
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isAppAdmin(currentUser);
   const userCanEdit = canEdit(currentUser);
   const canSeeHidden = canSeeHiddenUsers(currentUser);
 
@@ -206,15 +206,22 @@ export default async function TournamentDetailPage({
           />
         )}
 
-      {/* Participants (admin only, when not completed) */}
-      {isAdmin && userCanEdit && tournament.status !== 'completed' && (
-        <ParticipantsManager
-          tournamentId={tournament.id}
-          participants={participants}
-          allUsers={allUsers}
-          userMap={userMap}
-          maxPlayers={tournament.max_players ?? 16}
-        />
+      {/* Participants (admin): anche su torneo completato — l’API riapre/azzera tabellone se serve */}
+      {isAdmin && userCanEdit && (
+        <div className="space-y-2">
+          {tournament.status === 'completed' && (
+            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+              Modificando i partecipanti su un torneo completato, il sistema può riaprire il torneo e azzerare coppie e tabellone per mantenere i dati coerenti.
+            </p>
+          )}
+          <ParticipantsManager
+            tournamentId={tournament.id}
+            participants={participants}
+            allUsers={allUsers}
+            userMap={userMap}
+            maxPlayers={tournament.max_players ?? 16}
+          />
+        </div>
       )}
 
       {/* Navigation: Go to pairs page when enough participants and no pairs yet */}

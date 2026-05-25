@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAppAdmin } from '@/lib/auth';
 import { getTournamentById } from '@/lib/db/queries';
 import { ArrowLeft } from 'lucide-react';
 import { EditTournamentForm } from '@/components/tournaments/EditTournamentForm';
@@ -13,7 +13,7 @@ export default async function EditTournamentPage({
   const { id } = await params;
   const user = await getCurrentUser();
   
-  if (!user || user.role !== 'admin') {
+  if (!user || !isAppAdmin(user)) {
     redirect('/tournaments');
   }
 

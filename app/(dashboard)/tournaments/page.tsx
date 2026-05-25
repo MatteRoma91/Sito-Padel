@@ -1,14 +1,20 @@
 import Link from 'next/link';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import { getTournaments } from '@/lib/db/queries';
 import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
 import { Plus, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
 
-export default async function TournamentsPage() {
+export default async function TournamentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ notice?: string }>;
+}) {
   const currentUser = await getCurrentUser();
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = isAppAdmin(currentUser);
   const userCanEdit = canEdit(currentUser);
-  
+  const params = searchParams ? await searchParams : {};
+  const showAdminOnlyNotice = params.notice === 'admin_only';
+
   const tournaments = getTournaments();
 
   const statusLabels: Record<string, { label: string; color: string }> = {
@@ -20,6 +26,15 @@ export default async function TournamentsPage() {
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
+      {showAdminOnlyNotice && (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          Accesso negato: il pannello impostazioni è riservato agli amministratori. Se dovresti avere accesso,
+          verifica che il tuo utente abbia ruolo <strong>admin</strong> nel database.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Tornei</h1>
         {isAdmin && userCanEdit && (

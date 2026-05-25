@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import {
   getTournamentById,
   getTournamentParticipants,
@@ -10,6 +10,7 @@ import {
   getMatches,
 } from '@/lib/db/queries';
 import { parseOrThrow, ValidationError } from '@/lib/validations';
+import { prepareTournamentForAdminRosterOrBracketChange } from '@/lib/tournaments/tournament-side-effects';
 
 const postBodySchema = z.object({
   userId: z.string().uuid(),
@@ -60,17 +61,27 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
     }
 
+    const warnings: string[] = [];
     if (rosterLocked(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
-        },
-        { status: 409 }
-      );
+      if (!isAppAdmin(user)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
+          },
+          { status: 409 }
+        );
+      }
+      const prep = prepareTournamentForAdminRosterOrBracketChange(id);
+      if (prep.didReopen) {
+        warnings.push('Torneo riaperto (stato: in corso) per consentire la modifica al roster.');
+      }
+      if (prep.didResetBracket) {
+        warnings.push('Coppie e tabellone sono stati azzerati per aggiornare i partecipanti.');
+      }
     }
 
-    const isAdmin = user.role === 'admin';
+    const isAdmin = isAppAdmin(user);
     const isSelf = userId === user.id;
 
     if (!isAdmin) {
@@ -100,7 +111,10 @@ export async function POST(
     }
 
     setParticipating(id, userId, participating);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ success: false, error: error.message }, { status: 400 });
@@ -136,17 +150,27 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
     }
 
+    const warnings: string[] = [];
     if (rosterLocked(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
-        },
-        { status: 409 }
-      );
+      if (!isAppAdmin(user)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
+          },
+          { status: 409 }
+        );
+      }
+      const prep = prepareTournamentForAdminRosterOrBracketChange(id);
+      if (prep.didReopen) {
+        warnings.push('Torneo riaperto (stato: in corso) per consentire la modifica al roster.');
+      }
+      if (prep.didResetBracket) {
+        warnings.push('Coppie e tabellone sono stati azzerati per aggiornare i partecipanti.');
+      }
     }
 
-    const isAdmin = user.role === 'admin';
+    const isAdmin = isAppAdmin(user);
     const isSelf = userId === user.id;
 
     if (!isAdmin) {
@@ -162,7 +186,10 @@ export async function DELETE(
     }
 
     removeParticipant(id, userId);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    });
   } catch (error) {
     console.error('Remove participant error:', error);
     return NextResponse.json({ success: false, error: 'Errore del server' }, { status: 500 });

@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcrypt';
 import { getUserByUsername, getUserById, incrementLoginCount } from './db/queries';
 import type { User } from './types';
+import { isAppAdmin } from './user-role';
+
+export { isAppAdmin };
 
 export interface SessionData {
   userId?: string;
@@ -111,7 +114,7 @@ export async function logout(): Promise<void> {
 
 export async function isAdmin(): Promise<boolean> {
   const user = await getCurrentUser();
-  return !!user && user.role === 'admin';
+  return isAppAdmin(user);
 }
 
 /** Admin o maestro (staff lezioni). */

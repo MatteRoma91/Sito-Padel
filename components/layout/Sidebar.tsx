@@ -24,6 +24,7 @@ import {
 import { useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { ChatLinkWithBadge } from '@/components/ui/ChatLinkWithBadge';
+import { isAppAdmin } from '@/lib/user-role';
 
 interface SidebarProps {
   user: {
@@ -56,7 +57,7 @@ const settingsNavItem = { href: '/settings', label: 'Impostazioni', icon: Settin
 
 const lessonNavItem = { href: '/lezioni', label: 'Lezioni', icon: GraduationCap };
 
-const canSeeSettings = (_username: string, role: string) => role === 'admin'; // guest e player non vedono Impostazioni
+const canSeeSettings = (user: { role?: string }) => isAppAdmin(user);
 
 export function Sidebar({ user, showLessonMenu }: SidebarProps) {
   const pathname = usePathname();
@@ -116,7 +117,7 @@ export function Sidebar({ user, showLessonMenu }: SidebarProps) {
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto mt-[var(--header-mobile-offset)] md:mt-0 pb-[env(safe-area-inset-bottom,0px)] md:pb-0">
           {navItems
             .filter((item) => {
-              if (item.href === '/partite') return user.role === 'admin';
+              if (item.href === '/partite') return isAppAdmin(user);
               return true;
             })
             .map((item) => {
@@ -173,7 +174,7 @@ export function Sidebar({ user, showLessonMenu }: SidebarProps) {
               </Link>
             );
           })()}
-          {canSeeSettings(user.username, user.role) && (
+          {canSeeSettings(user) && (
             <>
               <div className="my-2 border-t border-white/20" />
               {(() => {

@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAppAdmin } from '@/lib/auth';
 import { getSiteConfig, getUsers, getUsersWithLoginCounts, getTournaments, logSecurityEvent } from '@/lib/db/queries';
 import { getServerStats } from '@/lib/server-stats';
 import { Settings, Users, Trophy, Server } from 'lucide-react';
@@ -13,8 +13,8 @@ const SettingsTabs = dynamic(() => import('@/components/settings/SettingsTabs').
 });
 import type { SettingsTabId } from '@/components/settings/SettingsTabs';
 
-function canAccessSettings(_username: string, role: string): boolean {
-  return role === 'admin';
+function canAccessSettings(user: { role?: string } | null): boolean {
+  return isAppAdmin(user);
 }
 
 const VALID_TABS: SettingsTabId[] = ['testi', 'notifiche', 'utenti', 'accessi', 'server', 'ricalcola', 'strumenti', 'galleria', 'logs', 'statistiche', 'centrosportivo'];
@@ -27,8 +27,8 @@ export default async function SettingsPage({
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  if (!canAccessSettings(user.username, user.role)) {
-    redirect('/');
+  if (!canAccessSettings(user)) {
+    redirect('/tournaments?notice=admin_only');
   }
 
   const headersList = await headers();

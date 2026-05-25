@@ -48,4 +48,28 @@ describe('tournament side effects', () => {
     const ptsAfter = q.getCumulativeRankings().find((r) => r.user_id === u1)?.total_points ?? 0;
     expect(ptsAfter).toBe(0);
   });
+
+  it('prepareTournamentForAdminRosterOrBracketChange removes pairs on draft with roster', async () => {
+    const q = await import('@/lib/db/queries');
+    const se = await import('@/lib/tournaments/tournament-side-effects');
+    q.ensureDb();
+    const adminId = q.createUser({ username: 'adm2', password: 'x', role: 'admin', full_name: 'Admin' });
+    const u1 = q.createUser({ username: 'a1', password: 'x', role: 'player', full_name: 'A1', nickname: 'A1' });
+    const u2 = q.createUser({ username: 'a2', password: 'x', role: 'player', full_name: 'A2', nickname: 'A2' });
+    const tid = q.createTournament({
+      name: 'D',
+      date: '2026-08-01',
+      max_players: 8,
+      category: 'brocco_500',
+      created_by: adminId,
+    });
+    q.insertPairs(tid, [
+      { player1_id: u1, player2_id: u2, seed: 1 },
+    ]);
+    const r = se.prepareTournamentForAdminRosterOrBracketChange(tid);
+    expect(r.didReopen).toBe(false);
+    expect(r.didResetBracket).toBe(true);
+    expect(q.getPairs(tid)).toHaveLength(0);
+    expect(q.getMatches(tid)).toHaveLength(0);
+  });
 });

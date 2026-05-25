@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import { 
   getTournamentById,
   getPairById,
@@ -13,7 +13,11 @@ import {
   getDecidedMatchCountByPair
 } from '@/lib/db/queries';
 import { validatePairUpdates } from '@/lib/tournaments/pair-updates';
-import { getPairEditBlockReason, afterPairsOrExtractMutation } from '@/lib/tournaments/tournament-side-effects';
+import {
+  getPairEditBlockReason,
+  afterPairsOrExtractMutation,
+  unlockTournamentForAdminPairMutations,
+} from '@/lib/tournaments/tournament-side-effects';
 
 export async function DELETE(
   request: Request,
@@ -28,7 +32,7 @@ export async function DELETE(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -38,6 +42,7 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
   }
 
+  unlockTournamentForAdminPairMutations(tournamentId);
   const block = getPairEditBlockReason(tournamentId);
   if (block) {
     return NextResponse.json({ success: false, error: block }, { status: 409 });
@@ -53,19 +58,13 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: 'La coppia non appartiene a questo torneo' }, { status: 400 });
   }
 
-  // Check if there are matches (don't allow deletion if bracket is generated)
   const matches = getMatches(tournamentId);
-  if (matches.length > 0) {
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Non puoi eliminare coppie dopo aver generato il tabellone. Elimina prima il tabellone.' 
-    }, { status: 400 });
-  }
 
   try {
-    // Delete any existing matches and rankings (safety)
-    deleteMatches(tournamentId);
-    deleteTournamentRankings(tournamentId);
+    if (matches.length > 0) {
+      deleteMatches(tournamentId);
+      deleteTournamentRankings(tournamentId);
+    }
 
     // Delete the pair
     deletePair(pairId);
@@ -92,7 +91,7 @@ export async function PATCH(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -101,6 +100,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
   }
 
+  unlockTournamentForAdminPairMutations(tournamentId);
   const block = getPairEditBlockReason(tournamentId);
   if (block) {
     return NextResponse.json({ success: false, error: block }, { status: 409 });
@@ -115,7 +115,8 @@ export async function PATCH(
     const body = await request.json();
     const player1_id = body?.player1_id as string | undefined;
     const player2_id = body?.player2_id as string | undefined;
-    const acknowledgePlayedMatches = Boolean(body?.acknowledge_played_matches);
+    const acknowledgePlayedMatches =
+      Boolean(body?.acknowledge_played_matches) || isAppAdmin(user);
 
     const existingPairs = getPairs(tournamentId);
     const participants = getTournamentParticipants(tournamentId);

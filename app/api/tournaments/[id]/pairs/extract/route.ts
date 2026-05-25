@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import { 
   getTournamentById,
   getTournamentParticipants, 
@@ -10,12 +10,11 @@ import {
   deleteMatches,
   deleteTournamentRankings,
   insertPairs,
-  revertTournamentResultFromOverall,
 } from '@/lib/db/queries';
 import { extractPairs, extractPairsFor8Players, extractPairsFor12Players } from '@/lib/pairs';
 
 import { getTournamentFormat } from '@/lib/types';
-import { afterPairsOrExtractMutation } from '@/lib/tournaments/tournament-side-effects';
+import { afterPairsOrExtractMutation, unlockTournamentForAdminPairMutations } from '@/lib/tournaments/tournament-side-effects';
 
 export async function POST(
   request: Request,
@@ -30,7 +29,7 @@ export async function POST(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -40,17 +39,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
     }
 
-    if (tournament.status === 'completed') {
-      return NextResponse.json(
-        { success: false, error: 'Torneo completato: riaprilo prima di ri-estrarre le coppie.' },
-        { status: 409 }
-      );
-    }
-
-    if (tournament.overall_applied_at) {
-      revertTournamentResultFromOverall(tournamentId);
-    }
-
+    unlockTournamentForAdminPairMutations(tournamentId);
     // Get participating users
     const participants = getTournamentParticipants(tournamentId);
     const participatingIds = participants.filter(p => p.participating).map(p => p.user_id);

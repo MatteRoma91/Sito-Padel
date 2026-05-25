@@ -42,10 +42,13 @@ export function ParticipantsManager({
         showToast(res.error, 'error');
         return;
       }
-      const data = res.data as { success?: boolean; error?: string };
+      const data = res.data as { success?: boolean; error?: string; warnings?: string[] };
       if (data && data.success === false) {
         showToast(data.error || 'Errore', 'error');
         return;
+      }
+      for (const w of data?.warnings ?? []) {
+        showToast(w, 'info');
       }
       showToast(!isParticipating ? 'Partecipante aggiunto' : 'Partecipante rimosso', 'success');
       router.refresh();
@@ -66,10 +69,13 @@ export function ParticipantsManager({
         showToast(res.error, 'error');
         return;
       }
-      const data = res.data as { success?: boolean; error?: string };
+      const data = res.data as { success?: boolean; error?: string; warnings?: string[] };
       if (data && data.success === false) {
         showToast(data.error || 'Errore', 'error');
         return;
+      }
+      for (const w of data?.warnings ?? []) {
+        showToast(w, 'info');
       }
       showToast('Giocatore aggiunto', 'success');
       router.refresh();

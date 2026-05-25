@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser, canEdit } from '@/lib/auth';
+import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
 import {
   getPairs,
   getMatches,
@@ -9,6 +9,7 @@ import {
   recalculateCumulativeRankings,
   applyTournamentResultToOverall,
   updateTournament,
+  revertTournamentResultFromOverall,
 } from '@/lib/db/queries';
 import { getDb } from '@/lib/db/db';
 import { calculateTournamentRankings, isTournamentComplete } from '@/lib/rankings';
@@ -28,7 +29,7 @@ export async function POST(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
+  if (!isAppAdmin(user)) {
     return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
   }
 
@@ -42,7 +43,7 @@ export async function POST(
         }
 
         if (tournament.overall_applied_at) {
-          throw Object.assign(new Error('ALREADY_APPLIED'), { code: 'ALREADY_APPLIED' as const });
+          revertTournamentResultFromOverall(tournamentId);
         }
 
         const pairs = getPairs(tournamentId);
@@ -86,15 +87,6 @@ export async function POST(
     const code = error && typeof error === 'object' && 'code' in error ? (error as { code?: string }).code : undefined;
     if (code === 'NOT_FOUND') {
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
-    }
-    if (code === 'ALREADY_APPLIED') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Classifica già consolidata per questo torneo. Riapri il torneo per ricalcolare.',
-        },
-        { status: 409 }
-      );
     }
     if (code === 'INCOMPLETE') {
       return NextResponse.json(

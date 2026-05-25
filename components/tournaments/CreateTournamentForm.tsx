@@ -38,7 +38,7 @@ export function CreateTournamentForm() {
     const payloadMaxPlayers = numericMaxPlayers === 8 ? 8 : numericMaxPlayers === 12 ? 12 : 16;
     const payloadCategory =
       payloadMaxPlayers === 8
-        ? 'brocco_500'
+        ? 'master_1000'
         : (formData.get('category') as string | null) || 'master_1000';
 
     const payload: Record<string, unknown> = {
