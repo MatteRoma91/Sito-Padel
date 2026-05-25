@@ -298,10 +298,11 @@ export function reopenTournament(tournamentId: string): void {
 const OVERALL_SCORE_SEED: { name: string; score: number }[] = [
   { name: 'Faber', score: 90 }, { name: 'David', score: 90 }, { name: 'Cora', score: 86 }, { name: 'Gerva', score: 83 },
   { name: 'Mich', score: 82 }, { name: 'Braccio', score: 76 }, { name: 'Gazzella', score: 74 }, { name: 'Merzio', score: 73 },
-  { name: 'Dile', score: 72 }, { name: 'Fabio', score: 71 }, { name: 'Dibby', score: 70 }, { name: 'Scimmia', score: 69 },
-  { name: 'Danti', score: 67 }, { name: 'Veca', score: 65 }, { name: 'Valerio', score: 65 }, { name: 'Ema baldi', score: 60 },
-  { name: 'Porra', score: 58 }, { name: 'Fefo', score: 56 }, { name: 'Jullios', score: 54 }, { name: 'Samba', score: 48 },
-  { name: 'Marco', score: 45 },
+  { name: 'Dile', score: 72 }, { name: 'Fabio', score: 71 }, { name: 'Wakki', score: 71 }, { name: 'Dibby', score: 70 },
+  { name: 'Scimmia', score: 69 }, { name: 'Danti', score: 67 }, { name: 'Veca', score: 65 }, { name: 'Valerio', score: 65 },
+  { name: 'DonMatteo', score: 65 }, { name: 'StefanoDio', score: 66 }, { name: 'Ema baldi', score: 60 },
+  { name: 'Renni', score: 60 }, { name: 'Porra', score: 58 }, { name: 'Fefo', score: 56 }, { name: 'Jullios', score: 54 },
+  { name: 'Marcello', score: 51 }, { name: 'Samba', score: 48 }, { name: 'Marco', score: 45 },
 ];
 
 /** Data di inizio per i grafici: lo storico parte dal 1 gennaio 2025 e si aggiorna a ogni torneo completato. */
