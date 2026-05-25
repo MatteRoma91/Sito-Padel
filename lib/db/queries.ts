@@ -1144,6 +1144,63 @@ export function deletePair(pairId: string): void {
 }
 
 /**
+ * ID dei tornei passati rispetto a excludeTournamentId (data strettamente minore),
+ * ordinati dal più recente al più vecchio. Tie-break deterministico su id.
+ */
+export function getPastTournamentIdsBeforeCurrent(excludeTournamentId: string, limit: number): string[] {
+  ensureDb();
+  const db = getDb();
+  const current = db.prepare('SELECT date FROM tournaments WHERE id = ?').get(excludeTournamentId) as { date: string } | undefined;
+  const currentDate = current?.date ?? '9999-12-31';
+  const rows = db
+    .prepare(
+      `SELECT id FROM tournaments WHERE id != ? AND date < ? ORDER BY date DESC, id DESC LIMIT ?`
+    )
+    .all(excludeTournamentId, currentDate, limit) as { id: string }[];
+  return rows.map((r) => r.id);
+}
+
+/** Unisce le coppie (player1, player2) in una mappa simmetrica userId -> Set(partnerId). */
+export function getPartnerPairsFromTournamentIds(tournamentIds: string[]): Map<string, Set<string>> {
+  const partnerMap = new Map<string, Set<string>>();
+  if (tournamentIds.length === 0) {
+    return partnerMap;
+  }
+  ensureDb();
+  const placeholders = tournamentIds.map(() => '?').join(',');
+  const rows = getDb()
+    .prepare(`SELECT player1_id, player2_id FROM pairs WHERE tournament_id IN (${placeholders})`)
+    .all(...tournamentIds) as { player1_id: string; player2_id: string }[];
+
+  for (const row of rows) {
+    const a = row.player1_id;
+    const b = row.player2_id;
+    if (!partnerMap.has(a)) partnerMap.set(a, new Set());
+    if (!partnerMap.has(b)) partnerMap.set(b, new Set());
+    partnerMap.get(a)!.add(b);
+    partnerMap.get(b)!.add(a);
+  }
+  return partnerMap;
+}
+
+/**
+ * Partner nel torneo passato immediatamente precedente (per data, poi id) rispetto al torneo indicato.
+ */
+export function getImmediatePreviousTournamentPartnerPairs(excludeTournamentId: string): Map<string, Set<string>> {
+  const ids = getPastTournamentIdsBeforeCurrent(excludeTournamentId, 1);
+  return getPartnerPairsFromTournamentIds(ids);
+}
+
+/**
+ * Partner nei tornei dalla 2ª alla 5ª posizione nella cronologia passata (esclude il più recente),
+ * per la preferenza soft in estrazione.
+ */
+export function getOlderRecentPartnerPairs(excludeTournamentId: string): Map<string, Set<string>> {
+  const ids = getPastTournamentIdsBeforeCurrent(excludeTournamentId, 5);
+  return getPartnerPairsFromTournamentIds(ids.slice(1));
+}
+
+/**
  * Restituisce le coppie (player1_id, player2_id) dai tornei più recenti già disputati,
  * escludendo il torneo indicato. Usato per evitare di ripetere le stesse coppie.
  * Considera solo tornei con data < data del torneo corrente (tornei passati).
@@ -1154,38 +1211,8 @@ export function getRecentPartnerPairs(
   excludeTournamentId: string,
   lastN = 5
 ): Map<string, Set<string>> {
-  ensureDb();
-  const db = getDb();
-  const current = db.prepare('SELECT date FROM tournaments WHERE id = ?').get(excludeTournamentId) as { date: string } | undefined;
-  const currentDate = current?.date ?? '9999-12-31';
-  const tournamentIds = db
-    .prepare(
-      `SELECT id FROM tournaments WHERE id != ? AND date < ? ORDER BY date DESC LIMIT ?`
-    )
-    .all(excludeTournamentId, currentDate, lastN) as { id: string }[];
-
-  if (tournamentIds.length === 0) {
-    return new Map();
-  }
-
-  const placeholders = tournamentIds.map(() => '?').join(',');
-  const ids = tournamentIds.map((t) => t.id);
-  const rows = db
-    .prepare(
-      `SELECT player1_id, player2_id FROM pairs WHERE tournament_id IN (${placeholders})`
-    )
-    .all(...ids) as { player1_id: string; player2_id: string }[];
-
-  const partnerMap = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const a = row.player1_id;
-    const b = row.player2_id;
-    if (!partnerMap.has(a)) partnerMap.set(a, new Set());
-    if (!partnerMap.has(b)) partnerMap.set(b, new Set());
-    partnerMap.get(a)!.add(b);
-    partnerMap.get(b)!.add(a);
-  }
-  return partnerMap;
+  const ids = getPastTournamentIdsBeforeCurrent(excludeTournamentId, lastN);
+  return getPartnerPairsFromTournamentIds(ids);
 }
 
 function normalizeMatchRow(r: Record<string, unknown>): Match {

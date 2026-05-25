@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, UserPlus } from 'lucide-react';
 import type { User, TournamentParticipant } from '@/lib/types';
@@ -24,11 +24,56 @@ export function ParticipantsManager({
 }: ParticipantsManagerProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | 'batch' | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
-  const participatingIds = new Set(participants.filter(p => p.participating).map(p => p.user_id));
-  const availableUsers = allUsers.filter(u => !participatingIds.has(u.id));
+  const participatingIds = new Set(participants.filter((p) => p.participating).map((p) => p.user_id));
+  const availableUsers = allUsers.filter((u) => !participatingIds.has(u.id));
+  const slotsRemaining = Math.max(0, maxPlayers - participatingIds.size);
+
+  const participatingUsers = Array.from(participatingIds).map((id) => userMap.get(id)).filter(Boolean) as User[];
+
+  useEffect(() => {
+    if (!showAdd) {
+      setSelectedIds(new Set());
+      return;
+    }
+    const pid = new Set(participants.filter((p) => p.participating).map((p) => p.user_id));
+    setSelectedIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (!pid.has(id) && allUsers.some((u) => u.id === id)) {
+          next.add(id);
+        }
+      }
+      return next.size === prev.size && [...prev].every((id) => next.has(id)) ? prev : next;
+    });
+  }, [showAdd, participants, allUsers]);
+
+  function toggleSelectUser(userId: string) {
+    if (selectedIds.has(userId)) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+      return;
+    }
+    if (participatingIds.size + selectedIds.size >= maxPlayers) {
+      showToast(`Puoi aggiungere al massimo ${maxPlayers} partecipanti.`, 'error');
+      return;
+    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.add(userId);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
 
   async function toggleParticipation(userId: string, isParticipating: boolean) {
     setLoading(userId);
@@ -57,35 +102,52 @@ export function ParticipantsManager({
     }
   }
 
-  async function addParticipant(userId: string) {
-    setLoading(userId);
+  async function addSelectedParticipants() {
+    const order = Array.from(selectedIds);
+    if (order.length === 0) return;
+
+    setLoading('batch');
     try {
-      const res = await fetchJson(`/api/tournaments/${tournamentId}/participants`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, participating: true }),
-      });
-      if (!res.ok) {
-        showToast(res.error, 'error');
-        return;
+      let warningsShown = false;
+      for (let i = 0; i < order.length; i++) {
+        const userId = order[i];
+        const res = await fetchJson(`/api/tournaments/${tournamentId}/participants`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, participating: true }),
+        });
+        if (!res.ok) {
+          showToast(res.error, 'error');
+          await router.refresh();
+          setSelectedIds(new Set(order.slice(i)));
+          return;
+        }
+        const data = res.data as { success?: boolean; error?: string; warnings?: string[] };
+        if (data && data.success === false) {
+          showToast(data.error || 'Errore', 'error');
+          await router.refresh();
+          setSelectedIds(new Set(order.slice(i)));
+          return;
+        }
+        if (!warningsShown && data?.warnings?.length) {
+          for (const w of data.warnings) {
+            showToast(w, 'info');
+          }
+          warningsShown = true;
+        }
       }
-      const data = res.data as { success?: boolean; error?: string; warnings?: string[] };
-      if (data && data.success === false) {
-        showToast(data.error || 'Errore', 'error');
-        return;
-      }
-      for (const w of data?.warnings ?? []) {
-        showToast(w, 'info');
-      }
-      showToast('Giocatore aggiunto', 'success');
-      router.refresh();
-      setShowAdd(false);
+
+      await router.refresh();
+      setSelectedIds(new Set());
+      showToast(order.length === 1 ? 'Giocatore aggiunto' : `Aggiunti ${order.length} giocatori`, 'success');
     } finally {
       setLoading(null);
     }
   }
 
-  const participatingUsers = Array.from(participatingIds).map(id => userMap.get(id)).filter(Boolean) as User[];
+  const nSelected = selectedIds.size;
+  const canAddSelection =
+    nSelected > 0 && participatingIds.size + nSelected <= maxPlayers && loading !== 'batch';
 
   return (
     <div className="card">
@@ -94,7 +156,8 @@ export function ParticipantsManager({
           Partecipanti ({participatingUsers.length}/{maxPlayers})
         </h2>
         <button
-          onClick={() => setShowAdd(!showAdd)}
+          type="button"
+          onClick={() => setShowAdd((open) => !open)}
           disabled={participatingUsers.length >= maxPlayers}
           className="btn btn-secondary flex items-center gap-2 text-sm py-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -104,19 +167,52 @@ export function ParticipantsManager({
       </div>
 
       {showAdd && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-primary-100/70 dark:bg-surface-dark/30">
-          <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Seleziona un giocatore da aggiungere:</p>
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-primary-100/70 dark:bg-surface-dark/30 space-y-3">
+          <p className="text-sm text-slate-700 dark:text-slate-300">
+            Seleziona i giocatori da aggiungere (clic per selezionare/deselezionare), poi conferma con il pulsante qui sotto.
+            <span className="block mt-1 text-slate-600 dark:text-slate-400">Posti liberi: {slotsRemaining}</span>
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={addSelectedParticipants}
+              disabled={!canAddSelection}
+              className="btn btn-primary text-sm py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading === 'batch'
+                ? 'Aggiunta in corso…'
+                : nSelected === 0
+                  ? 'Aggiungi selezionati'
+                  : `Aggiungi ${nSelected} selezionat${nSelected === 1 ? 'o' : 'i'}`}
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              disabled={nSelected === 0 || loading === 'batch'}
+              className="btn btn-secondary text-sm py-1.5 disabled:opacity-50"
+            >
+              Deseleziona tutti
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {availableUsers.map(user => (
-              <button
-                key={user.id}
-                onClick={() => addParticipant(user.id)}
-                disabled={loading === user.id}
-                className="px-3 py-1.5 rounded-lg bg-white dark:bg-white text-slate-900 border border-slate-300 text-sm hover:bg-slate-50 hover:border-slate-400 transition disabled:opacity-50"
-              >
-                {user.nickname || user.full_name || user.username}
-              </button>
-            ))}
+            {availableUsers.map((user) => {
+              const selected = selectedIds.has(user.id);
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => toggleSelectUser(user.id)}
+                  disabled={loading === 'batch'}
+                  className={`px-3 py-1.5 rounded-lg border text-sm transition disabled:opacity-50 ${
+                    selected
+                      ? 'bg-accent-500 border-accent-600 text-slate-900 ring-2 ring-accent-400/50'
+                      : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {user.nickname || user.full_name || user.username}
+                </button>
+              );
+            })}
             {availableUsers.length === 0 && (
               <p className="text-sm text-slate-700 dark:text-slate-300">Tutti i giocatori sono già partecipanti</p>
             )}
@@ -130,7 +226,7 @@ export function ParticipantsManager({
             Nessun partecipante. Aggiungi almeno {maxPlayers} giocatori per formare le coppie.
           </p>
         ) : (
-          participatingUsers.map(user => (
+          participatingUsers.map((user) => (
             <div key={user.id} className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-accent-500 flex items-center justify-center text-slate-900 text-sm font-medium">
@@ -141,8 +237,9 @@ export function ParticipantsManager({
                 </span>
               </div>
               <button
+                type="button"
                 onClick={() => toggleParticipation(user.id, true)}
-                disabled={loading === user.id}
+                disabled={loading === user.id || loading === 'batch'}
                 className="p-1.5 rounded text-slate-600 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition"
                 title="Rimuovi partecipante"
               >

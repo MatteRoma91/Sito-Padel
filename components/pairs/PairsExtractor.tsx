@@ -99,7 +99,7 @@ export function PairsExtractor({ tournamentId, hasExistingPairs }: PairsExtracto
         <div>
           <p className="font-medium text-slate-800 dark:text-slate-100">Pronto per l&apos;estrazione</p>
           <p className="text-sm text-slate-700 dark:text-slate-300">
-            16 partecipanti confermati
+            Tutti i partecipanti richiesti sono confermati. L&apos;estrazione non ripete la stessa coppia del torneo immediatamente precedente; se non è possibile, comparirà un messaggio di errore.
           </p>
         </div>
         <button

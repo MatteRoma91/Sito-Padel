@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit, isAppAdmin } from '@/lib/auth';
-import { 
+import {
   getTournamentById,
-  getTournamentParticipants, 
+  getTournamentParticipants,
   getCumulativeRankings,
   getUsersByIds,
-  getRecentPartnerPairs,
+  getImmediatePreviousTournamentPartnerPairs,
+  getOlderRecentPartnerPairs,
   deletePairs,
   deleteMatches,
   deleteTournamentRankings,
   insertPairs,
 } from '@/lib/db/queries';
-import { extractPairs, extractPairsFor8Players, extractPairsFor12Players } from '@/lib/pairs';
+import {
+  extractPairs,
+  extractPairsFor8Players,
+  extractPairsFor12Players,
+  PairingConstraintError,
+} from '@/lib/pairs';
 
 import { getTournamentFormat } from '@/lib/types';
 import { afterPairsOrExtractMutation, unlockTournamentForAdminPairMutations } from '@/lib/tournaments/tournament-side-effects';
@@ -62,14 +68,17 @@ export async function POST(
     const skillLevelMap = new Map(users.map(u => [u.id, u.skill_level]));
     const overallScoreMap = new Map(users.map(u => [u.id, u.overall_score ?? 50]));
 
-    const recentPartners = getRecentPartnerPairs(tournamentId, 5);
+    const partnerConstraints = {
+      hardPrevious: getImmediatePreviousTournamentPartnerPairs(tournamentId),
+      softOlder: getOlderRecentPartnerPairs(tournamentId),
+    };
 
     const extractedPairs =
       fmt === 'round_robin_8'
-        ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners)
+        ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, partnerConstraints)
         : fmt === 'saliscendi_12'
-          ? extractPairsFor12Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners)
-          : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners);
+          ? extractPairsFor12Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, partnerConstraints)
+          : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap, partnerConstraints);
 
     // Delete existing pairs, matches, and rankings
     deleteMatches(tournamentId);
@@ -84,6 +93,9 @@ export async function POST(
     return NextResponse.json({ success: true, pairs: extractedPairs });
   } catch (error) {
     console.error('Extract pairs error:', error);
+    if (error instanceof PairingConstraintError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     const message = error instanceof Error ? error.message : 'Errore del server';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
