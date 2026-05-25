@@ -41,7 +41,8 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 - **Autenticazione**: Login con username/password; ruoli **Admin**, **Maestro** (lezioni/carnet), **Giocatore** e **Guest** (sola lettura per demo/acquirenti)
 - **Giocatori**: Gestione profili giocatori
 - **Tornei**: Tabellone a 16, girone a 8 (Brocco 500), formato **Saliscendi** a 12 giocatori; estrazione coppie; consolidamento classifica; MVP; overall e classifica ATP cumulativa (vedi [docs/TORNEI-E-CLASSIFICHE.md](docs/TORNEI-E-CLASSIFICHE.md))
-- **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
+- **Estrazione Coppie**: Algoritmo forte+debole; **non** ripete la stessa coppia del torneo precedente (vincolo rigido); preferenza per non ripetere coppie dei tornei 2–5 precedenti (soft). Se l’estrazione è impossibile sotto il vincolo rigido, l’API restituisce errore 400
+- **Partecipanti torneo (admin)**: aggiunta multipla con conferma in batch (senza chiudere il pannello dopo ogni nome)
 - **Tabellone**: Quarti, semifinali, finale + tabellone consolazione (formato 16); Saliscendi con round e campi Oro/Argento/Bronzo (formato 12)
 - **Live Score**: Aggiornamento in tempo reale dei punteggi match tramite WebSocket
 - **Classifiche**: Classifica torneo e classifica cumulativa
