@@ -13,6 +13,7 @@ import { StrumentiTab } from './StrumentiTab';
 import { GalleriaTab } from './GalleriaTab';
 import { LogsTab } from './LogsTab';
 import { NotificheTab } from './NotificheTab';
+import { CentroSportivoTab } from './CentroSportivoTab';
 import type { ServerStats } from '@/lib/server-stats';
 
 export type SettingsTabId = 'testi' | 'notifiche' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche' | 'centrosportivo';
