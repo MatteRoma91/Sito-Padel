@@ -133,3 +133,31 @@ export function extractPairsFor8Players(
     seed: i + 1,
   }));
 }
+
+/**
+ * Estrae 6 coppie da 12 giocatori (stesso criterio forte+debole del tabellone 16).
+ */
+export function extractPairsFor12Players(
+  playerIds: string[],
+  rankings: Map<string, number>,
+  skillLevels: Map<string, SkillLevel | null>,
+  overallScores?: Map<string, number>,
+  recentPartners?: Map<string, Set<string>>
+): ExtractedPair[] {
+  if (playerIds.length !== 12) {
+    throw new Error(`Servono esattamente 12 giocatori, trovati ${playerIds.length}`);
+  }
+
+  const sorted = sortPlayersForExtraction(playerIds, rankings, skillLevels, overallScores);
+  const strong = sorted.slice(0, 6);
+  const weak = sorted.slice(6, 12);
+  const partners = recentPartners ?? new Map<string, Set<string>>();
+
+  const assigned = assignPairsAvoidingRecent(strong, weak, partners);
+
+  return assigned.map((p, i) => ({
+    player1_id: p.strong,
+    player2_id: p.weak,
+    seed: i + 1,
+  }));
+}

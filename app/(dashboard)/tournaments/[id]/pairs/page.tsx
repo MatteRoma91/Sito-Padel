@@ -11,6 +11,7 @@ import {
 } from '@/lib/db/queries';
 import { ArrowLeft, ArrowRight, Shuffle } from 'lucide-react';
 import { PairsManager } from '@/components/tournaments/PairsManager';
+import { getExpectedPlayersAndPairs } from '@/lib/types';
 
 export default async function TournamentPairsPage({
   params,
@@ -45,7 +46,7 @@ export default async function TournamentPairsPage({
   // Participating users
   const participatingUserIds = participants.filter(p => p.participating).map(p => p.user_id);
 
-  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+  const { pairs: expectedPairs } = getExpectedPlayersAndPairs(tournament);
   const isComplete = pairs.length === expectedPairs;
 
   return (
@@ -75,6 +76,7 @@ export default async function TournamentPairsPage({
       <PairsManager
         tournamentId={tournament.id}
         maxPlayers={tournament.max_players}
+        tournamentFormat={tournament.format ?? null}
         pairs={pairs}
         participatingUserIds={participatingUserIds}
         userMap={userMap}

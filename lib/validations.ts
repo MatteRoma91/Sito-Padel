@@ -41,7 +41,8 @@ export const createTournamentSchema = z.object({
   time: z.string().max(20).optional(),
   venue: z.string().max(200).optional(),
   category: z.enum(['grand_slam', 'master_1000']).optional(),
-  maxPlayers: z.coerce.number().int().refine((n) => n === 8 || n === 16, '8 o 16 giocatori').optional(),
+  maxPlayers: z.coerce.number().int().refine((n) => n === 8 || n === 16 || n === 12, '8, 12 o 16 giocatori').optional(),
+  format: z.enum(['bracket_16', 'round_robin_8', 'saliscendi_12']).optional(),
   slot_start: z.string().max(10).optional(),
   slot_end: z.string().max(10).optional(),
   court_ids: z.array(z.string().uuid()).optional(),
@@ -76,6 +77,7 @@ export const matchScoreSchema = z
   .object({
     score_pair1: z.number().int().min(0).max(99),
     score_pair2: z.number().int().min(0).max(99),
+    force_result_override: z.boolean().optional(),
   })
   .refine((data) => data.score_pair1 !== data.score_pair2, {
     message: 'I punteggi devono essere diversi',

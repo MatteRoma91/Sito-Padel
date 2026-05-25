@@ -729,4 +729,48 @@ export function initSchema() {
   } catch {
     // Migration failed or already applied
   }
+
+  // Torneo Saliscendi: formato esplicito
+  try {
+    db.exec(`ALTER TABLE tournaments ADD COLUMN format TEXT`);
+  } catch {
+    // Column already exists
+  }
+
+  // Migrazione matches: round saliscendi + round_number, court_tier, is_final_round
+  try {
+    const matchCols = db.prepare('PRAGMA table_info(matches)').all() as { name: string }[];
+    const hasRoundNumber = matchCols.some((c) => c.name === 'round_number');
+    if (!hasRoundNumber) {
+      db.exec(`ALTER TABLE matches RENAME TO _matches_sal_migrate`);
+      db.exec(`
+        CREATE TABLE matches (
+          id TEXT PRIMARY KEY,
+          tournament_id TEXT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+          round TEXT NOT NULL CHECK(round IN ('quarterfinal', 'semifinal', 'final', 'third_place', 'consolation_semi', 'consolation_final', 'consolation_seventh', 'round_robin', 'saliscendi')),
+          bracket_type TEXT NOT NULL DEFAULT 'main' CHECK(bracket_type IN ('main', 'consolation')),
+          pair1_id TEXT REFERENCES pairs(id),
+          pair2_id TEXT REFERENCES pairs(id),
+          score_pair1 INTEGER,
+          score_pair2 INTEGER,
+          winner_pair_id TEXT REFERENCES pairs(id),
+          order_in_round INTEGER NOT NULL DEFAULT 0,
+          round_number INTEGER NOT NULL DEFAULT 0,
+          court_tier TEXT CHECK(court_tier IS NULL OR court_tier IN ('oro', 'argento', 'bronzo')),
+          is_final_round INTEGER NOT NULL DEFAULT 0
+        )
+      `);
+      db.exec(`
+        INSERT INTO matches (id, tournament_id, round, bracket_type, pair1_id, pair2_id, score_pair1, score_pair2, winner_pair_id, order_in_round, round_number, court_tier, is_final_round)
+        SELECT id, tournament_id, round, bracket_type, pair1_id, pair2_id, score_pair1, score_pair2, winner_pair_id, order_in_round, 0, NULL, 0
+        FROM _matches_sal_migrate
+      `);
+      db.exec(`DROP TABLE _matches_sal_migrate`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_matches_pair1 ON matches(pair1_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_matches_pair2 ON matches(pair2_id)`);
+    }
+  } catch {
+    // Migration failed or already applied
+  }
 }

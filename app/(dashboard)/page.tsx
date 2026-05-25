@@ -123,6 +123,7 @@ export default async function HomePage() {
           tournamentName={nextBroccoburgher.name}
           tournamentId={nextBroccoburgher.id}
           date={nextBroccoburgher.date}
+          time={nextBroccoburgher.time}
         />
       )}
 

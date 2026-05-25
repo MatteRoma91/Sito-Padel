@@ -6,6 +6,18 @@ export type TournamentStatus = 'draft' | 'open' | 'in_progress' | 'completed';
 
 export type TournamentCategory = 'grand_slam' | 'master_1000' | 'brocco_500';
 
+/** Formato struttura torneo (esplicito; retrocompatibile con NULL = inferito da max_players). */
+export type TournamentFormat = 'bracket_16' | 'round_robin_8' | 'saliscendi_12';
+
+export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
+  bracket_16: 'Tabellone (16 giocatori)',
+  round_robin_8: 'Girone Brocco (8 giocatori)',
+  saliscendi_12: 'Saliscendi (12 giocatori, 6 coppie)',
+};
+
+/** Tier campo Saliscendi: Oro / Argento / Bronzo. */
+export type SaliscendiCourtTier = 'oro' | 'argento' | 'bronzo';
+
 export type SkillLevel = 'A_GOLD' | 'A_SILVER' | 'B_GOLD' | 'B_SILVER' | 'C';
 
 /** Livello derivato dal punteggio overall 0-100 (include D e Santiago) */
@@ -51,6 +63,9 @@ export const TOURNAMENT_LAST_DELTA_8 = -3;
 /** Posizione "ultimo" nel torneo a 4 coppie */
 export const TOURNAMENT_LAST_POSITION_8 = 4;
 
+/** Saliscendi: 6 coppie, ultimo posto = 6° (stesso delta overall del tabellone 16). */
+export const TOURNAMENT_LAST_POSITION_12 = 6;
+
 export const SKILL_LEVEL_VALUES: Record<SkillLevel, number> = {
   'A_GOLD': 5,
   'A_SILVER': 4,
@@ -78,7 +93,8 @@ export type MatchRound =
   | 'consolation_semi'
   | 'consolation_final'
   | 'consolation_seventh'
-  | 'round_robin';
+  | 'round_robin'
+  | 'saliscendi';
 
 export type BracketType = 'main' | 'consolation';
 
@@ -112,10 +128,39 @@ export interface Tournament {
   status: TournamentStatus;
   category: TournamentCategory;
   max_players: number;
+  /** NULL = inferito da max_players (8 girone, 16 tabellone). */
+  format?: TournamentFormat | null;
   created_by: string;
   created_at: string;
   completed_at?: string | null;
   mvp_deadline?: string | null;
+}
+
+/** Formato effettivo del torneo (retrocompatibile). */
+export function getTournamentFormat(t: Pick<Tournament, 'format' | 'max_players'>): TournamentFormat {
+  if (t.format === 'saliscendi_12' || t.max_players === 12) return 'saliscendi_12';
+  if (t.max_players === 8) return 'round_robin_8';
+  return 'bracket_16';
+}
+
+export function isSaliscendiTournament(t: Pick<Tournament, 'format' | 'max_players'>): boolean {
+  return getTournamentFormat(t) === 'saliscendi_12';
+}
+
+/** Partecipanti / coppie attesi per formato. */
+export function getExpectedPlayersAndPairs(t: Pick<Tournament, 'format' | 'max_players'>): { players: number; pairs: number } {
+  const f = getTournamentFormat(t);
+  if (f === 'saliscendi_12') return { players: 12, pairs: 6 };
+  if (f === 'round_robin_8') return { players: 8, pairs: 4 };
+  return { players: 16, pairs: 8 };
+}
+
+/** Ultima posizione in classifica torneo (per cucchiarella / overall). */
+export function getLastRankingPosition(t: Pick<Tournament, 'format' | 'max_players'>): number {
+  const f = getTournamentFormat(t);
+  if (f === 'saliscendi_12') return TOURNAMENT_LAST_POSITION_12;
+  if (f === 'round_robin_8') return TOURNAMENT_LAST_POSITION_8;
+  return 8;
 }
 
 export interface TournamentParticipant {
@@ -144,6 +189,12 @@ export interface Match {
   score_pair2: number | null;
   winner_pair_id: string | null;
   order_in_round: number;
+  /** Saliscendi: 1, 2, 3… Altri formati: 0. */
+  round_number?: number;
+  /** Saliscendi: campo logico. */
+  court_tier?: SaliscendiCourtTier | null;
+  /** Saliscendi: 1 se questo round è marcato come ultimo (classifica da qui). */
+  is_final_round?: number;
 }
 
 export interface TournamentRanking {

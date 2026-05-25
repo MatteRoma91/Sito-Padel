@@ -51,10 +51,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const data = parseOrThrow(createTournamentSchema, body);
-    const { name, date, time, venue, category, maxPlayers, slot_start, slot_end, court_ids } = data;
+    const { name, date, time, venue, category, maxPlayers, format: formatBody, slot_start, slot_end, court_ids } = data;
 
     const validCategory = category === 'grand_slam' ? 'grand_slam' : 'master_1000';
-    const validMaxPlayers = maxPlayers === 8 ? 8 : 16;
+    const validMaxPlayers = maxPlayers === 8 ? 8 : maxPlayers === 12 ? 12 : 16;
+    const format =
+      validMaxPlayers === 12 || formatBody === 'saliscendi_12'
+        ? ('saliscendi_12' as const)
+        : null;
     const courtIdsFiltered = Array.isArray(court_ids) ? court_ids.filter((id): id is string => typeof id === 'string' && id.trim() !== '') : [];
 
     if (courtIdsFiltered.length > 0) {
@@ -106,6 +110,7 @@ export async function POST(request: Request) {
         venue: venue ?? undefined,
         category: validMaxPlayers === 8 ? 'brocco_500' : validCategory,
         max_players: validMaxPlayers,
+        format,
         created_by: user.id,
         slot_start,
         slot_end,
@@ -126,6 +131,7 @@ export async function POST(request: Request) {
       venue: venue ?? undefined,
       category: validMaxPlayers === 8 ? 'brocco_500' : validCategory,
       max_players: validMaxPlayers,
+      format,
       created_by: user.id,
     });
 

@@ -5,8 +5,8 @@ import { seed } from './seed';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../constants';
-import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot, CourtBookingMatch } from '../types';
-import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8 } from '../types';
+import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot, CourtBookingMatch, TournamentFormat } from '../types';
+import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8, getTournamentFormat, getLastRankingPosition } from '../types';
 import { DEFAULT_SITE_CONFIG } from './site-config-defaults';
 
 let initialized = false;
@@ -124,7 +124,9 @@ export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null):
 export function applyTournamentResultToOverall(tournamentId: string): void {
   ensureDb();
   const tournament = getTournamentById(tournamentId);
-  const is8Player = tournament?.max_players === 8;
+  if (!tournament) return;
+  const fmt = getTournamentFormat(tournament);
+  const is8Player = fmt === 'round_robin_8';
 
   const pairs = getPairs(tournamentId);
   const matches = getMatches(tournamentId).filter(m => m.winner_pair_id != null);
@@ -166,7 +168,7 @@ export function applyTournamentResultToOverall(tournamentId: string): void {
   }
 
   const posWinDelta = is8Player ? TOURNAMENT_WIN_DELTA_8 : TOURNAMENT_WIN_DELTA;
-  const lastPos = is8Player ? TOURNAMENT_LAST_POSITION_8 : 8;
+  const lastPos = getLastRankingPosition(tournament);
   const lastDelta = is8Player ? TOURNAMENT_LAST_DELTA_8 : TOURNAMENT_LAST_DELTA;
 
   for (const pair of pairs) {
@@ -682,10 +684,21 @@ export function getAllPastTournamentDates(): { date: string }[] {
   return getDb().prepare("SELECT DISTINCT date FROM tournaments WHERE date < date('now') ORDER BY date DESC").all() as { date: string }[];
 }
 
-export function createTournament(data: { name: string; date: string; time?: string; venue?: string; category?: TournamentCategory; max_players?: number; created_by: string }): string {
+export function createTournament(data: {
+  name: string;
+  date: string;
+  time?: string;
+  venue?: string;
+  category?: TournamentCategory;
+  max_players?: number;
+  format?: TournamentFormat | null;
+  created_by: string;
+}): string {
   ensureDb();
   const id = randomUUID();
-  const maxPlayers = data.max_players === 8 ? 8 : 16;
+  const isSal = data.format === 'saliscendi_12' || data.max_players === 12;
+  const maxPlayers = data.max_players === 8 ? 8 : isSal ? 12 : 16;
+  const format: TournamentFormat | null = isSal ? 'saliscendi_12' : null;
   const category: TournamentCategory =
     maxPlayers === 8
       ? 'brocco_500'
@@ -694,9 +707,9 @@ export function createTournament(data: { name: string; date: string; time?: stri
         : 'master_1000';
 
   getDb().prepare(
-    `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, data.name, data.date, data.time || null, data.venue || null, category, maxPlayers, data.created_by);
+    `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, format, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, data.name, data.date, data.time || null, data.venue || null, category, maxPlayers, format, data.created_by);
   return id;
 }
 
@@ -707,6 +720,7 @@ export function createTournamentWithCourtBookings(data: {
   venue?: string;
   category?: TournamentCategory;
   max_players?: number;
+  format?: TournamentFormat | null;
   created_by: string;
   slot_start: string;
   slot_end: string;
@@ -714,7 +728,9 @@ export function createTournamentWithCourtBookings(data: {
 }): string {
   ensureDb();
   const db = getDb();
-  const maxPlayers = data.max_players === 8 ? 8 : 16;
+  const isSal = data.format === 'saliscendi_12' || data.max_players === 12;
+  const maxPlayers = data.max_players === 8 ? 8 : isSal ? 12 : 16;
+  const format: TournamentFormat | null = isSal ? 'saliscendi_12' : null;
   const category: TournamentCategory =
     maxPlayers === 8
       ? 'brocco_500'
@@ -727,9 +743,9 @@ export function createTournamentWithCourtBookings(data: {
 
   db.transaction(() => {
     db.prepare(
-      `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(tournamentId, name, data.date, data.time || null, data.venue || null, category, maxPlayers, data.created_by);
+      `INSERT INTO tournaments (id, name, date, time, venue, category, max_players, format, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(tournamentId, name, data.date, data.time || null, data.venue || null, category, maxPlayers, format, data.created_by);
 
     const insertBooking = db.prepare(
       `INSERT INTO court_bookings (id, court_id, date, slot_start, slot_end, booking_name, tournament_id, booked_by_user_id, guest_name, guest_phone, created_by)
@@ -756,7 +772,7 @@ export function createTournamentWithCourtBookings(data: {
   return tournamentId;
 }
 
-export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'completed_at' | 'mvp_deadline'>>): void {
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'format' | 'completed_at' | 'mvp_deadline'>>): void {
   ensureDb();
   const existing = getTournamentById(id);
 
@@ -773,7 +789,7 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
 
   // Calcola il nuovo max_players (se fornito) o quello esistente
   const effectiveMaxPlayers = data.max_players !== undefined
-    ? (data.max_players === 8 ? 8 : 16)
+    ? (data.max_players === 8 ? 8 : data.max_players === 12 ? 12 : 16)
     : (existing?.max_players ?? 16);
 
   // Gestione categoria: forzata a brocco_500 per tornei da 8 giocatori
@@ -792,6 +808,20 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
   if (data.max_players !== undefined) {
     fields.push('max_players = ?');
     values.push(String(effectiveMaxPlayers));
+  }
+
+  if (data.format !== undefined) {
+    fields.push('format = ?');
+    values.push(data.format);
+  } else if (data.max_players !== undefined && effectiveMaxPlayers === 8) {
+    fields.push('format = ?');
+    values.push(null);
+  } else if (data.max_players !== undefined && effectiveMaxPlayers === 12) {
+    fields.push('format = ?');
+    values.push('saliscendi_12');
+  } else if (data.max_players !== undefined && effectiveMaxPlayers === 16) {
+    fields.push('format = ?');
+    values.push(null);
   }
 
   if (fields.length === 0) return;
@@ -988,16 +1018,47 @@ export function getRecentPartnerPairs(
   return partnerMap;
 }
 
+function normalizeMatchRow(r: Record<string, unknown>): Match {
+  const m = r as unknown as Match;
+  return {
+    ...m,
+    round_number: typeof r.round_number === 'number' ? r.round_number : Number(r.round_number ?? 0),
+    court_tier: (r.court_tier as Match['court_tier']) ?? null,
+    is_final_round: typeof r.is_final_round === 'number' ? r.is_final_round : Number(r.is_final_round ?? 0),
+  };
+}
+
+function compareMatchesForDisplay(a: Match, b: Match): number {
+  const salA = a.round === 'saliscendi' ? 1 : 0;
+  const salB = b.round === 'saliscendi' ? 1 : 0;
+  if (salA !== salB) return salA - salB;
+  if (salA === 1) {
+    const ra = a.round_number ?? 0;
+    const rb = b.round_number ?? 0;
+    if (ra !== rb) return ra - rb;
+    return (a.order_in_round ?? 0) - (b.order_in_round ?? 0);
+  }
+  const bt = (a.bracket_type || '').localeCompare(b.bracket_type || '');
+  if (bt !== 0) return bt;
+  const rr = String(a.round).localeCompare(String(b.round));
+  if (rr !== 0) return rr;
+  return (a.order_in_round ?? 0) - (b.order_in_round ?? 0);
+}
+
 // ============ MATCHES ============
 
 export function getMatches(tournamentId: string): Match[] {
   ensureDb();
-  return getDb().prepare('SELECT * FROM matches WHERE tournament_id = ? ORDER BY bracket_type, round, order_in_round').all(tournamentId) as Match[];
+  const rows = getDb().prepare('SELECT * FROM matches WHERE tournament_id = ?').all(tournamentId) as Record<string, unknown>[];
+  const matches = rows.map(normalizeMatchRow);
+  matches.sort(compareMatchesForDisplay);
+  return matches;
 }
 
 export function getMatchById(id: string): Match | undefined {
   ensureDb();
-  return getDb().prepare('SELECT * FROM matches WHERE id = ?').get(id) as Match | undefined;
+  const row = getDb().prepare('SELECT * FROM matches WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  return row ? normalizeMatchRow(row) : undefined;
 }
 
 export function deleteMatches(tournamentId: string): void {
@@ -1009,11 +1070,25 @@ export function insertMatches(tournamentId: string, matches: Omit<Match, 'id' | 
   ensureDb();
   const db = getDb();
   const stmt = db.prepare(
-    `INSERT INTO matches (id, tournament_id, round, bracket_type, pair1_id, pair2_id, score_pair1, score_pair2, winner_pair_id, order_in_round)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO matches (id, tournament_id, round, bracket_type, pair1_id, pair2_id, score_pair1, score_pair2, winner_pair_id, order_in_round, round_number, court_tier, is_final_round)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const m of matches) {
-    stmt.run(randomUUID(), tournamentId, m.round, m.bracket_type, m.pair1_id, m.pair2_id, m.score_pair1, m.score_pair2, m.winner_pair_id, m.order_in_round);
+    stmt.run(
+      randomUUID(),
+      tournamentId,
+      m.round,
+      m.bracket_type,
+      m.pair1_id,
+      m.pair2_id,
+      m.score_pair1,
+      m.score_pair2,
+      m.winner_pair_id,
+      m.order_in_round,
+      m.round_number ?? 0,
+      m.court_tier ?? null,
+      m.is_final_round ?? 0
+    );
   }
 }
 
@@ -1025,6 +1100,35 @@ export function updateMatchResult(matchId: string, scorePair1: number, scorePair
 export function updateMatchPairs(matchId: string, pair1Id: string | null, pair2Id: string | null): void {
   ensureDb();
   getDb().prepare('UPDATE matches SET pair1_id = ?, pair2_id = ? WHERE id = ?').run(pair1Id, pair2Id, matchId);
+}
+
+export function countSaliscendiMatchesAfterRound(tournamentId: string, roundNumber: number): number {
+  ensureDb();
+  const r = getDb().prepare(
+    `SELECT COUNT(*) as c FROM matches WHERE tournament_id = ? AND round = 'saliscendi' AND round_number > ?`
+  ).get(tournamentId, roundNumber) as { c: number };
+  return r.c;
+}
+
+export function setSaliscendiRoundIsFinal(tournamentId: string, roundNumber: number, isFinal: boolean): void {
+  ensureDb();
+  getDb().prepare(
+    `UPDATE matches SET is_final_round = ? WHERE tournament_id = ? AND round = 'saliscendi' AND round_number = ?`
+  ).run(isFinal ? 1 : 0, tournamentId, roundNumber);
+}
+
+/** Rimuove tutti i match Saliscendi del torneo. */
+export function deleteSaliscendiMatches(tournamentId: string): void {
+  ensureDb();
+  getDb().prepare(`DELETE FROM matches WHERE tournament_id = ? AND round = 'saliscendi'`).run(tournamentId);
+}
+
+/** Elimina i match Saliscendi con round_number strettamente maggiore (correzione admin forzata). */
+export function deleteSaliscendiMatchesAfterRound(tournamentId: string, roundNumber: number): void {
+  ensureDb();
+  getDb().prepare(
+    `DELETE FROM matches WHERE tournament_id = ? AND round = 'saliscendi' AND round_number > ?`
+  ).run(tournamentId, roundNumber);
 }
 
 export interface MatchHistoryEntry {
@@ -1472,9 +1576,10 @@ export function getOverallScoreHistory(userId: string): OverallScoreHistoryEntry
     }
     const position = pairIdToPosition.get(userPair.id);
 
-    const is8Player = t.max_players === 8;
+    const fmt = getTournamentFormat(t);
+    const is8Player = fmt === 'round_robin_8';
     const posWinDelta = is8Player ? TOURNAMENT_WIN_DELTA_8 : TOURNAMENT_WIN_DELTA;
-    const lastPos = is8Player ? TOURNAMENT_LAST_POSITION_8 : 8;
+    const lastPos = getLastRankingPosition(t);
     const lastDelta = is8Player ? TOURNAMENT_LAST_DELTA_8 : TOURNAMENT_LAST_DELTA;
 
     let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
@@ -1820,13 +1925,16 @@ export function recalculateCumulativeRankings(): void {
     GROUP BY u.id
   `).all() as { user_id: string; count: number }[];
 
-  // Wooden spoon: posizione 8
+  // Wooden spoon: ultima posizione per formato torneo
   const woodenSpoons = db.prepare(`
     SELECT u.id as user_id, COUNT(*) as count
     FROM users u
     JOIN pairs p ON (p.player1_id = u.id OR p.player2_id = u.id)
     JOIN tournament_rankings tr ON tr.pair_id = p.id
-    WHERE tr.position = 8
+    JOIN tournaments t ON t.id = tr.tournament_id
+    WHERE (t.max_players = 8 AND tr.position = 4)
+       OR (t.max_players = 16 AND IFNULL(t.format, '') != 'saliscendi_12' AND tr.position = 8)
+       OR ((t.format = 'saliscendi_12' OR t.max_players = 12) AND tr.position = 6)
     GROUP BY u.id
   `).all() as { user_id: string; count: number }[];
 

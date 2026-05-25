@@ -40,6 +40,8 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
     "Torneo a 16 giocatori (8 coppie): tabellone a eliminazione diretta con quarti, semifinali e finale. A seconda della categoria (Grande Slam o Master 1000) vengono assegnati i relativi punti ATP. In base al regolamento della tappa si può prevedere anche una consolazione per definire tutte le posizioni fino all'8° posto.",
   text_regolamento_modalita_8:
     "Torneo a 8 giocatori (4 coppie): si disputa in girone all'italiana (round-robin). La categoria è fissa BroccoChallenger 500. Punti ATP per posizione: 1° = 500, 2° = 250, 3° = 175, 4° = 80.",
+  text_regolamento_modalita_12:
+    "Torneo Saliscendi (12 giocatori, 6 coppie): tre campi (Oro, Argento, Bronzo). Round multipli con movimenti sali/scendi; l'admin avanza i round e marca esplicitamente l'ultimo round prima della classifica. Punti ATP Master 1000 sulle prime 6 posizioni (1° = 1000, 2° = 650, 3° = 400, 4° = 200, 5° = 100, 6° = 50). I game inseriti in app sono il risultato finale del match (regola del fischio e punto d'oro gestiti sul campo).",
   text_regolamento_overall_8:
     "Per i tornei a 8 giocatori (4 coppie): partita vinta +1, partita persa -1, 1° posto +3, 4° posto (ultimo) -3.",
   text_regolamento_classifica_medaglie:

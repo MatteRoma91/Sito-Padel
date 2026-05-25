@@ -15,14 +15,18 @@ import { ArrowLeft, Grid3X3, Shuffle } from 'lucide-react';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
 import { GenerateBracketButton } from '@/components/tournaments/GenerateBracketButton';
 import { ExportPdfButtonLazy as ExportPdfButton } from '@/components/tournaments/ExportPdfButtonLazy';
-
-const BracketView = dynamic(() => import('@/components/bracket/BracketView').then((m) => ({ default: m.BracketView })), {
-  loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
-});
 import { ConsolidateResultsButton } from '@/components/tournaments/ConsolidateResultsButton';
 import { ReopenTournamentButton } from '@/components/tournaments/ReopenTournamentButton';
 import { ReopenMvpVotingButton } from '@/components/tournaments/ReopenMvpVotingButton';
 import { isTournamentComplete } from '@/lib/rankings';
+import { isSaliscendiTournament, getExpectedPlayersAndPairs } from '@/lib/types';
+
+const BracketView = dynamic(() => import('@/components/bracket/BracketView').then((m) => ({ default: m.BracketView })), {
+  loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
+});
+const SaliscendiView = dynamic(() => import('@/components/tournaments/SaliscendiView').then((m) => ({ default: m.SaliscendiView })), {
+  loading: () => <div className="card p-6 animate-pulse h-64 rounded-lg" />,
+});
 
 export default async function TournamentBracketPage({
   params,
@@ -46,7 +50,8 @@ export default async function TournamentBracketPage({
   const matches = getMatches(tournament.id);
   const rankings = getTournamentRankings(tournament.id);
 
-  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+  const isSal = isSaliscendiTournament(tournament);
+  const { pairs: expectedPairs } = getExpectedPlayersAndPairs(tournament);
 
   // If no pairs, redirect to pairs page (admin) or tournament page (player)
   if (pairs.length < expectedPairs) {
@@ -112,7 +117,7 @@ export default async function TournamentBracketPage({
         <div className="flex items-center gap-3 mb-2">
           <Grid3X3 className="w-6 h-6 text-accent-500" />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            Tabellone
+            {isSal ? 'Torneo Saliscendi' : 'Tabellone'}
           </h1>
         </div>
         <p className="text-slate-700 dark:text-slate-300">
@@ -120,8 +125,8 @@ export default async function TournamentBracketPage({
         </p>
       </div>
 
-      {/* Generate bracket if no matches yet */}
-      {matches.length === 0 && pairs.length === expectedPairs && isAdmin && userCanEdit && (
+      {/* Generate bracket (solo tabellone / girone classico) */}
+      {!isSal && matches.length === 0 && pairs.length === expectedPairs && isAdmin && userCanEdit && (
         <GenerateBracketButton tournamentId={tournament.id} />
       )}
 
@@ -140,11 +145,10 @@ export default async function TournamentBracketPage({
         <ConsolidateResultsButton tournamentId={tournament.id} />
       )}
 
-      {/* Bracket view */}
-      {matches.length > 0 && (
-        <BracketView
+      {/* Bracket / Saliscendi */}
+      {isSal ? (
+        <SaliscendiView
           tournamentId={tournament.id}
-          maxPlayers={tournament.max_players}
           pairs={pairs}
           matches={matches}
           userMap={userMap}
@@ -152,6 +156,19 @@ export default async function TournamentBracketPage({
           tournamentStatus={tournament.status}
           hiddenUserIds={hiddenUserIds}
         />
+      ) : (
+        matches.length > 0 && (
+          <BracketView
+            tournamentId={tournament.id}
+            maxPlayers={tournament.max_players}
+            pairs={pairs}
+            matches={matches}
+            userMap={userMap}
+            isAdmin={(isAdmin && userCanEdit) ?? false}
+            tournamentStatus={tournament.status}
+            hiddenUserIds={hiddenUserIds}
+          />
+        )
       )}
 
       {/* Rankings */}

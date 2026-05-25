@@ -11,7 +11,9 @@ import {
   deleteTournamentRankings,
   insertPairs
 } from '@/lib/db/queries';
-import { extractPairs, extractPairsFor8Players } from '@/lib/pairs';
+import { extractPairs, extractPairsFor8Players, extractPairsFor12Players } from '@/lib/pairs';
+
+import { getTournamentFormat } from '@/lib/types';
 
 export async function POST(
   request: Request,
@@ -40,7 +42,8 @@ export async function POST(
     const participants = getTournamentParticipants(tournamentId);
     const participatingIds = participants.filter(p => p.participating).map(p => p.user_id);
 
-    const expectedPlayers = tournament.max_players === 8 ? 8 : 16;
+    const fmt = getTournamentFormat(tournament);
+    const expectedPlayers = fmt === 'round_robin_8' ? 8 : fmt === 'saliscendi_12' ? 12 : 16;
 
     if (participatingIds.length !== expectedPlayers) {
       return NextResponse.json({ 
@@ -60,9 +63,11 @@ export async function POST(
     const recentPartners = getRecentPartnerPairs(tournamentId, 5);
 
     const extractedPairs =
-      expectedPlayers === 8
+      fmt === 'round_robin_8'
         ? extractPairsFor8Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners)
-        : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners);
+        : fmt === 'saliscendi_12'
+          ? extractPairsFor12Players(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners)
+          : extractPairs(participatingIds, rankingMap, skillLevelMap, overallScoreMap, recentPartners);
 
     // Delete existing pairs, matches, and rankings
     deleteMatches(tournamentId);

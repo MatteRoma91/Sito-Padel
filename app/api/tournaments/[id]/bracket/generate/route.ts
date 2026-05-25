@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
 import { getTournamentById, getPairs, deleteMatches, insertMatches } from '@/lib/db/queries';
 import { generateBracket, generateRoundRobinFor4Pairs } from '@/lib/bracket';
+import { getTournamentFormat } from '@/lib/types';
 
 export async function POST(
   request: Request,
@@ -24,6 +25,13 @@ export async function POST(
     const tournament = getTournamentById(tournamentId);
     if (!tournament) {
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
+    if (getTournamentFormat(tournament) === 'saliscendi_12') {
+      return NextResponse.json({
+        success: false,
+        error: 'Per il formato Saliscendi usa la schermata dedicata (avvio Round 1 dal tabellone).',
+      }, { status: 400 });
     }
 
     const pairs = getPairs(tournamentId);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock } from 'lucide-react';
 
@@ -8,6 +8,18 @@ interface CountdownBroccoburgherProps {
   tournamentName: string;
   tournamentId: string;
   date: string;
+  /** Ora di inizio torneo (input HTML time, es. "18:30"). Se assente, si usa mezzanotte locale del giorno. */
+  time?: string | null;
+}
+
+function parseTournamentStart(date: string, time: string | null | undefined): Date {
+  const t = time && String(time).trim();
+  if (t) {
+    const tp = String(t).trim();
+    const normalized = tp.length === 5 ? `${tp}:00` : tp;
+    return new Date(`${date}T${normalized}`);
+  }
+  return new Date(`${date}T00:00:00`);
 }
 
 function getTimeLeft(targetDate: Date): { days: number; hours: number; minutes: number; seconds: number; isPast: boolean } {
@@ -26,17 +38,18 @@ function getTimeLeft(targetDate: Date): { days: number; hours: number; minutes: 
   return { days, hours, minutes, seconds, isPast: false };
 }
 
-export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: CountdownBroccoburgherProps) {
-  const targetDate = new Date(date + 'T00:00:00');
+export function CountdownBroccoburgher({ tournamentName, tournamentId, date, time }: CountdownBroccoburgherProps) {
+  const targetDate = useMemo(() => parseTournamentStart(date, time), [date, time]);
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
 
   useEffect(() => {
-    const target = new Date(date + 'T00:00:00');
+    const target = parseTournamentStart(date, time);
+    setTimeLeft(getTimeLeft(target));
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(target));
     }, 1000);
     return () => clearInterval(interval);
-  }, [date]);
+  }, [date, time]);
 
   if (timeLeft.isPast) {
     return (
@@ -59,7 +72,19 @@ export function CountdownBroccoburgher({ tournamentName, tournamentId, date }: C
         <p className="font-semibold text-accent-500 mb-1">{tournamentName}</p>
         <p className="text-sm text-accent-500 flex items-center gap-1 mb-4">
           <Calendar className="w-4 h-4" />
-          {targetDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          {targetDate.toLocaleString(
+            'it-IT',
+            time?.trim()
+              ? {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }
+              : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+          )}
         </p>
         <div className="flex gap-4">
           <div className="flex flex-col items-center min-w-[4rem]">

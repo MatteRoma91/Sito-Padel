@@ -1,5 +1,6 @@
 import type { Match, Pair, TournamentRanking, TournamentCategory } from './types';
 import { getPositionPoints } from './types';
+import { calculateSaliscendiRankings, isSaliscendiTournamentComplete } from './tournaments/saliscendi';
 
 /**
  * Calcola le classifiche di un torneo basandosi sui risultati delle partite.
@@ -10,6 +11,11 @@ export function calculateTournamentRankings(
   matches: Match[],
   category: TournamentCategory = 'master_1000'
 ): TournamentRanking[] {
+  // Saliscendi (6 coppie, ultimo round marcato)
+  if (matches.some((m) => m.round === 'saliscendi')) {
+    return calculateSaliscendiRankings(pairs, matches, category);
+  }
+
   const mainMatches = matches.filter(m => m.bracket_type === 'main');
   const consolationMatches = matches.filter(m => m.bracket_type === 'consolation');
 
@@ -143,8 +149,13 @@ export function calculateTournamentRankings(
 }
 
 /**
- * Verifica se il torneo è completato (tutte le partite hanno un vincitore)
+ * Verifica se il torneo è completato (tutte le partite hanno un vincitore).
+ * Saliscendi: solo il round finale marcato deve essere completo.
  */
 export function isTournamentComplete(matches: Match[]): boolean {
-  return matches.length > 0 && matches.every(m => m.winner_pair_id !== null);
+  if (matches.length === 0) return false;
+  if (matches.some((m) => m.round === 'saliscendi')) {
+    return isSaliscendiTournamentComplete(matches);
+  }
+  return matches.every(m => m.winner_pair_id !== null);
 }

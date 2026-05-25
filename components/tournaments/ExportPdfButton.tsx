@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { jsPDF } from 'jspdf';
 import type { Pair, Match, TournamentRanking, User } from '@/lib/types';
 import { ROUND_LABELS } from '@/lib/bracket';
+import { getSaliscendiMatches } from '@/lib/tournaments/saliscendi';
 
 interface ExportPdfButtonProps {
   tournament: {
@@ -99,54 +100,95 @@ export function ExportPdfButton({
 
       // Matches
       if (matches.length > 0) {
-        const mainMatches = matches.filter(m => m.bracket_type === 'main');
+        const salMatches = matches.filter((m) => m.round === 'saliscendi');
+        if (salMatches.length > 0) {
+          doc.setFontSize(14);
+          doc.text('Torneo Saliscendi', 14, y);
+          y += 8;
+          doc.setFontSize(10);
+          const ordered = getSaliscendiMatches(matches);
+          let lastRn = 0;
+          for (const m of ordered) {
+            const rn = m.round_number ?? 0;
+            if (rn !== lastRn) {
+              lastRn = rn;
+              doc.setFontSize(11);
+              doc.text(
+                `Round ${rn}${(m.is_final_round ?? 0) === 1 ? ' (finale)' : ''}`,
+                14,
+                y
+              );
+              y += 5;
+              doc.setFontSize(10);
+            }
+            const tier = m.court_tier === 'oro' ? 'Oro' : m.court_tier === 'argento' ? 'Argento' : 'Bronzo';
+            const score = m.winner_pair_id ? `${m.score_pair1} - ${m.score_pair2}` : 'vs';
+            doc.text(`  ${tier}: ${getPairName(m.pair1_id)} ${score} ${getPairName(m.pair2_id)}`, 16, y);
+            y += 5;
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+          }
+          y += 5;
+        }
+
+        const mainMatches = matches.filter(m => m.bracket_type === 'main' && m.round !== 'saliscendi');
         const consolationMatches = matches.filter(m => m.bracket_type === 'consolation');
 
-        doc.setFontSize(14);
-        doc.text('Tabellone Principale', 14, y);
-        y += 8;
+        const rounds = ['quarterfinal', 'semifinal', 'final', 'third_place'] as const;
+        const mainHasContent = rounds.some((round) => mainMatches.some((m) => m.round === round));
+        if (mainHasContent) {
+          doc.setFontSize(14);
+          doc.text('Tabellone Principale', 14, y);
+          y += 8;
 
-        doc.setFontSize(10);
-        const rounds = ['quarterfinal', 'semifinal', 'final', 'third_place'];
-        rounds.forEach(round => {
-          const roundMatches = mainMatches.filter(m => m.round === round);
-          if (roundMatches.length > 0) {
-            doc.setFontSize(11);
-            doc.text(ROUND_LABELS[round as keyof typeof ROUND_LABELS], 14, y);
-            y += 5;
-            doc.setFontSize(10);
-            
-            roundMatches.sort((a, b) => a.order_in_round - b.order_in_round).forEach(m => {
-              const score = m.winner_pair_id ? `${m.score_pair1} - ${m.score_pair2}` : 'vs';
-              doc.text(`${getPairName(m.pair1_id)} ${score} ${getPairName(m.pair2_id)}`, 20, y);
+          doc.setFontSize(10);
+          rounds.forEach((round) => {
+            const roundMatches = mainMatches.filter((m) => m.round === round);
+            if (roundMatches.length > 0) {
+              doc.setFontSize(11);
+              doc.text(ROUND_LABELS[round], 14, y);
               y += 5;
-            });
-            y += 2;
-          }
-        });
+              doc.setFontSize(10);
 
-        y += 5;
-        doc.setFontSize(14);
-        doc.text('Tabellone Consolazione', 14, y);
-        y += 8;
+              roundMatches.sort((a, b) => a.order_in_round - b.order_in_round).forEach((m) => {
+                const score = m.winner_pair_id ? `${m.score_pair1} - ${m.score_pair2}` : 'vs';
+                doc.text(`${getPairName(m.pair1_id)} ${score} ${getPairName(m.pair2_id)}`, 20, y);
+                y += 5;
+              });
+              y += 2;
+            }
+          });
+          y += 5;
+        }
 
-        const consolationRounds = ['consolation_semi', 'consolation_final', 'consolation_seventh'];
-        consolationRounds.forEach(round => {
-          const roundMatches = consolationMatches.filter(m => m.round === round);
-          if (roundMatches.length > 0) {
-            doc.setFontSize(11);
-            doc.text(ROUND_LABELS[round as keyof typeof ROUND_LABELS], 14, y);
-            y += 5;
-            doc.setFontSize(10);
-            
-            roundMatches.sort((a, b) => a.order_in_round - b.order_in_round).forEach(m => {
-              const score = m.winner_pair_id ? `${m.score_pair1} - ${m.score_pair2}` : 'vs';
-              doc.text(`${getPairName(m.pair1_id)} ${score} ${getPairName(m.pair2_id)}`, 20, y);
+        const consolationRounds = ['consolation_semi', 'consolation_final', 'consolation_seventh'] as const;
+        const consolationHasContent = consolationRounds.some((round) =>
+          consolationMatches.some((m) => m.round === round)
+        );
+        if (consolationHasContent) {
+          doc.setFontSize(14);
+          doc.text('Tabellone Consolazione', 14, y);
+          y += 8;
+
+          consolationRounds.forEach((round) => {
+            const roundMatches = consolationMatches.filter((m) => m.round === round);
+            if (roundMatches.length > 0) {
+              doc.setFontSize(11);
+              doc.text(ROUND_LABELS[round], 14, y);
               y += 5;
-            });
-            y += 2;
-          }
-        });
+              doc.setFontSize(10);
+
+              roundMatches.sort((a, b) => a.order_in_round - b.order_in_round).forEach((m) => {
+                const score = m.winner_pair_id ? `${m.score_pair1} - ${m.score_pair2}` : 'vs';
+                doc.text(`${getPairName(m.pair1_id)} ${score} ${getPairName(m.pair2_id)}`, 20, y);
+                y += 5;
+              });
+              y += 2;
+            }
+          });
+        }
       }
 
       // Rankings

@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shuffle, Plus, Trash2, AlertTriangle, Pencil, Save, Undo2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import type { User, Pair } from '@/lib/types';
+import type { User, Pair, TournamentFormat } from '@/lib/types';
+import { getExpectedPlayersAndPairs } from '@/lib/types';
 import { Avatar } from '@/components/ui/Avatar';
 
 interface PairsManagerProps {
   tournamentId: string;
   maxPlayers: number;
+  /** Per formato Saliscendi (12 giocatori) passare `saliscendi_12` o lasciare null e usare maxPlayers 12. */
+  tournamentFormat?: TournamentFormat | null;
   pairs: Pair[];
   participatingUserIds: string[];
   userMap: Map<string, User>;
@@ -20,6 +23,7 @@ interface PairsManagerProps {
 export function PairsManager({
   tournamentId,
   maxPlayers,
+  tournamentFormat = null,
   pairs,
   participatingUserIds,
   userMap,
@@ -48,8 +52,10 @@ export function PairsManager({
   // Available players for manual pair creation
   const availablePlayers = participatingUserIds.filter(id => !playersInPairs.has(id));
 
-  const expectedPlayers = maxPlayers === 8 ? 8 : 16;
-  const expectedPairs = maxPlayers === 8 ? 4 : 8;
+  const { players: expectedPlayers, pairs: expectedPairs } = getExpectedPlayersAndPairs({
+    max_players: maxPlayers,
+    format: tournamentFormat ?? undefined,
+  });
 
   // Check if we have enough players for extraction
   const canExtract = participatingUserIds.length === expectedPlayers;

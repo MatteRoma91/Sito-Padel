@@ -12,6 +12,7 @@ export default function RegolamentoPage() {
   const classificaMedaglie = config.text_regolamento_classifica_medaglie || '';
   const modalita16 = config.text_regolamento_modalita_16 || '';
   const modalita8 = config.text_regolamento_modalita_8 || '';
+  const modalita12 = config.text_regolamento_modalita_12 || '';
   const overallIntro = config.text_regolamento_overall_intro || '';
   const overallDelta = config.text_regolamento_overall_delta || '';
   const overall8 = config.text_regolamento_overall_8 || '';
@@ -39,7 +40,7 @@ export default function RegolamentoPage() {
       </h1>
 
       {/* Modalità di torneo */}
-      {(modalita16 || modalita8) && (
+      {(modalita16 || modalita8 || modalita12) && (
         <section className="card">
           <div className="p-4 border-b border-primary-100 dark:border-primary-300/50 flex items-center gap-2">
             <Users className="w-6 h-6 text-accent-500" />
@@ -54,6 +55,14 @@ export default function RegolamentoPage() {
                   Torneo a 16 giocatori (8 coppie)
                 </h3>
                 <p className="text-sm">{modalita16}</p>
+              </div>
+            )}
+            {modalita12 && (
+              <div>
+                <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-1">
+                  Torneo Saliscendi (12 giocatori, 6 coppie)
+                </h3>
+                <p className="text-sm">{modalita12}</p>
               </div>
             )}
             {modalita8 && (

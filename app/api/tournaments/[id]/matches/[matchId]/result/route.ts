@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
-import { getMatchById, getMatches, updateMatchResult, updateMatchPairs } from '@/lib/db/queries';
+import { getMatchById, getMatches, updateMatchResult, updateMatchPairs, countSaliscendiMatchesAfterRound, deleteSaliscendiMatchesAfterRound } from '@/lib/db/queries';
 import { propagateResults } from '@/lib/bracket';
 import { parseOrThrow, matchScoreSchema, ValidationError } from '@/lib/validations';
 
@@ -23,11 +23,30 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { score_pair1, score_pair2 } = parseOrThrow(matchScoreSchema, body);
+    const { score_pair1, score_pair2, force_result_override } = parseOrThrow(matchScoreSchema, body);
 
     const match = getMatchById(matchId);
     if (!match || match.tournament_id !== tournamentId) {
       return NextResponse.json({ success: false, error: 'Match non trovato' }, { status: 404 });
+    }
+
+    if (match.round === 'saliscendi') {
+      const rn = match.round_number ?? 0;
+      const later = countSaliscendiMatchesAfterRound(tournamentId, rn);
+      if (later > 0 && !force_result_override) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'Esistono round successivi con match già creati. Per modificare questo risultato conferma il forzamento (cancellerà i round successivi).',
+            need_force_override: true,
+          },
+          { status: 409 }
+        );
+      }
+      if (later > 0 && force_result_override) {
+        deleteSaliscendiMatchesAfterRound(tournamentId, rn);
+      }
     }
 
     if (!match.pair1_id || !match.pair2_id) {
@@ -58,18 +77,16 @@ export async function POST(
       // Socket.io not initialized (e.g. next dev without custom server)
     }
 
-    // Propagate results to next matches
-    const allMatches = getMatches(tournamentId);
-    // Update the current match in our local array
-    const updatedMatches = allMatches.map(m => 
-      m.id === matchId 
-        ? { ...m, score_pair1, score_pair2, winner_pair_id: winnerId }
-        : m
-    );
+    if (match.round !== 'saliscendi') {
+      const allMatches = getMatches(tournamentId);
+      const updatedMatches = allMatches.map(m =>
+        m.id === matchId ? { ...m, score_pair1, score_pair2, winner_pair_id: winnerId } : m
+      );
 
-    const updates = propagateResults(updatedMatches);
-    for (const update of updates) {
-      updateMatchPairs(update.matchId, update.pair1_id, update.pair2_id);
+      const updates = propagateResults(updatedMatches);
+      for (const update of updates) {
+        updateMatchPairs(update.matchId, update.pair1_id, update.pair2_id);
+      }
     }
 
     return NextResponse.json({ success: true });

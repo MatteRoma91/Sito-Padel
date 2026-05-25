@@ -260,6 +260,7 @@ export const ROUND_LABELS: Record<MatchRound, string> = {
   consolation_final: '5° e 6° posto',
   consolation_seventh: '7° e 8° posto',
   round_robin: 'Girone',
+  saliscendi: 'Saliscendi',
 };
 
 /**

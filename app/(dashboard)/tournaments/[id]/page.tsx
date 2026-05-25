@@ -12,7 +12,7 @@ import {
   getSiteConfig
 } from '@/lib/db/queries';
 import { canSeeHiddenUsers } from '@/lib/visibility';
-import { TOURNAMENT_CATEGORY_LABELS } from '@/lib/types';
+import { TOURNAMENT_CATEGORY_LABELS, getExpectedPlayersAndPairs, isSaliscendiTournament } from '@/lib/types';
 import { buildMetadata } from '@/lib/seo';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
@@ -80,8 +80,8 @@ export default async function TournamentDetailPage({
   // Participating users
   const participatingUserIds = participants.filter(p => p.participating).map(p => p.user_id);
 
-  const expectedPlayers = tournament.max_players === 8 ? 8 : 16;
-  const expectedPairs = tournament.max_players === 8 ? 4 : 8;
+  const { players: expectedPlayers, pairs: expectedPairs } = getExpectedPlayersAndPairs(tournament);
+  const isSal = isSaliscendiTournament(tournament);
 
   const statusLabels: Record<string, { label: string; color: string }> = {
     draft: { label: 'Bozza', color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300' },
@@ -235,14 +235,14 @@ export default async function TournamentDetailPage({
                 Coppie pronte!
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
-                Le {expectedPairs} coppie sono state formate. {isAdmin ? 'Procedi al tabellone.' : 'In attesa della generazione del tabellone.'}
+                Le {expectedPairs} coppie sono state formate. {isAdmin ? (isSal ? 'Procedi al Saliscendi.' : 'Procedi al tabellone.') : 'In attesa della generazione del tabellone.'}
               </p>
             </div>
             <Link
               href={`/tournaments/${tournament.id}/bracket`}
               className="btn btn-primary flex items-center gap-2"
             >
-              {isAdmin ? 'Vai al Tabellone' : 'Visualizza Coppie'}
+              {isAdmin ? (isSal ? 'Vai al Saliscendi' : 'Vai al Tabellone') : 'Visualizza'}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -256,7 +256,7 @@ export default async function TournamentDetailPage({
             <div>
               <p className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Grid3X3 className="w-5 h-5 text-accent-500" />
-                Tabellone in corso
+                Tabellone {isSal ? 'Saliscendi' : ''} in corso
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
                 {matches.filter(m => m.winner_pair_id).length} di {matches.length} partite completate
@@ -276,7 +276,7 @@ export default async function TournamentDetailPage({
                 href={`/tournaments/${tournament.id}/bracket`}
                 className="btn btn-primary flex items-center gap-2"
               >
-                Visualizza Tabellone
+                {isSal ? 'Apri Saliscendi' : 'Visualizza Tabellone'}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

@@ -35,7 +35,7 @@ export function CreateTournamentForm() {
 
     const formData = new FormData(e.currentTarget);
     const numericMaxPlayers = Number(formData.get('max_players') || 16);
-    const payloadMaxPlayers = numericMaxPlayers === 8 ? 8 : 16;
+    const payloadMaxPlayers = numericMaxPlayers === 8 ? 8 : numericMaxPlayers === 12 ? 12 : 16;
     const payloadCategory =
       payloadMaxPlayers === 8
         ? 'brocco_500'
@@ -49,6 +49,9 @@ export function CreateTournamentForm() {
       category: payloadCategory,
       maxPlayers: payloadMaxPlayers,
     };
+    if (payloadMaxPlayers === 12) {
+      payload.format = 'saliscendi_12';
+    }
     if (reserveCourts && selectedCourtIds.length > 0) {
       payload.slot_start = slotStart;
       payload.slot_end = slotEnd;
@@ -105,6 +108,10 @@ export function CreateTournamentForm() {
           <div className="input bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-not-allowed">
             BroccoChallenger 500 (fissata)
           </div>
+        ) : maxPlayers === 12 ? (
+          <div className="input bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-not-allowed">
+            Master 1000 (fissata per Saliscendi)
+          </div>
         ) : (
           <select name="category" className="input" defaultValue="master_1000">
             <option value="master_1000">Master 1000</option>
@@ -122,10 +129,14 @@ export function CreateTournamentForm() {
           className="input"
           defaultValue="16"
           required
-          onChange={(e) => setMaxPlayers(Number(e.target.value) === 8 ? 8 : 16)}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setMaxPlayers(v === 8 ? 8 : v === 12 ? 12 : 16);
+          }}
         >
           <option value="16">16 (8 coppie, tabellone)</option>
-          <option value="8">8 (4 coppie, girone all&apos;italiana)</option>
+          <option value="12">12 (6 coppie, Saliscendi)</option>
+          <option value="8">8 (4 coppie, girone)</option>
         </select>
       </div>
 
