@@ -44,6 +44,8 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
     "Torneo Saliscendi (12 giocatori, 6 coppie): tre campi (Oro, Argento, Bronzo). Round multipli con movimenti sali/scendi; l'admin avanza i round e marca esplicitamente l'ultimo round prima della classifica. Punti ATP Master 1000 sulle prime 6 posizioni (1° = 1000, 2° = 650, 3° = 400, 4° = 200, 5° = 100, 6° = 50). I game inseriti in app sono il risultato finale del match (regola del fischio e punto d'oro gestiti sul campo).",
   text_regolamento_overall_8:
     "Per i tornei a 8 giocatori (4 coppie): partita vinta +1, partita persa -1, 1° posto +3, 4° posto (ultimo) -3.",
+  text_regolamento_overall_12:
+    "Torneo Saliscendi (12 giocatori, 6 coppie): stessi delta del tabellone a 16 per partita (+1/-1) e classifica (+2/-2), con ultimo posto al 6°.",
   text_regolamento_classifica_medaglie:
     'I punti si sommano nel tempo: la classifica generale è cumulativa e riflette tutti i tornei disputati. Medaglie: Oro (1°), Argento (2°), Bronzo (3°), Cucchiarella (8°), MVP (votato dai partecipanti).',
   text_regolamento_mvp_title: 'Votazione MVP',

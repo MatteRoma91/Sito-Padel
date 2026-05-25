@@ -1,6 +1,28 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getCurrentUser, canEdit } from '@/lib/auth';
-import { getTournamentById, getTournamentParticipants, setParticipating, removeParticipant } from '@/lib/db/queries';
+import {
+  getTournamentById,
+  getTournamentParticipants,
+  setParticipating,
+  removeParticipant,
+  getPairs,
+  getMatches,
+} from '@/lib/db/queries';
+import { parseOrThrow, ValidationError } from '@/lib/validations';
+
+const postBodySchema = z.object({
+  userId: z.string().uuid(),
+  participating: z.boolean(),
+});
+
+function countParticipating(tournamentId: string): number {
+  return getTournamentParticipants(tournamentId).filter((p) => p.participating).length;
+}
+
+function rosterLocked(tournamentId: string): boolean {
+  return getPairs(tournamentId).length > 0 || getMatches(tournamentId).length > 0;
+}
 
 export async function GET(
   request: Request,
@@ -28,36 +50,61 @@ export async function POST(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
-    return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
-  }
 
   try {
-    const data = await request.json();
-    const { userId, participating } = data;
+    const raw = await request.json();
+    const { userId, participating } = parseOrThrow(postBodySchema, raw);
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'userId richiesto' }, { status: 400 });
+    const tournament = getTournamentById(id);
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
+    if (rosterLocked(id)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
+        },
+        { status: 409 }
+      );
+    }
+
+    const isAdmin = user.role === 'admin';
+    const isSelf = userId === user.id;
+
+    if (!isAdmin) {
+      if (!isSelf) {
+        return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
+      }
+      if (tournament.status !== 'open') {
+        return NextResponse.json(
+          { success: false, error: 'Iscrizione consentita solo con iscrizioni aperte.' },
+          { status: 403 }
+        );
+      }
     }
 
     if (participating) {
-      const tournament = getTournamentById(id);
-      if (tournament) {
-        const participants = getTournamentParticipants(id);
-        const currentCount = participants.filter(p => p.participating).length;
-        const maxPlayers = tournament.max_players ?? 16;
-        if (currentCount >= maxPlayers) {
-          return NextResponse.json({
+      const currentCount = countParticipating(id);
+      const maxPlayers = tournament.max_players ?? 16;
+      if (currentCount >= maxPlayers) {
+        return NextResponse.json(
+          {
             success: false,
             error: `Numero massimo di partecipanti raggiunto (${maxPlayers}).`,
-          }, { status: 400 });
-        }
+          },
+          { status: 400 }
+        );
       }
     }
 
     setParticipating(id, userId, participating);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     console.error('Set participant error:', error);
     return NextResponse.json({ success: false, error: 'Errore del server' }, { status: 500 });
   }
@@ -75,9 +122,6 @@ export async function DELETE(
   if (!canEdit(user)) {
     return NextResponse.json({ success: false, error: 'Utente in sola lettura' }, { status: 403 });
   }
-  if (user.role !== 'admin') {
-    return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
-  }
 
   try {
     const { searchParams } = new URL(request.url);
@@ -85,6 +129,36 @@ export async function DELETE(
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId richiesto' }, { status: 400 });
+    }
+
+    const tournament = getTournamentById(id);
+    if (!tournament) {
+      return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
+    if (rosterLocked(id)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Impossibile modificare i partecipanti: sono già presenti coppie o partite.',
+        },
+        { status: 409 }
+      );
+    }
+
+    const isAdmin = user.role === 'admin';
+    const isSelf = userId === user.id;
+
+    if (!isAdmin) {
+      if (!isSelf) {
+        return NextResponse.json({ success: false, error: 'Non autorizzato' }, { status: 403 });
+      }
+      if (tournament.status !== 'open') {
+        return NextResponse.json(
+          { success: false, error: 'Disiscrizione consentita solo con iscrizioni aperte.' },
+          { status: 403 }
+        );
+      }
     }
 
     removeParticipant(id, userId);

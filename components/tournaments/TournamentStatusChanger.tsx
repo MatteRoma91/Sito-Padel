@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
+import { fetchJson } from '@/lib/fetch-json';
 
 interface TournamentStatusChangerProps {
   tournamentId: string;
@@ -17,6 +19,7 @@ const statuses = [
 
 export function TournamentStatusChanger({ tournamentId, currentStatus }: TournamentStatusChangerProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
 
   async function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -25,14 +28,24 @@ export function TournamentStatusChanger({ tournamentId, currentStatus }: Tournam
 
     setLoading(true);
     try {
-      await fetch(`/api/tournaments/${tournamentId}`, {
+      const res = await fetchJson(`/api/tournaments/${tournamentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        e.target.value = currentStatus;
+        return;
+      }
+      const data = res.data as { success?: boolean; error?: string };
+      if (data && 'success' in data && data.success === false) {
+        showToast(data.error || 'Errore', 'error');
+        e.target.value = currentStatus;
+        return;
+      }
+      showToast('Stato aggiornato', 'success');
       router.refresh();
-    } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import { ROUND_LABELS } from '@/lib/bracket';
 import { Play, Check, Trophy, RefreshCw, Users, X } from 'lucide-react';
 import { useLiveMatchScores } from '@/hooks/useLiveMatchScores';
 import { useToast } from '@/components/ui/Toast';
+import { fetchJson } from '@/lib/fetch-json';
 
 interface BracketViewProps {
   tournamentId: string;
@@ -61,10 +62,13 @@ export function BracketView({
   async function generateBracket() {
     setLoading(true);
     try {
-      await fetch(`/api/tournaments/${tournamentId}/bracket/generate`, { method: 'POST' });
+      const res = await fetchJson(`/api/tournaments/${tournamentId}/bracket/generate`, { method: 'POST' });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      showToast('Tabellone generato', 'success');
       router.refresh();
-    } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -81,16 +85,24 @@ export function BracketView({
 
     setLoading(true);
     try {
-      await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+      const res = await fetchJson(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ score_pair1: s1, score_pair2: s2 }),
       });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const data = res.data as { success?: boolean; error?: string };
+      if (data && 'success' in data && data.success === false) {
+        showToast(data.error || 'Errore', 'error');
+        return;
+      }
+      showToast('Risultato salvato', 'success');
       setActiveMatch(null);
       setScores({ pair1: '', pair2: '' });
       router.refresh();
-    } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -157,30 +169,36 @@ export function BracketView({
     try {
       // STEP 1: Clear all quarterfinal pairs first to avoid conflicts
       for (const match of qfMatches) {
-        await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}/pairs`, {
+        const res = await fetchJson(`/api/tournaments/${tournamentId}/matches/${match.id}/pairs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pair1_id: null, pair2_id: null }),
         });
+        if (!res.ok) {
+          showToast(res.error, 'error');
+          setLoading(false);
+          return;
+        }
       }
-      
+
       // STEP 2: Now save the new assignments
       for (const match of qfMatches) {
         const sel = quarterfinalSelections[match.id];
-        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}/pairs`, {
+        const res = await fetchJson(`/api/tournaments/${tournamentId}/matches/${match.id}/pairs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pair1_id: sel.pair1, pair2_id: sel.pair2 }),
         });
-        const data = await res.json();
-        if (!data.success) {
-          showToast(data.error || 'Errore durante l\'assegnazione', 'error');
+        const data = res.ok ? (res.data as { success?: boolean; error?: string }) : null;
+        if (!res.ok || (data && data.success === false)) {
+          showToast(res.ok ? data?.error || 'Errore durante l\'assegnazione' : res.error, 'error');
           setLoading(false);
           return;
         }
       }
       setEditingQuarterfinals(false);
       setQuarterfinalSelections({});
+      showToast('Quarti aggiornati', 'success');
       router.refresh();
     } catch (error) {
       console.error(error);

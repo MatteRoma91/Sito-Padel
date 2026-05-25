@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, UserPlus } from 'lucide-react';
 import type { User, TournamentParticipant } from '@/lib/types';
+import { useToast } from '@/components/ui/Toast';
+import { fetchJson } from '@/lib/fetch-json';
 
 interface ParticipantsManagerProps {
   tournamentId: string;
@@ -13,14 +15,15 @@ interface ParticipantsManagerProps {
   maxPlayers?: number;
 }
 
-export function ParticipantsManager({ 
-  tournamentId, 
-  participants, 
-  allUsers, 
+export function ParticipantsManager({
+  tournamentId,
+  participants,
+  allUsers,
   userMap,
   maxPlayers = 16,
 }: ParticipantsManagerProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
@@ -30,14 +33,22 @@ export function ParticipantsManager({
   async function toggleParticipation(userId: string, isParticipating: boolean) {
     setLoading(userId);
     try {
-      await fetch(`/api/tournaments/${tournamentId}/participants`, {
+      const res = await fetchJson(`/api/tournaments/${tournamentId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, participating: !isParticipating }),
       });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const data = res.data as { success?: boolean; error?: string };
+      if (data && data.success === false) {
+        showToast(data.error || 'Errore', 'error');
+        return;
+      }
+      showToast(!isParticipating ? 'Partecipante aggiunto' : 'Partecipante rimosso', 'success');
       router.refresh();
-    } catch (error) {
-      console.error(error);
     } finally {
       setLoading(null);
     }
@@ -46,15 +57,23 @@ export function ParticipantsManager({
   async function addParticipant(userId: string) {
     setLoading(userId);
     try {
-      await fetch(`/api/tournaments/${tournamentId}/participants`, {
+      const res = await fetchJson(`/api/tournaments/${tournamentId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, participating: true }),
       });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const data = res.data as { success?: boolean; error?: string };
+      if (data && data.success === false) {
+        showToast(data.error || 'Errore', 'error');
+        return;
+      }
+      showToast('Giocatore aggiunto', 'success');
       router.refresh();
       setShowAdd(false);
-    } catch (error) {
-      console.error(error);
     } finally {
       setLoading(null);
     }
@@ -78,7 +97,6 @@ export function ParticipantsManager({
         </button>
       </div>
 
-      {/* Add participant dropdown */}
       {showAdd && (
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-primary-100/70 dark:bg-surface-dark/30">
           <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Seleziona un giocatore da aggiungere:</p>
@@ -100,7 +118,6 @@ export function ParticipantsManager({
         </div>
       )}
 
-      {/* Participants list */}
       <div className="divide-y divide-slate-200 dark:divide-slate-700">
         {participatingUsers.length === 0 ? (
           <p className="p-4 text-slate-700 dark:text-slate-300 text-sm">
@@ -130,7 +147,6 @@ export function ParticipantsManager({
         )}
       </div>
 
-      {/* Progress */}
       {participatingUsers.length > 0 && (
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between text-sm mb-2">
@@ -140,7 +156,7 @@ export function ParticipantsManager({
             </span>
           </div>
           <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full transition-all ${participatingUsers.length >= maxPlayers ? 'bg-green-500' : 'bg-accent-500'}`}
               style={{ width: `${Math.min(100, (participatingUsers.length / maxPlayers) * 100)}%` }}
             />

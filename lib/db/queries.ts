@@ -282,16 +282,22 @@ export function rebuildOverallFromCompletedTournaments(): number {
   return n;
 }
 
-/** Riapre un torneo completato: annulla overall, rimuove classifica torneo. */
+/** Riapre un torneo completato: annulla overall, rimuove classifica torneo, pulizia MVP/Saliscendi, ATP aggiornata. */
 export function reopenTournament(tournamentId: string): void {
   ensureDb();
   revertTournamentResultFromOverall(tournamentId);
   deleteTournamentRankings(tournamentId);
+  const tournament = getTournamentById(tournamentId);
+  if (tournament && getTournamentFormat(tournament) === 'saliscendi_12') {
+    clearSaliscendiFinalFlags(tournamentId);
+  }
+  deleteMvpDataForTournament(tournamentId);
   updateTournament(tournamentId, {
     status: 'in_progress',
     completed_at: null,
     mvp_deadline: null,
   });
+  recalculateCumulativeRankings();
 }
 
 
@@ -575,6 +581,59 @@ export function createBooking(data: {
       kind
     );
   return id;
+}
+
+export class SlotOccupiedError extends Error {
+  constructor() {
+    super('SLOT_OCCUPIED');
+    this.name = 'SlotOccupiedError';
+  }
+}
+
+/**
+ * Inserisce una prenotazione con lock SQLite IMMEDIATE per ridurre race doppia prenotazione.
+ */
+export function createBookingWithImmediateLock(data: {
+  court_id: string;
+  date: string;
+  slot_start: string;
+  slot_end: string;
+  booking_name: string;
+  tournament_id?: string | null;
+  booked_by_user_id?: string | null;
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  created_by?: string | null;
+  booking_kind?: 'standard' | 'lesson';
+}): string {
+  ensureDb();
+  const db = getDb();
+  const parseTime = (t: string): number => {
+    const [h, m] = t.split(':').map(Number);
+    return (h ?? 0) * 60 + (m ?? 0);
+  };
+  const timeInRange = (start: number, end: number, slotStart: number, slotEnd: number): boolean =>
+    start < slotEnd && end > slotStart;
+
+  const txn = db.transaction(() => {
+    const startMin = parseTime(data.slot_start);
+    const endMin = parseTime(data.slot_end);
+    const existing = getBookingsByDate(data.date).filter((b) => b.court_id === data.court_id);
+    for (const b of existing) {
+      const bStart = parseTime(b.slot_start);
+      const bEnd = parseTime(b.slot_end);
+      if (timeInRange(startMin, endMin, bStart, bEnd)) {
+        throw new SlotOccupiedError();
+      }
+    }
+    return createBooking(data);
+  }, { behavior: 'immediate' });
+  try {
+    return txn();
+  } catch (e) {
+    if (e instanceof SlotOccupiedError) throw e;
+    throw e;
+  }
 }
 
 export function updateBooking(
@@ -942,6 +1001,7 @@ export function deleteTournament(id: string): void {
   ensureDb();
   revertTournamentResultFromOverall(id);
   getDb().prepare('DELETE FROM tournaments WHERE id = ?').run(id);
+  recalculateCumulativeRankings();
 }
 
 // ============ PARTICIPANTS ============
@@ -1737,6 +1797,24 @@ export function getTournamentRankings(tournamentId: string): TournamentRanking[]
 export function deleteTournamentRankings(tournamentId: string): void {
   ensureDb();
   getDb().prepare('DELETE FROM tournament_rankings WHERE tournament_id = ?').run(tournamentId);
+}
+
+/** Reset flag ultimo round sui match Saliscendi (solo formato saliscendi). */
+export function clearSaliscendiFinalFlags(tournamentId: string): void {
+  ensureDb();
+  getDb()
+    .prepare(
+      `UPDATE matches SET is_final_round = 0 WHERE tournament_id = ? AND round = 'saliscendi'`
+    )
+    .run(tournamentId);
+}
+
+/** Rimuove MVP e voti per un torneo (es. riapertura). */
+export function deleteMvpDataForTournament(tournamentId: string): void {
+  ensureDb();
+  const db = getDb();
+  db.prepare('DELETE FROM mvp_votes WHERE tournament_id = ?').run(tournamentId);
+  db.prepare('DELETE FROM tournament_mvp WHERE tournament_id = ?').run(tournamentId);
 }
 
 export function insertTournamentRanking(data: TournamentRanking): void {

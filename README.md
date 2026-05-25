@@ -30,7 +30,8 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 | **[docs/SECURITY-REPORT.md](docs/SECURITY-REPORT.md)** | Sicurezza: indici DB, rate limit, validazione Zod, sessioni, firewall, password hashing |
 | **[docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md)** | Confronto prima/dopo (performance, sicurezza, vulnerabilità npm) |
 | **[docs/LIGHTHOUSE.md](docs/LIGHTHOUSE.md)** | Come eseguire Lighthouse e aggiornare i report in `docs/reports/` |
-| **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Piano notifiche push Web Push (futuro) |
+| **[docs/TORNEI-E-CLASSIFICHE.md](docs/TORNEI-E-CLASSIFICHE.md)** | Formati 16/8/12, consolidamento, ATP cumulativa, overall, reopen, push |
+| **[NOTIFICHE-CONTESTO.md](NOTIFICHE-CONTESTO.md)** | Notifiche Web Push: stato implementazione, env, cron |
 | **[docs/archive/](docs/archive/)** | Documenti storici e materiali non operativi correnti |
 
 ---
@@ -39,9 +40,9 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 
 - **Autenticazione**: Login con username/password; ruoli **Admin**, **Maestro** (lezioni/carnet), **Giocatore** e **Guest** (sola lettura per demo/acquirenti)
 - **Giocatori**: Gestione profili giocatori
-- **Tornei**: Creazione e gestione tornei
+- **Tornei**: Tabellone a 16, girone a 8 (Brocco 500), formato **Saliscendi** a 12 giocatori; estrazione coppie; consolidamento classifica; MVP; overall e classifica ATP cumulativa (vedi [docs/TORNEI-E-CLASSIFICHE.md](docs/TORNEI-E-CLASSIFICHE.md))
 - **Estrazione Coppie**: Algoritmo forte+debole per bilanciare le coppie
-- **Tabellone**: Quarti, semifinali, finale + tabellone consolazione
+- **Tabellone**: Quarti, semifinali, finale + tabellone consolazione (formato 16); Saliscendi con round e campi Oro/Argento/Bronzo (formato 12)
 - **Live Score**: Aggiornamento in tempo reale dei punteggi match tramite WebSocket
 - **Classifiche**: Classifica torneo e classifica cumulativa
 - **Calendario**: Vista calendario tornei
@@ -50,6 +51,7 @@ Sito privato per la gestione di tornei di padel con chat, live score, galleria e
 - **Galleria**: Caricamento e visualizzazione di immagini e video (tutti possono caricare, solo admin può eliminare); limite totale 20 GB; gestione e spazio in Impostazioni
 - **Centro sportivo**: Gestione campi e prenotazioni in stile Playtomic: griglia giorno/campi/slot (30 min), prenotazioni 60 o 90 min con **nome prenotazione** e celle unificate; pagina partita con assegnazione di 4 partecipanti (utenti del sito); admin configura da Impostazioni orari apertura/chiusura, durate consentite (60/90 min) e **slot di chiusura** (fasce non prenotabili); gestione campi (aggiungi/modifica/elimina). Visibile ad admin, guest (sola lettura) e giocatori (prenotano per sé; admin può prenotare anche per ospiti). **Lezioni** (carnet, richieste, timetable): menu **Lezioni** per admin, maestro e giocatori **con carnet** (`/lezioni`; i giocatori vedono solo i propri carnet); in **Prenota un campo** nessun blocco lezioni per i giocatori, solo scorciatoia staff verso `/lezioni`.
 - **PWA / Offline**: Sito installabile come app su smartphone/tablet; caching intelligente (stale-while-revalidate per ranking e tornei, cache-first per asset statici); notifica quando è disponibile una nuova versione
+- **Notifiche push** (opzionale): Web Push con VAPID; promemoria torneo via cron (`/api/cron/tournament-reminders`); opt-in da **Impostazioni → Notifiche**
 - **Health Check**: Endpoint `/api/health` per monitoraggio esterno (verifica DB e risposta JSON)
 
 ## Tecnologie

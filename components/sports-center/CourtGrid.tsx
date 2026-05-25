@@ -46,9 +46,9 @@ export function CourtGrid({ courts, bookings = [], canBook, onSlotClick }: Court
   const sortedStarts = Array.from(allStarts).sort();
 
   return (
-    <div className="card overflow-x-auto max-w-full">
-      <div className="min-w-[600px]">
-        <table className="w-full text-sm">
+    <div className="card overflow-x-auto max-w-full touch-pan-x">
+      <div className="min-w-[480px] sm:min-w-[600px]">
+        <table className="w-full text-xs sm:text-sm">
           <thead>
             <tr className="border-b border-primary-200 dark:border-primary-700">
               <th className="text-left p-2 font-semibold text-slate-700 dark:text-slate-300 w-20">Ora</th>

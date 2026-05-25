@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
 import {
   getBookingsByDate,
-  createBooking,
+  createBookingWithImmediateLock,
   getCourtsOrdered,
   getBookingById,
   getAllClosedSlots,
   getSiteConfig,
+  SlotOccupiedError,
 } from '@/lib/db/queries';
 
 function parseTime(t: string): number {
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
       finalBookedBy = user.id;
     }
 
-    const id = createBooking({
+    const id = createBookingWithImmediateLock({
       court_id,
       date,
       slot_start,
@@ -177,6 +178,12 @@ export async function POST(request: Request) {
     const booking = getBookingById(id);
     return NextResponse.json({ success: true, id, booking });
   } catch (err) {
+    if (err instanceof SlotOccupiedError) {
+      return NextResponse.json({
+        success: false,
+        error: 'Lo slot è già occupato (concorrenza). Riprova o scegli un altro orario.',
+      }, { status: 409 });
+    }
     console.error('Create booking error:', err);
     return NextResponse.json({ success: false, error: 'Errore del server' }, { status: 500 });
   }

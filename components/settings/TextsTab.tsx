@@ -6,31 +6,92 @@ import { Card } from '@/components/ui/Card';
 
 const SECTIONS: { title: string; keys: readonly string[] }[] = [
   { title: 'Generale', keys: ['text_tour_name', 'text_welcome_subtitle'] as const },
-  { title: 'Regolamento – Classifica', keys: ['text_regolamento_title', 'text_regolamento_classifica_intro', 'text_regolamento_classifica_punti', 'text_regolamento_classifica_medaglie'] as const },
-  { title: 'Regolamento – Overall', keys: ['text_regolamento_overall_intro', 'text_regolamento_overall_delta', 'text_regolamento_overall_livelli', 'text_regolamento_overall_baseline'] as const },
-  { title: 'Regolamento – Compleanno', keys: ['text_regolamento_compleanno_title', 'text_regolamento_compleanno_1', 'text_regolamento_compleanno_2'] as const },
+  {
+    title: 'Regolamento – Modalità torneo',
+    keys: [
+      'text_regolamento_modalita_16',
+      'text_regolamento_modalita_8',
+      'text_regolamento_modalita_12',
+    ] as const,
+  },
+  {
+    title: 'Regolamento – Classifica ATP',
+    keys: [
+      'text_regolamento_title',
+      'text_regolamento_classifica_intro',
+      'text_regolamento_classifica_punti',
+      'text_regolamento_classifica_punti_gs',
+      'text_regolamento_classifica_punti_m1000',
+      'text_regolamento_classifica_punti_brocco',
+      'text_regolamento_classifica_medaglie',
+    ] as const,
+  },
+  {
+    title: 'Regolamento – Overall',
+    keys: [
+      'text_regolamento_overall_intro',
+      'text_regolamento_overall_delta',
+      'text_regolamento_overall_8',
+      'text_regolamento_overall_12',
+      'text_regolamento_overall_livelli',
+      'text_regolamento_overall_baseline',
+    ] as const,
+  },
+  {
+    title: 'Regolamento – MVP',
+    keys: ['text_regolamento_mvp_title', 'text_regolamento_mvp'] as const,
+  },
+  {
+    title: 'Regolamento – Compleanno',
+    keys: ['text_regolamento_compleanno_title', 'text_regolamento_compleanno_1', 'text_regolamento_compleanno_2'] as const,
+  },
 ];
 
 const LABELS: Record<string, string> = {
   text_tour_name: 'Nome tour',
   text_welcome_subtitle: 'Sottotitolo benvenuto (home)',
   text_regolamento_title: 'Titolo regolamento',
+  text_regolamento_modalita_16: 'Modalità — tabellone 16',
+  text_regolamento_modalita_8: 'Modalità — girone 8',
+  text_regolamento_modalita_12: 'Modalità — Saliscendi 12',
   text_regolamento_classifica_intro: 'Classifica intro',
-  text_regolamento_classifica_punti: 'Classifica punti',
-  text_regolamento_classifica_medaglie: 'Classifica medaglie',
+  text_regolamento_classifica_punti: 'Classifica punti (legacy, opzionale)',
+  text_regolamento_classifica_punti_gs: 'Punti Grande Slam',
+  text_regolamento_classifica_punti_m1000: 'Punti Master 1000',
+  text_regolamento_classifica_punti_brocco: 'Punti Brocco 500',
+  text_regolamento_classifica_medaglie: 'Classifica medaglie / cumulativo',
   text_regolamento_overall_intro: 'Overall intro',
-  text_regolamento_overall_delta: 'Overall delta',
+  text_regolamento_overall_delta: 'Overall delta (16 / tabellone)',
+  text_regolamento_overall_8: 'Overall torneo a 8',
+  text_regolamento_overall_12: 'Overall Saliscendi 12',
   text_regolamento_overall_livelli: 'Overall livelli',
   text_regolamento_overall_baseline: 'Overall baseline',
+  text_regolamento_mvp_title: 'MVP titolo sezione',
+  text_regolamento_mvp: 'MVP testo',
   text_regolamento_compleanno_title: 'Compleanno titolo',
   text_regolamento_compleanno_1: 'Compleanno paragrafo 1',
   text_regolamento_compleanno_2: 'Compleanno paragrafo 2',
 };
 
 const USE_TEXTAREA = new Set([
-  'text_welcome_subtitle', 'text_regolamento_classifica_intro', 'text_regolamento_classifica_punti',
-  'text_regolamento_classifica_medaglie', 'text_regolamento_overall_intro', 'text_regolamento_overall_delta',
-  'text_regolamento_overall_livelli', 'text_regolamento_overall_baseline', 'text_regolamento_compleanno_1',
+  'text_welcome_subtitle',
+  'text_regolamento_modalita_16',
+  'text_regolamento_modalita_8',
+  'text_regolamento_modalita_12',
+  'text_regolamento_classifica_intro',
+  'text_regolamento_classifica_punti',
+  'text_regolamento_classifica_punti_gs',
+  'text_regolamento_classifica_punti_m1000',
+  'text_regolamento_classifica_punti_brocco',
+  'text_regolamento_classifica_medaglie',
+  'text_regolamento_overall_intro',
+  'text_regolamento_overall_delta',
+  'text_regolamento_overall_8',
+  'text_regolamento_overall_12',
+  'text_regolamento_overall_livelli',
+  'text_regolamento_overall_baseline',
+  'text_regolamento_mvp',
+  'text_regolamento_compleanno_1',
   'text_regolamento_compleanno_2',
 ]);
 
@@ -41,7 +102,11 @@ interface TextsTabProps {
 export function TextsTab({ config }: TextsTabProps) {
   const router = useRouter();
   const initialValues = useMemo(
-    () => SECTIONS.flatMap((s) => [...s.keys]).reduce((acc, k) => ({ ...acc, [k]: config[k] || '' }), {} as Record<string, string>),
+    () =>
+      SECTIONS.flatMap((s) => [...s.keys]).reduce(
+        (acc, k) => ({ ...acc, [k]: config[k] ?? '' }),
+        {} as Record<string, string>
+      ),
     [config]
   );
   const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }));
@@ -103,7 +168,7 @@ export function TextsTab({ config }: TextsTabProps) {
             {section.keys.map((key) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {LABELS[key]}
+                  {LABELS[key] ?? key}
                 </label>
                 {USE_TEXTAREA.has(key) ? (
                   <textarea

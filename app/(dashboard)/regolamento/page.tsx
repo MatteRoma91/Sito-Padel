@@ -16,6 +16,7 @@ export default function RegolamentoPage() {
   const overallIntro = config.text_regolamento_overall_intro || '';
   const overallDelta = config.text_regolamento_overall_delta || '';
   const overall8 = config.text_regolamento_overall_8 || '';
+  const overall12 = config.text_regolamento_overall_12 || '';
   const overallLivelli = config.text_regolamento_overall_livelli || '';
   const overallBaseline = config.text_regolamento_overall_baseline || '';
   const compleannoTitle = config.text_regolamento_compleanno_title || 'La regola del compleanno';
@@ -140,11 +141,12 @@ export default function RegolamentoPage() {
         </div>
         <div className="p-4 space-y-4 text-slate-700 dark:text-slate-300">
           {overallIntro && <p>{overallIntro}</p>}
-          {(overallDelta || overall8) && (
+          {(overallDelta || overall8 || overall12) && (
             <div>
               <h3 className="font-medium text-slate-800 dark:text-slate-100 mb-2">Come si modifica</h3>
               {overallDelta && <p className="text-sm">{overallDelta}</p>}
               {overall8 && <p className="text-sm mt-2">{overall8}</p>}
+              {overall12 && <p className="text-sm mt-2">{overall12}</p>}
             </div>
           )}
           {overallLivelli && (

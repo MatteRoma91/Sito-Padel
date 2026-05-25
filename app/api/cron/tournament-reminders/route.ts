@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
 
     const participants = getTournamentParticipants(t.id);
     for (const p of participants) {
+      if (!p.participating) continue;
       const uid = p.user_id;
       if (!recordNotificationSent(kind, t.id, uid)) continue;
 

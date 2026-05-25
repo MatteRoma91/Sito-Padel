@@ -195,6 +195,42 @@ export function SaliscendiView({
     }
   }
 
+  async function submitWalkover(matchId: string, winningSide: 'pair1' | 'pair2', forceOverride = false) {
+    const s1 = winningSide === 'pair1' ? 6 : 0;
+    const s2 = winningSide === 'pair2' ? 6 : 0;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score_pair1: s1,
+          score_pair2: s2,
+          ...(forceOverride ? { force_result_override: true } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 409 && data.need_force_override && !forceOverride) {
+        setForceDialog({ matchId, s1, s2 });
+        setLoading(false);
+        return;
+      }
+      if (!data.success) {
+        showToast(data.error || 'Errore', 'error');
+        return;
+      }
+      setActiveMatch(null);
+      setScores({ pair1: '', pair2: '' });
+      setForceDialog(null);
+      showToast('Ritiro registrato (walkover 6–0)', 'success');
+      router.refresh();
+    } catch {
+      showToast('Errore di connessione', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function submitResult(matchId: string, forceOverride = false) {
     const s1 = parseInt(scores.pair1, 10);
     const s2 = parseInt(scores.pair2, 10);
@@ -343,7 +379,7 @@ export function SaliscendiView({
                       </span>
                     )}
                   </h3>
-                  {isAdmin && tournamentStatus !== 'completed' && !roundMatches.some((m) => m.winner_pair_id) && (
+                  {isAdmin && tournamentStatus !== 'completed' && !isFinal && (
                     <button
                       type="button"
                       className="btn btn-secondary text-sm"
@@ -412,7 +448,7 @@ export function SaliscendiView({
                                 onChange={(e) => setScores((s) => ({ ...s, pair2: e.target.value }))}
                               />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <button
                                 type="button"
                                 className="btn btn-primary text-xs"
@@ -420,6 +456,22 @@ export function SaliscendiView({
                                 onClick={() => void submitResult(m.id)}
                               >
                                 Salva
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary text-xs"
+                                disabled={loading}
+                                onClick={() => void submitWalkover(m.id, 'pair1')}
+                              >
+                                WO: vince coppia 1 (6–0)
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary text-xs"
+                                disabled={loading}
+                                onClick={() => void submitWalkover(m.id, 'pair2')}
+                              >
+                                WO: vince coppia 2 (0–6)
                               </button>
                               <button
                                 type="button"

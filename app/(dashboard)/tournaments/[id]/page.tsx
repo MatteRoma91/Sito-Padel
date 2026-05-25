@@ -16,6 +16,7 @@ import { TOURNAMENT_CATEGORY_LABELS, getExpectedPlayersAndPairs, isSaliscendiTou
 import { buildMetadata } from '@/lib/seo';
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users, Shuffle, Trophy, ArrowRight, Grid3X3 } from 'lucide-react';
 import { ParticipantsManager } from '@/components/tournaments/ParticipantsManager';
+import { TournamentSelfEnroll } from '@/components/tournaments/TournamentSelfEnroll';
 import { TournamentStatusChanger } from '@/components/tournaments/TournamentStatusChanger';
 import { TournamentRankingView } from '@/components/tournaments/TournamentRankingView';
 import { ExportPdfButtonLazy as ExportPdfButton } from '@/components/tournaments/ExportPdfButtonLazy';
@@ -189,6 +190,21 @@ export default async function TournamentDetailPage({
           <p className="text-sm text-slate-700 dark:text-slate-300">Partite</p>
         </div>
       </div>
+
+      {/* Self-enroll: giocatori con iscrizioni aperte, prima di coppie/tabellone */}
+      {userCanEdit &&
+        currentUser?.role === 'player' &&
+        tournament.status === 'open' &&
+        pairs.length === 0 &&
+        matches.length === 0 && (
+          <TournamentSelfEnroll
+            tournamentId={tournament.id}
+            maxPlayers={tournament.max_players ?? 16}
+            participatingCount={participatingUserIds.length}
+            currentUserId={currentUser.id}
+            isEnrolled={participants.some((p) => p.user_id === currentUser.id && p.participating)}
+          />
+        )}
 
       {/* Participants (admin only, when not completed) */}
       {isAdmin && userCanEdit && tournament.status !== 'completed' && (

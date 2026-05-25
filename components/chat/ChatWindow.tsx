@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, ArrowLeft, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
+import { fetchJson } from '@/lib/fetch-json';
 
 const CHAT_UNREAD_UPDATE = 'chat:unread-update';
 
@@ -23,6 +25,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDeleted }: ChatWindowProps) {
+  const { showToast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -55,6 +58,7 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
         if (!cancelled) {
           setTitle('Chat');
           setLoading(false);
+          showToast('Impossibile caricare la conversazione', 'error');
         }
       });
 
@@ -77,6 +81,7 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
         if (!cancelled) {
           setMessages([]);
           setMessagesError('Impossibile caricare i messaggi');
+          showToast('Impossibile caricare i messaggi', 'error');
         }
       });
 
@@ -140,13 +145,18 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
     setShowDeleteConfirm(false);
     if (!conversationId || !onConversationDeleted) return;
     try {
-      const res = await fetch(`/api/chat/conversations/${conversationId}`, { method: 'DELETE' });
-      const data = await res.json();
+      const res = await fetchJson(`/api/chat/conversations/${conversationId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const data = res.data as { success?: boolean };
       if (data.success) {
         onConversationDeleted(conversationId);
+        showToast('Conversazione eliminata', 'success');
       }
     } catch {
-      // ignore
+      showToast('Errore di connessione', 'error');
     }
   };
 
@@ -156,15 +166,21 @@ export function ChatWindow({ conversationId, onClose, isAdmin, onConversationDel
 
     setSending(true);
     try {
-      const res = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+      const res = await fetchJson(`/api/chat/conversations/${conversationId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body }),
       });
-      const data = await res.json();
+      if (!res.ok) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const data = res.data as { success?: boolean; message?: Message };
       if (data.success && data.message) {
-        setMessages(prev => [...prev, data.message]);
+        setMessages(prev => [...prev, data.message!]);
         setInput('');
+      } else if (data && data.success === false) {
+        showToast('Messaggio non inviato', 'error');
       }
     } finally {
       setSending(false);

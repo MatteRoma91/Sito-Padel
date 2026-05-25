@@ -11,6 +11,7 @@ import {
   getDecidedMatchCountByPair
 } from '@/lib/db/queries';
 import { validatePairUpdates, type PairUpdateInput } from '@/lib/tournaments/pair-updates';
+import { getPairEditBlockReason, afterPairsOrExtractMutation } from '@/lib/tournaments/tournament-side-effects';
 
 export async function POST(
   request: Request,
@@ -33,6 +34,11 @@ export async function POST(
   const tournament = getTournamentById(tournamentId);
   if (!tournament) {
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+  }
+
+  const block = getPairEditBlockReason(tournamentId);
+  if (block) {
+    return NextResponse.json({ success: false, error: block }, { status: 409 });
   }
 
   try {
@@ -89,6 +95,8 @@ export async function POST(
     // Insert the new pair
     const pairId = insertSinglePair(tournamentId, player1_id, player2_id);
 
+    afterPairsOrExtractMutation();
+
     return NextResponse.json({ success: true, pairId });
   } catch (error) {
     console.error('Add pair error:', error);
@@ -116,6 +124,11 @@ export async function PATCH(
   const tournament = getTournamentById(tournamentId);
   if (!tournament) {
     return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+  }
+
+  const block = getPairEditBlockReason(tournamentId);
+  if (block) {
+    return NextResponse.json({ success: false, error: block }, { status: 409 });
   }
 
   try {

@@ -57,7 +57,9 @@ export async function sendPushToTournamentParticipants(tournamentId: string, pay
   if (!isPushConfigured()) return;
   const db = getDb();
   const rows = db
-    .prepare('SELECT DISTINCT user_id FROM tournament_participants WHERE tournament_id = ?')
+    .prepare(
+      'SELECT DISTINCT user_id FROM tournament_participants WHERE tournament_id = ? AND participating = 1'
+    )
     .all(tournamentId) as { user_id: string }[];
   for (const r of rows) {
     await sendPushToUser(r.user_id, payload);

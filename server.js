@@ -24,7 +24,7 @@ const SESSION_PASSWORD = (() => {
   return secret || 'complex_password_at_least_32_characters_long_for_iron_session';
 })();
 const SESSION_COOKIE = 'padel-session';
-const SESSION_TTL = 60 * 60 * 2; // 2 ore
+const SESSION_TTL = 60 * 60 * 24 * 30; // 30 giorni — allineare a SESSION_MAX_AGE_SECONDS in lib/auth.ts (iron-session)
 
 function parseCookie(cookieHeader) {
   if (!cookieHeader) return {};

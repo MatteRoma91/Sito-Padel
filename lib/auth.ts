@@ -13,7 +13,8 @@ export interface SessionData {
   sessionCreatedAt?: number;
 }
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 giorni
+/** Durata massima sessione (deve coincidere con TTL iron-session in server.js per Socket.io). */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 giorni
 
 function getSessionPassword(): string {
   const secret = process.env.SESSION_SECRET;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { getCurrentUser } from '@/lib/auth';
 
 const GALLERY_DIR = path.join(process.cwd(), 'public', 'gallery');
 
@@ -20,6 +21,11 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path: pathSegments } = await params;
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
+  }
+
   const filename = pathSegments?.join('/');
   if (!filename || filename.includes('..')) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });

@@ -9,11 +9,13 @@ import {
   deletePairs,
   deleteMatches,
   deleteTournamentRankings,
-  insertPairs
+  insertPairs,
+  revertTournamentResultFromOverall,
 } from '@/lib/db/queries';
 import { extractPairs, extractPairsFor8Players, extractPairsFor12Players } from '@/lib/pairs';
 
 import { getTournamentFormat } from '@/lib/types';
+import { afterPairsOrExtractMutation } from '@/lib/tournaments/tournament-side-effects';
 
 export async function POST(
   request: Request,
@@ -36,6 +38,17 @@ export async function POST(
     const tournament = getTournamentById(tournamentId);
     if (!tournament) {
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
+    }
+
+    if (tournament.status === 'completed') {
+      return NextResponse.json(
+        { success: false, error: 'Torneo completato: riaprilo prima di ri-estrarre le coppie.' },
+        { status: 409 }
+      );
+    }
+
+    if (tournament.overall_applied_at) {
+      revertTournamentResultFromOverall(tournamentId);
     }
 
     // Get participating users
@@ -76,6 +89,8 @@ export async function POST(
 
     // Insert new pairs
     insertPairs(tournamentId, extractedPairs);
+
+    afterPairsOrExtractMutation();
 
     return NextResponse.json({ success: true, pairs: extractedPairs });
   } catch (error) {

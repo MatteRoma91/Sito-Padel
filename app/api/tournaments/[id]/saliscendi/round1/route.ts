@@ -7,6 +7,7 @@ import {
   getMatches,
   deleteSaliscendiMatches,
   insertMatches,
+  updateTournament,
 } from '@/lib/db/queries';
 import { getTournamentFormat } from '@/lib/types';
 import type { SaliscendiCourtTier } from '@/lib/types';
@@ -108,6 +109,10 @@ export async function POST(
         is_final_round: isFinal,
       }))
     );
+
+    if (tournament.status === 'open' || tournament.status === 'draft') {
+      updateTournament(tournamentId, { status: 'in_progress' });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

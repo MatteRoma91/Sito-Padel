@@ -466,6 +466,9 @@ export function approveLessonRequest(params: {
 
   const db = getDb();
   const tx = db.transaction(() => {
+    const slotRecheck = assertSlotFreeForLesson(params.courtId, params.date, params.slotStart, params.slotEnd);
+    if (!slotRecheck.ok) throw new Error(slotRecheck.error);
+
     const bookingId = createBooking({
       court_id: params.courtId,
       date: params.date,
@@ -500,7 +503,7 @@ export function approveLessonRequest(params: {
     ).run(bookingId, params.reviewedByUserId, params.requestId);
 
     return { bookingId, consumptionId };
-  });
+  }, { behavior: 'immediate' });
 
   const result = tx();
   logLesson('approve_request', { requestId: params.requestId, bookingId: result.bookingId, entitlementId: ent.id });
@@ -541,6 +544,9 @@ export function createDirectLessonSession(params: {
 
   const db = getDb();
   const result = db.transaction(() => {
+    const slotRecheck = assertSlotFreeForLesson(params.courtId, params.date, params.slotStart, params.slotEnd);
+    if (!slotRecheck.ok) throw new Error(slotRecheck.error);
+
     const bookingId = createBooking({
       court_id: params.courtId,
       date: params.date,
@@ -570,7 +576,7 @@ export function createDirectLessonSession(params: {
     });
     incrementLessonsUsed(ent.id);
     return { bookingId, consumptionId };
-  })();
+  }, { behavior: 'immediate' })();
 
   logLesson('direct_lesson', { entitlementId: ent.id, bookingId: result.bookingId });
   return result;

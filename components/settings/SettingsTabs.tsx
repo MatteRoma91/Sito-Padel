@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield, BarChart3, LayoutGrid } from 'lucide-react';
+import { FileText, Users, Activity, Server, RefreshCw, Wrench, Images, Shield, BarChart3, LayoutGrid, Bell } from 'lucide-react';
 import { StatisticheTab } from './StatisticheTab';
 import { TextsTab } from './TextsTab';
 import { UsersTab } from './UsersTab';
@@ -12,10 +12,10 @@ import { RicalcolaTab } from './RicalcolaTab';
 import { StrumentiTab } from './StrumentiTab';
 import { GalleriaTab } from './GalleriaTab';
 import { LogsTab } from './LogsTab';
-import { CentroSportivoTab } from './CentroSportivoTab';
+import { NotificheTab } from './NotificheTab';
 import type { ServerStats } from '@/lib/server-stats';
 
-export type SettingsTabId = 'testi' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche' | 'centrosportivo';
+export type SettingsTabId = 'testi' | 'notifiche' | 'utenti' | 'accessi' | 'server' | 'ricalcola' | 'strumenti' | 'galleria' | 'logs' | 'statistiche' | 'centrosportivo';
 
 interface UserWithLoginCount {
   id: string;
@@ -41,6 +41,7 @@ const SETTINGS_GROUPS: { id: string; label: string; items: { id: SettingsTabId; 
     label: 'Contenuto',
     items: [
       { id: 'testi', label: 'Testi', description: 'Nome tour, regolamento e testi del sito.', icon: FileText },
+      { id: 'notifiche', label: 'Notifiche', description: 'Push Web su questo dispositivo.', icon: Bell },
       { id: 'galleria', label: 'Galleria', description: 'Immagini e media della galleria.', icon: Images },
     ],
   },
@@ -178,6 +179,7 @@ export function SettingsTabs({
         )}
         <div>
           {activeTab === 'testi' && <TextsTab config={config} />}
+          {activeTab === 'notifiche' && <NotificheTab />}
           {activeTab === 'utenti' && <UsersTab users={users} />}
           {activeTab === 'accessi' && <AccessiTab usersWithLoginCounts={usersWithLoginCounts} />}
           {activeTab === 'server' && <ServerTab stats={serverStats} />}
