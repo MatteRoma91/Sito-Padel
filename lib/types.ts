@@ -134,6 +134,8 @@ export interface Tournament {
   created_at: string;
   completed_at?: string | null;
   mvp_deadline?: string | null;
+  /** ISO timestamp: overall già applicato per questo torneo (idempotenza consolidate). */
+  overall_applied_at?: string | null;
 }
 
 /** Formato effettivo del torneo (retrocompatibile). */

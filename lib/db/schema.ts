@@ -773,4 +773,22 @@ export function initSchema() {
   } catch {
     // Migration failed or already applied
   }
+
+  // Overall idempotente: flag per torneo già consolidato su overall_score
+  try {
+    db.exec(`ALTER TABLE tournaments ADD COLUMN overall_applied_at TEXT`);
+  } catch {
+    // Column already exists
+  }
+  try {
+    db.prepare(`
+      UPDATE tournaments
+      SET overall_applied_at = COALESCE(completed_at, datetime('now'))
+      WHERE status = 'completed'
+        AND overall_applied_at IS NULL
+        AND EXISTS (SELECT 1 FROM tournament_rankings tr WHERE tr.tournament_id = tournaments.id)
+    `).run();
+  } catch {
+    // Backfill failed or not applicable
+  }
 }

@@ -120,11 +120,12 @@ export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null):
   getDb().prepare('UPDATE users SET skill_level = ? WHERE id = ?').run(skillLevel, id);
 }
 
-/** Applica i risultati del torneo al punteggio overall. 16 giocatori: partita +1/-1, 1° +2, 8° -2. 8 giocatori: partita +1/-1, 1° +3, 4° (ultimo) -3. */
-export function applyTournamentResultToOverall(tournamentId: string): void {
+/** Calcola i delta overall per utente in base a classifica + match del torneo. */
+export function computeTournamentOverallDeltas(tournamentId: string): Map<string, number> {
   ensureDb();
   const tournament = getTournamentById(tournamentId);
-  if (!tournament) return;
+  const deltas = new Map<string, number>();
+  if (!tournament) return deltas;
   const fmt = getTournamentFormat(tournament);
   const is8Player = fmt === 'round_robin_8';
 
@@ -179,14 +180,120 @@ export function applyTournamentResultToOverall(tournamentId: string): void {
       let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
       if (position === 1) delta += posWinDelta;
       if (position === lastPos) delta += lastDelta;
-
-      const user = getUserById(userId);
-      const current = user?.overall_score != null ? user.overall_score : 50;
-      const newScore = Math.max(0, Math.min(100, current + delta));
-      updateUser(userId, { overall_score: newScore });
+      deltas.set(userId, delta);
     }
   }
+  return deltas;
 }
+
+function applyOverallDeltas(deltas: Map<string, number>, multiplier: 1 | -1): void {
+  for (const [userId, delta] of deltas) {
+    if (delta === 0) continue;
+    const user = getUserById(userId);
+    const current = user?.overall_score != null ? user.overall_score : 50;
+    const newScore = Math.max(0, Math.min(100, current + delta * multiplier));
+    updateUser(userId, { overall_score: newScore });
+  }
+}
+
+export function isTournamentOverallApplied(tournamentId: string): boolean {
+  ensureDb();
+  const t = getTournamentById(tournamentId);
+  return Boolean(t?.overall_applied_at);
+}
+
+/** Applica i risultati del torneo al punteggio overall. Idempotente se già consolidato. */
+export function applyTournamentResultToOverall(
+  tournamentId: string,
+  options?: { force?: boolean }
+): void {
+  ensureDb();
+  const tournament = getTournamentById(tournamentId);
+  if (!tournament) return;
+
+  if (tournament.overall_applied_at && !options?.force) {
+    return;
+  }
+  if (tournament.overall_applied_at && options?.force) {
+    revertTournamentResultFromOverall(tournamentId);
+  }
+
+  const deltas = computeTournamentOverallDeltas(tournamentId);
+  applyOverallDeltas(deltas, 1);
+  setTournamentOverallAppliedAt(tournamentId, new Date().toISOString());
+}
+
+/** Annulla l'effetto overall di un torneo già consolidato. */
+export function revertTournamentResultFromOverall(tournamentId: string): void {
+  ensureDb();
+  const tournament = getTournamentById(tournamentId);
+  if (!tournament?.overall_applied_at) return;
+
+  const deltas = computeTournamentOverallDeltas(tournamentId);
+  applyOverallDeltas(deltas, -1);
+  clearTournamentOverallAppliedAt(tournamentId);
+}
+
+export function setTournamentOverallAppliedAt(tournamentId: string, at: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE tournaments SET overall_applied_at = ? WHERE id = ?').run(at, tournamentId);
+}
+
+export function clearTournamentOverallAppliedAt(tournamentId: string): void {
+  ensureDb();
+  getDb().prepare('UPDATE tournaments SET overall_applied_at = NULL WHERE id = ?').run(tournamentId);
+}
+
+/** Baseline overall: seed se in lista, altrimenti 50. */
+export function getBaselineOverallScoreForUser(userId: string): number {
+  return getSeedOverallScoreForUser(userId) ?? 50;
+}
+
+/** Reset overall di tutti i giocatori al baseline (seed o 50). */
+export function resetAllPlayerOverallToBaseline(): void {
+  ensureDb();
+  for (const u of getUsers()) {
+    if (u.role !== 'player') continue;
+    updateUser(u.id, { overall_score: getBaselineOverallScoreForUser(u.id) });
+  }
+}
+
+export function clearAllTournamentOverallAppliedFlags(): void {
+  ensureDb();
+  getDb().prepare('UPDATE tournaments SET overall_applied_at = NULL').run();
+}
+
+/** Ricostruisce overall da tornei completati (solo admin / ricalcola tutto). */
+export function rebuildOverallFromCompletedTournaments(): number {
+  ensureDb();
+  resetAllPlayerOverallToBaseline();
+  clearAllTournamentOverallAppliedFlags();
+  const completed = getTournaments()
+    .filter(t => t.status === 'completed')
+    .sort((a, b) => a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at));
+  let n = 0;
+  for (const t of completed) {
+    const pairs = getPairs(t.id);
+    const rankings = getTournamentRankings(t.id);
+    if (pairs.length === 0 || rankings.length === 0) continue;
+    applyTournamentResultToOverall(t.id);
+    n++;
+  }
+  return n;
+}
+
+/** Riapre un torneo completato: annulla overall, rimuove classifica torneo. */
+export function reopenTournament(tournamentId: string): void {
+  ensureDb();
+  revertTournamentResultFromOverall(tournamentId);
+  deleteTournamentRankings(tournamentId);
+  updateTournament(tournamentId, {
+    status: 'in_progress',
+    completed_at: null,
+    mvp_deadline: null,
+  });
+}
+
 
 const OVERALL_SCORE_SEED: { name: string; score: number }[] = [
   { name: 'Faber', score: 90 }, { name: 'David', score: 90 }, { name: 'Cora', score: 86 }, { name: 'Gerva', score: 83 },
@@ -772,7 +879,7 @@ export function createTournamentWithCourtBookings(data: {
   return tournamentId;
 }
 
-export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'format' | 'completed_at' | 'mvp_deadline'>>): void {
+export function updateTournament(id: string, data: Partial<Pick<Tournament, 'name' | 'date' | 'time' | 'venue' | 'status' | 'category' | 'max_players' | 'format' | 'completed_at' | 'mvp_deadline' | 'overall_applied_at'>>): void {
   ensureDb();
   const existing = getTournamentById(id);
 
@@ -786,6 +893,7 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
   if (data.status !== undefined) { fields.push('status = ?'); values.push(data.status); }
   if (data.completed_at !== undefined) { fields.push('completed_at = ?'); values.push(data.completed_at); }
   if (data.mvp_deadline !== undefined) { fields.push('mvp_deadline = ?'); values.push(data.mvp_deadline); }
+  if (data.overall_applied_at !== undefined) { fields.push('overall_applied_at = ?'); values.push(data.overall_applied_at); }
 
   // Calcola il nuovo max_players (se fornito) o quello esistente
   const effectiveMaxPlayers = data.max_players !== undefined
@@ -831,6 +939,7 @@ export function updateTournament(id: string, data: Partial<Pick<Tournament, 'nam
 
 export function deleteTournament(id: string): void {
   ensureDb();
+  revertTournamentResultFromOverall(id);
   getDb().prepare('DELETE FROM tournaments WHERE id = ?').run(id);
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, canEdit } from '@/lib/auth';
-import { getTournamentById, updateTournament, deleteTournament } from '@/lib/db/queries';
+import { getTournamentById, updateTournament, deleteTournament, reopenTournament } from '@/lib/db/queries';
 import { sendPushToAllPlayers } from '@/lib/notifications/push';
 import { updateTournamentSchema, parseOrThrow, ValidationError } from '@/lib/validations';
 import type { TournamentStatus, TournamentCategory } from '@/lib/types';
@@ -62,7 +62,9 @@ export async function PATCH(
     if (status !== undefined) updates.status = status as TournamentStatus;
     if (category !== undefined) updates.category = category === 'grand_slam' ? 'grand_slam' : 'master_1000';
 
-    if (Object.keys(updates).length > 0) {
+    if (status === 'in_progress' && prev?.status === 'completed') {
+      reopenTournament(id);
+    } else if (Object.keys(updates).length > 0) {
       updateTournament(id, updates);
       if (
         status === 'open' &&

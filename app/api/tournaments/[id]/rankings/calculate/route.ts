@@ -37,6 +37,13 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Torneo non trovato' }, { status: 404 });
     }
 
+    if (tournament.overall_applied_at) {
+      return NextResponse.json({
+        success: false,
+        error: 'Classifica già consolidata per questo torneo. Riapri il torneo per ricalcolare.',
+      }, { status: 409 });
+    }
+
     const pairs = getPairs(tournamentId);
     const matches = getMatches(tournamentId);
 

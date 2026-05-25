@@ -8,7 +8,8 @@ import {
   insertTournamentRanking,
   recalculateCumulativeRankings,
   applyTournamentResultToOverall,
-  seedOverallScores,
+  resetAllPlayerOverallToBaseline,
+  clearAllTournamentOverallAppliedFlags,
 } from '@/lib/db/queries';
 import { calculateTournamentRankings, isTournamentComplete } from '@/lib/rankings';
 import type { TournamentCategory } from '@/lib/types';
@@ -37,8 +38,9 @@ export async function POST() {
       .sort((a, b) => a.date.localeCompare(b.date));
     let recalculated = 0;
 
-    // Seed PRIMA: stabilisce baseline 1 gen 2025 (es. David 90), poi tornei aggiungono delta → DB = seed + tornei
-    seedOverallScores();
+    // Reset completo baseline + replay tornei (evita doppio conteggio su non-seed)
+    resetAllPlayerOverallToBaseline();
+    clearAllTournamentOverallAppliedFlags();
 
     for (const tournament of completed) {
       const pairs = getPairs(tournament.id);
