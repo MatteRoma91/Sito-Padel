@@ -27,7 +27,7 @@ Utente → DuckDNS → Nginx (:443/:80) ─┬→ bananapadeltour   → padel-to
 | Ubuntu | 24.04 LTS | kernel 6.8.0-101 |
 | Node.js | 22.22.0 LTS | via nvm, EOL aprile 2027 |
 | npm | 10.9.4 | |
-| Next.js | 16.2.3 | Sito-Padel, Roma-Buche, Gestione-Veicoli, Gestione-Casa |
+| Next.js | 16.2.3 | Sito-Padel, Roma-Buche, Gestione-Veicoli, MattGame |
 | React | 19 | entrambe le app |
 | PM2 | 6.0.14 | con modulo pm2-logrotate |
 | Nginx | 1.24.0 | reverse proxy + gzip + SSL |
@@ -98,10 +98,35 @@ npm install -g pm2
 pm2 update
 
 # Rebuild e restart delle app
-cd /home/ubuntu/Sito-Padel && npm rebuild && npm run build && pm2 restart padel-tour
-cd /home/ubuntu/Roma-Buche && npm rebuild && npm run build && pm2 restart roma-buche
+cd /home/ubuntu/Sito-Padel && npm rebuild better-sqlite3 bcrypt sharp && pm2 restart padel-tour
+cd /home/ubuntu/Roma-Buche && npm rebuild better-sqlite3 bcrypt sharp && npm run build && pm2 restart roma-buche
+cd /home/ubuntu/Gestione-Veicoli && npm rebuild better-sqlite3 bcrypt sharp && pm2 restart gestione-veicoli
+cd /home/ubuntu/MattGame && npm rebuild better-sqlite3 bcrypt sharp && pm2 restart mattgame mattgame-ogar
 pm2 save
 ```
+
+### Dopo upgrade Node.js (checklist obbligatoria)
+
+Dopo ogni aggiornamento di Node (nvm) o pulizia del server che tocca `node_modules`:
+
+1. Verificare versione: `node -v` (atteso: v22.22.0)
+2. Ricompilare moduli nativi su **tutte** le app:
+   ```bash
+   /home/ubuntu/scripts/check-native-modules.sh   # diagnostica
+   # se fallisce, rebuild manuale per app:
+   cd /home/ubuntu/Sito-Padel && npm rebuild better-sqlite3 bcrypt sharp
+   cd /home/ubuntu/Roma-Buche && npm rebuild better-sqlite3 bcrypt sharp
+   cd /home/ubuntu/Roma-Buche/.next/standalone && npm rebuild better-sqlite3 bcrypt
+   cd /home/ubuntu/Gestione-Veicoli && npm rebuild better-sqlite3 bcrypt sharp
+   cd /home/ubuntu/MattGame && npm rebuild better-sqlite3 bcrypt sharp
+   cd /home/ubuntu/SmartShellTerminal/website/backend && npm rebuild better-sqlite3 bcrypt
+   cd /home/ubuntu/control-room && npm rebuild sharp
+   ```
+3. Riavviare PM2: `pm2 restart all && pm2 save`
+4. Controllare log: `grep ERR_DLOPEN ~/.pm2/logs/*-error.log` (nessun risultato = OK)
+5. Smoke test: `/home/ubuntu/scripts/health-check.sh`
+
+Sintomo tipico se si salta il rebuild: pagina nera con solo «Riprova» e nei log `Module did not self-register` / `ERR_DLOPEN_FAILED`.
 
 ---
 

@@ -66,7 +66,7 @@ app.prepare().then(() => {
   runChatMigration();
 
   try {
-    const { ensureDb } = require('./lib/db/queries');
+    const { ensureDb } = require('./lib/db/ensure-db');
     ensureDb();
     console.log('> DB pre-warmed');
   } catch (e) {
