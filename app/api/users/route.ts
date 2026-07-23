@@ -10,16 +10,17 @@ export async function GET() {
   }
 
   const users = getUsers();
-  
-  // Hide skill_level from non-admin users
-  const safeUsers = currentUser.role === 'admin' 
-    ? users 
-    : users.map(u => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { skill_level, ...rest } = u;
-        return rest;
-      });
-  
+
+  // Never expose password_hash; hide skill_level from non-admins
+  const safeUsers = users.map((u) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password_hash, skill_level, ...rest } = u;
+    if (currentUser.role === 'admin') {
+      return { ...rest, skill_level };
+    }
+    return rest;
+  });
+
   return NextResponse.json({ users: safeUsers });
 }
 
@@ -44,10 +45,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Username già in uso' }, { status: 400 });
     }
 
-    // Default password is "Padel123", user must change it on first login
+    // Password generata random se non fornita; l'utente deve cambiarla al primo login
     const id = createUser({
       username,
-      // password is optional, will use default "Padel123"
+      password: data.password,
       full_name: full_name || undefined,
       nickname: nickname || undefined,
       role: role || 'player',

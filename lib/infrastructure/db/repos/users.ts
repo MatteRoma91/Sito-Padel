@@ -39,12 +39,13 @@ export function getUsersByIds(ids: string[]): User[] {
   return getDb().prepare(`SELECT * FROM users WHERE id IN (${placeholders})`).all(...ids) as User[];
 }
 
-const DEFAULT_PASSWORD = 'Padel123';
-
 export function createUser(data: { username: string; password?: string; full_name?: string; nickname?: string; role?: string; mustChangePassword?: boolean }): string {
   ensureDb();
   const id = randomUUID();
-  const password = data.password || DEFAULT_PASSWORD;
+  const password =
+    (data.password && data.password.trim().length > 0
+      ? data.password.trim()
+      : randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '').slice(0, 8));
   const passwordHash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
   // New users must change password unless explicitly set to false (e.g., admin creating themselves)
   const mustChange = data.mustChangePassword !== undefined ? (data.mustChangePassword ? 1 : 0) : 1;
@@ -97,13 +98,15 @@ export function setMustChangePassword(id: string, mustChange: boolean): void {
   getDb().prepare('UPDATE users SET must_change_password = ? WHERE id = ?').run(mustChange ? 1 : 0, id);
 }
 
-const RESET_PASSWORD = 'abc123';
-
-export function resetUserPassword(userId: string, newPassword?: string): void {
+export function resetUserPassword(userId: string, newPassword?: string): string {
   ensureDb();
-  const pwd = (newPassword?.trim() || '').length > 0 ? newPassword!.trim() : RESET_PASSWORD;
+  const pwd =
+    (newPassword?.trim() || '').length > 0
+      ? newPassword!.trim()
+      : randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '').slice(0, 8);
   const passwordHash = bcrypt.hashSync(pwd, BCRYPT_ROUNDS);
   getDb().prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(passwordHash, userId);
+  return pwd;
 }
 
 export function updateUserAvatar(id: string, avatarPath: string | null): void {

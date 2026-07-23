@@ -5,11 +5,13 @@
 
 const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
-const { randomUUID } = require('crypto');
+const { randomBytes, randomUUID } = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
-const DEFAULT_PASSWORD = 'Padel123';
+const DEFAULT_PASSWORD =
+  (process.env.BOOTSTRAP_PLAYER_PASSWORD || '').trim() ||
+  randomBytes(12).toString('base64url');
 
 const players = [
   { username: 'mich', nickname: 'Mich' },

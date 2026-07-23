@@ -7,10 +7,12 @@
 import { getDb } from '../lib/db/db';
 import { initSchema } from '../lib/db/schema';
 import bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { BCRYPT_ROUNDS } from '../lib/constants';
 
-const DEFAULT_PASSWORD = 'Padel123';
+const DEFAULT_PASSWORD =
+  process.env.BOOTSTRAP_PLAYER_PASSWORD?.trim() ||
+  randomBytes(12).toString('base64url');
 
 const players = [
   { username: 'mich', nickname: 'Mich' },

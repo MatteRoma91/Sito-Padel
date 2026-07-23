@@ -38,6 +38,10 @@ export async function POST(
   }
   const newPassword = parsed.data.password;
 
-  resetUserPassword(id, newPassword);
-  return NextResponse.json({ success: true });
+  const temporaryPassword = resetUserPassword(id, newPassword);
+  return NextResponse.json({
+    success: true,
+    // Solo se generata server-side: l'admin deve comunicarla una volta.
+    ...(newPassword ? {} : { temporary_password: temporaryPassword }),
+  });
 }
