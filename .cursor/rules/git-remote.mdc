@@ -9,5 +9,8 @@ Il progetto in `/home/ubuntu/Sito-Padel` deve essere pushato **solo** sulla repo
 
 **https://github.com/MatteRoma91/Sito-Padel**
 
-- `origin` e `upstream` puntano a MatteRoma91/Sito-Padel
-- Per pushare: `git push origin HEAD:main` (il branch locale potrebbe avere un nome diverso da `main`)
+- `origin` punta a `MatteRoma91/Sito-Padel`
+- Branch principale: `main`
+- Per pushare: `cd /home/ubuntu/Sito-Padel && git push origin HEAD:main`
+
+La mappa di tutte le webapp del VPS è in `/home/ubuntu/.cursor/rules/git-repos.mdc` (non in questa cartella).
