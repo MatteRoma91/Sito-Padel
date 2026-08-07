@@ -12,6 +12,7 @@ Questo workspace contiene **3 webapp distinte**, ciascuna con la **propria repo 
 | **Sito-Padel** | `/home/ubuntu/Sito-Padel` | MatteRoma91/Sito-Padel | origin |
 | **Roma-Buche** | `/home/ubuntu/Roma-Buche` | MatteRoma91/Ibuche | origin |
 | **control-room** | `/home/ubuntu/control-room` | MatteRoma91/Control-Room | origin |
+| **Studio Tiberi** | `/home/ubuntu/TiberiStudio` | MatteRoma91/studiotiberi | origin |
 
 ## Regola obbligatoria
 
@@ -20,6 +21,7 @@ Quando modifichi una webapp, **pusha SOLO sulla repo corrispondente**:
 - **Modifichi file in Sito-Padel** → `git push origin <branch>` (va su Sito-Padel.git)
 - **Modifichi file in Roma-Buche** → `cd /home/ubuntu/Roma-Buche && git push origin <branch>` (va su Ibuche.git)
 - **Modifichi file in control-room** → `cd /home/ubuntu/control-room && git push origin <branch>` (va su Control-Room.git)
+- **Modifichi file in TiberiStudio** → `cd /home/ubuntu/TiberiStudio && git push origin main` (va su studiotiberi.git)
 
 ## Prima di pushare
 
