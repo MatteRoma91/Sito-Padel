@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '@/lib/constants';
 import type { User, Tournament, TournamentParticipant, Pair, Match, TournamentRanking, CumulativeRanking, SkillLevel, TournamentCategory, Court, CourtBooking, CourtBookingParticipant, CenterClosedSlot, CourtBookingMatch, TournamentFormat } from '@/lib/types';
-import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8, getTournamentFormat, getLastRankingPosition } from '@/lib/types';
+import { overallScoreToLevel, overallLevelToSkillLevel, MATCH_WIN_DELTA, MATCH_LOSS_DELTA, TOURNAMENT_WIN_DELTA, TOURNAMENT_LAST_DELTA, TOURNAMENT_WIN_DELTA_8, TOURNAMENT_LAST_DELTA_8, TOURNAMENT_LAST_POSITION_8, getTournamentFormat, getLastRankingPosition, getOverallPositionDelta } from '@/lib/types';
 import { DEFAULT_SITE_CONFIG } from '@/lib/db/site-config-defaults';
 import { ensureDb } from './ensure';
 import { recalculateCumulativeRankings } from './cumulative';
@@ -164,18 +164,13 @@ export function computeTournamentOverallDeltas(tournamentId: string): Map<string
     }
   }
 
-  const posWinDelta = is8Player ? TOURNAMENT_WIN_DELTA_8 : TOURNAMENT_WIN_DELTA;
-  const lastPos = getLastRankingPosition(tournament);
-  const lastDelta = is8Player ? TOURNAMENT_LAST_DELTA_8 : TOURNAMENT_LAST_DELTA;
-
   for (const pair of pairs) {
     for (const userId of [pair.player1_id, pair.player2_id]) {
       const wins = userIdToWins.get(userId) ?? 0;
       const losses = userIdToLosses.get(userId) ?? 0;
       const position = userIdToPosition.get(userId);
       let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
-      if (position === 1) delta += posWinDelta;
-      if (position === lastPos) delta += lastDelta;
+      if (position != null) delta += getOverallPositionDelta(position, fmt);
       deltas.set(userId, delta);
     }
   }

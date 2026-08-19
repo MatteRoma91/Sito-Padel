@@ -51,20 +51,50 @@ export function overallLevelToSkillLevel(level: OverallLevel): SkillLevel | null
   return level;
 }
 
-/** Delta per aggiornamento overall a fine torneo (torneo 16 giocatori) */
-export const MATCH_WIN_DELTA = 1;
+/** Delta per aggiornamento overall a fine torneo (tutti i formati) */
+export const MATCH_WIN_DELTA = 2;
 export const MATCH_LOSS_DELTA = -1;
+
+/** @deprecated usato solo per compatibilità retroattiva – ora getOverallPositionDelta */
 export const TOURNAMENT_WIN_DELTA = 2;
 export const TOURNAMENT_LAST_DELTA = -2;
-
-/** Delta per torneo a 8 giocatori / 4 coppie: 1° +3, ultimo (4°) -3 */
-export const TOURNAMENT_WIN_DELTA_8 = 3;
-export const TOURNAMENT_LAST_DELTA_8 = -3;
-/** Posizione "ultimo" nel torneo a 4 coppie */
+export const TOURNAMENT_WIN_DELTA_8 = 2;
+export const TOURNAMENT_LAST_DELTA_8 = -1;
 export const TOURNAMENT_LAST_POSITION_8 = 4;
 
-/** Saliscendi: 6 coppie, ultimo posto = 6° (stesso delta overall del tabellone 16). */
+/** Saliscendi: 6 coppie, ultimo posto = 6°. */
 export const TOURNAMENT_LAST_POSITION_12 = 6;
+
+/**
+ * Delta di classifica (bonus/malus posizione) per un giocatore.
+ *
+ * Tabellone 16 e Saliscendi 12:
+ *   1° +3 | 2° +2 | 3° +1 | penultimo -1 | ultimo -2
+ *
+ * Brocco a 8 (4 coppie):
+ *   1° +2 | 2° +1 | 3° 0 | 4° -1
+ */
+export function getOverallPositionDelta(
+  position: number,
+  format: TournamentFormat | null | undefined
+): number {
+  if (format === 'round_robin_8') {
+    // Tabella esplicita 4 coppie
+    if (position === 1) return 2;
+    if (position === 2) return 1;
+    if (position === 3) return 0;
+    if (position === 4) return -1;
+    return 0;
+  }
+  // bracket_16 e saliscendi_12 (e fallback)
+  const lastPos = format === 'saliscendi_12' ? TOURNAMENT_LAST_POSITION_12 : 8;
+  if (position === 1) return 3;
+  if (position === 2) return 2;
+  if (position === 3) return 1;
+  if (position === lastPos - 1) return -1;  // penultimo
+  if (position === lastPos) return -2;       // ultimo
+  return 0;
+}
 
 export const SKILL_LEVEL_VALUES: Record<SkillLevel, number> = {
   'A_GOLD': 5,

@@ -43,9 +43,9 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
   text_regolamento_modalita_12:
     "Torneo Saliscendi (12 giocatori, 6 coppie): tre campi (Oro, Argento, Bronzo). Round multipli con movimenti sali/scendi; l'admin avanza i round e marca esplicitamente l'ultimo round prima della classifica. Punti ATP Master 1000 sulle prime 6 posizioni (1° = 1000, 2° = 650, 3° = 400, 4° = 200, 5° = 100, 6° = 50). I game inseriti in app sono il risultato finale del match (regola del fischio e punto d'oro gestiti sul campo).",
   text_regolamento_overall_8:
-    "Per i tornei a 8 giocatori (4 coppie): partita vinta +1, partita persa -1, 1° posto +3, 4° posto (ultimo) -3.",
+    "Per i tornei a 8 giocatori (4 coppie): partita vinta +2, partita persa -1. Bonus posizione: 1° +2, 2° +1, 3° 0, 4° (ultimo) -1.",
   text_regolamento_overall_12:
-    "Torneo Saliscendi (12 giocatori, 6 coppie): stessi delta del tabellone a 16 per partita (+1/-1) e classifica (+2/-2), con ultimo posto al 6°.",
+    "Torneo Saliscendi (12 giocatori, 6 coppie): partita vinta +2, partita persa -1. Bonus posizione: 1° +3, 2° +2, 3° +1, 5° -1, 6° (ultimo) -2.",
   text_regolamento_classifica_medaglie:
     'I punti si sommano nel tempo: la classifica generale è cumulativa e riflette tutti i tornei disputati. Medaglie: Oro (1°), Argento (2°), Bronzo (3°), Cucchiarella (8°), MVP (votato dai partecipanti).',
   text_regolamento_mvp_title: 'Votazione MVP',
@@ -54,7 +54,7 @@ export const DEFAULT_SITE_CONFIG: Record<string, string> = {
   text_regolamento_overall_intro:
     "Il punteggio overall è una scala da 0 a 100 che misura il livello di gioco di ogni partecipante. Si aggiorna automaticamente a fine di ogni torneo completato.",
   text_regolamento_overall_delta:
-    "Torneo a 16 giocatori: partita vinta +1, partita persa -1, 1° posto +2, 8° posto -2.",
+    "Torneo a 16 giocatori: partita vinta +2, partita persa -1. Bonus posizione: 1° +3, 2° +2, 3° +1, 7° -1, 8° -2.",
   text_regolamento_overall_livelli:
     "90+ = A Gold, 80+ = A Silver, 70+ = B Gold, 60+ = B Silver, 50+ = C, 40+ = D, sotto 40 = Santiago.",
   text_regolamento_overall_baseline:
