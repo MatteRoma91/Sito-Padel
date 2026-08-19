@@ -35,10 +35,11 @@ describe('getOverallPositionDelta', () => {
     expect(getOverallPositionDelta(4, 'round_robin_8')).toBe(-1);
   });
 
-  it('MATCH_WIN_DELTA = 2 e MATCH_LOSS_DELTA = -1', async () => {
+  it('MATCH_WIN_DELTA e MATCH_LOSS_DELTA esistono ma non influenzano overall (solo posizione conta)', async () => {
     const { MATCH_WIN_DELTA, MATCH_LOSS_DELTA } = await import('@/lib/types');
-    expect(MATCH_WIN_DELTA).toBe(2);
-    expect(MATCH_LOSS_DELTA).toBe(-1);
+    // Costanti mantenute per retro-compatibilità ma non usate in computeTournamentOverallDeltas
+    expect(typeof MATCH_WIN_DELTA).toBe('number');
+    expect(typeof MATCH_LOSS_DELTA).toBe('number');
   });
 });
 
@@ -53,14 +54,13 @@ describe('overall: computeTournamentOverallDeltas', () => {
     if (fs.existsSync(testDb)) fs.unlinkSync(testDb);
   });
 
-  it('bracket_16: 1° con 2 vittorie e 1 sconfitta → delta = 2*2 + 1*(-1) + 3 = 6', async () => {
+  it('bracket_16: 1° → delta = +3 (solo posizione, no match)', async () => {
     const {
       ensureDb,
       createUser,
       createTournament,
       insertPairs,
       getPairs,
-      insertMatches,
       insertTournamentRanking,
       computeTournamentOverallDeltas,
     } = await import('@/lib/db/queries');
@@ -88,31 +88,24 @@ describe('overall: computeTournamentOverallDeltas', () => {
     const pair1 = pairs.find((p) => p.seed === 1)!;
     const pair2 = pairs.find((p) => p.seed === 2)!;
 
-    // pair1 wins 2, loses 1 → position 1
-    insertMatches(tid, [
-      { round: 'semifinal', bracket_type: 'main', pair1_id: pair1.id, pair2_id: pair2.id, score_pair1: 6, score_pair2: 3, winner_pair_id: pair1.id, order_in_round: 0 },
-      { round: 'final', bracket_type: 'main', pair1_id: pair1.id, pair2_id: pair2.id, score_pair1: 6, score_pair2: 3, winner_pair_id: pair1.id, order_in_round: 0 },
-      { round: 'quarterfinal', bracket_type: 'main', pair1_id: pair2.id, pair2_id: pair1.id, score_pair1: 7, score_pair2: 6, winner_pair_id: pair2.id, order_in_round: 1 },
-    ]);
-
+    // Nessun match salvato — solo classifica (come i tornei storici)
     insertTournamentRanking({ tournament_id: tid, pair_id: pair1.id, position: 1, points: 1000, is_override: 0 });
     insertTournamentRanking({ tournament_id: tid, pair_id: pair2.id, position: 8, points: 0, is_override: 0 });
 
     const deltas = computeTournamentOverallDeltas(tid);
-    // u1 (pair1): 2 wins * 2 + 1 loss * (-1) + position 1 bonus (+3) = 4 - 1 + 3 = 6
-    expect(deltas.get(u1)).toBe(6);
-    // u3/u4 (pair2): 1 win * 2 + 2 losses * (-1) + position 8 malus (-2) = 2 - 2 - 2 = -2
-    expect(deltas.get(u3)).toBe(-2);
+    expect(deltas.get(u1)).toBe(3);   // 1° → +3
+    expect(deltas.get(u2)).toBe(3);   // stesso partner
+    expect(deltas.get(u3)).toBe(-2);  // 8° → -2
+    expect(deltas.get(u4)).toBe(-2);
   });
 
-  it('round_robin_8: 1° con 1 vittoria → delta = 1*2 + 0*(-1) + 2 = 4', async () => {
+  it('round_robin_8: 1° → delta = +2 (solo posizione, no match)', async () => {
     const {
       ensureDb,
       createUser,
       createTournament,
       insertPairs,
       getPairs,
-      insertMatches,
       insertTournamentRanking,
       computeTournamentOverallDeltas,
     } = await import('@/lib/db/queries');
@@ -140,17 +133,12 @@ describe('overall: computeTournamentOverallDeltas', () => {
     const pair1 = pairs.find((p) => p.seed === 1)!;
     const pair2 = pairs.find((p) => p.seed === 2)!;
 
-    insertMatches(tid, [
-      { round: 'round_robin', bracket_type: 'main', pair1_id: pair1.id, pair2_id: pair2.id, score_pair1: 6, score_pair2: 3, winner_pair_id: pair1.id, order_in_round: 0 },
-    ]);
     insertTournamentRanking({ tournament_id: tid, pair_id: pair1.id, position: 1, points: 500, is_override: 0 });
     insertTournamentRanking({ tournament_id: tid, pair_id: pair2.id, position: 4, points: 80, is_override: 0 });
 
     const deltas = computeTournamentOverallDeltas(tid);
-    // u1 (pair1): 1 win * 2 + position 1 → +2 = 4
-    expect(deltas.get(u1)).toBe(4);
-    // u3 (pair2): 1 loss * (-1) + position 4 → -1 = -2
-    expect(deltas.get(u3)).toBe(-2);
+    expect(deltas.get(u1)).toBe(2);   // 1° → +2
+    expect(deltas.get(u3)).toBe(-1);  // 4° → -1
   });
 });
 

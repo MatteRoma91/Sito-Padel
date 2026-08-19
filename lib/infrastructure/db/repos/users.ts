@@ -116,63 +116,29 @@ export function updateUserSkillLevel(id: string, skillLevel: SkillLevel | null):
   getDb().prepare('UPDATE users SET skill_level = ? WHERE id = ?').run(skillLevel, id);
 }
 
-/** Calcola i delta overall per utente in base a classifica + match del torneo. */
+/**
+ * Calcola i delta overall per utente in base alla sola posizione finale nel torneo.
+ * Non usa i singoli match: così il ricalcolo funziona anche per tornei storici
+ * dove le partite non sono salvate nel DB.
+ */
 export function computeTournamentOverallDeltas(tournamentId: string): Map<string, number> {
   ensureDb();
   const tournament = getTournamentById(tournamentId);
   const deltas = new Map<string, number>();
   if (!tournament) return deltas;
   const fmt = getTournamentFormat(tournament);
-  const is8Player = fmt === 'round_robin_8';
 
   const pairs = getPairs(tournamentId);
-  const matches = getMatches(tournamentId).filter(m => m.winner_pair_id != null);
   const rankings = getTournamentRankings(tournamentId);
+  if (rankings.length === 0) return deltas;
 
   const pairIdToPosition = new Map(rankings.map(r => [r.pair_id, r.position]));
-  const pairIdToPair = new Map(pairs.map(p => [p.id, p]));
-
-  const userIdToWins = new Map<string, number>();
-  const userIdToLosses = new Map<string, number>();
-  const userIdToPosition = new Map<string, number>();
 
   for (const pair of pairs) {
-    const pos = pairIdToPosition.get(pair.id);
-    if (pos != null) {
-      userIdToPosition.set(pair.player1_id, pos);
-      userIdToPosition.set(pair.player2_id, pos);
-    }
-    userIdToWins.set(pair.player1_id, 0);
-    userIdToWins.set(pair.player2_id, 0);
-    userIdToLosses.set(pair.player1_id, 0);
-    userIdToLosses.set(pair.player2_id, 0);
-  }
-
-  for (const m of matches) {
-    const winnerId = m.winner_pair_id!;
-    const loserId = m.pair1_id === winnerId ? m.pair2_id : m.pair1_id;
-    if (!loserId) continue;
-    const winnerPair = pairIdToPair.get(winnerId);
-    const loserPair = pairIdToPair.get(loserId);
-    if (winnerPair) {
-      userIdToWins.set(winnerPair.player1_id, (userIdToWins.get(winnerPair.player1_id) ?? 0) + 1);
-      userIdToWins.set(winnerPair.player2_id, (userIdToWins.get(winnerPair.player2_id) ?? 0) + 1);
-    }
-    if (loserPair) {
-      userIdToLosses.set(loserPair.player1_id, (userIdToLosses.get(loserPair.player1_id) ?? 0) + 1);
-      userIdToLosses.set(loserPair.player2_id, (userIdToLosses.get(loserPair.player2_id) ?? 0) + 1);
-    }
-  }
-
-  for (const pair of pairs) {
-    for (const userId of [pair.player1_id, pair.player2_id]) {
-      const wins = userIdToWins.get(userId) ?? 0;
-      const losses = userIdToLosses.get(userId) ?? 0;
-      const position = userIdToPosition.get(userId);
-      let delta = wins * MATCH_WIN_DELTA + losses * MATCH_LOSS_DELTA;
-      if (position != null) delta += getOverallPositionDelta(position, fmt);
-      deltas.set(userId, delta);
-    }
+    const position = pairIdToPosition.get(pair.id);
+    const delta = position != null ? getOverallPositionDelta(position, fmt) : 0;
+    deltas.set(pair.player1_id, delta);
+    deltas.set(pair.player2_id, delta);
   }
   return deltas;
 }

@@ -4,6 +4,7 @@ import {
   getTournaments,
   getPairs,
   getMatches,
+  getTournamentRankings,
   deleteTournamentRankings,
   insertTournamentRanking,
   recalculateCumulativeRankings,
@@ -38,25 +39,31 @@ export async function POST() {
       .sort((a, b) => a.date.localeCompare(b.date));
     let recalculated = 0;
 
-    // Reset completo baseline + replay tornei (evita doppio conteggio su non-seed)
+    // Reset completo baseline + replay da classifica finale (non dai match)
+    // Funziona anche per tornei storici senza match salvati nel DB
     resetAllPlayerOverallToBaseline();
     clearAllTournamentOverallAppliedFlags();
 
     for (const tournament of completed) {
       const pairs = getPairs(tournament.id);
+      const existingRankings = getTournamentRankings(tournament.id);
+
+      // Tornei con match completi: ricalcola anche i ranking ATP
       const matches = getMatches(tournament.id);
-
-      if (!isTournamentComplete(matches) || pairs.length === 0) continue;
-
-      const category: TournamentCategory = tournament.category ?? 'master_1000';
-      const rankings = calculateTournamentRankings(pairs, matches, category);
-
-      deleteTournamentRankings(tournament.id);
-      for (const r of rankings) {
-        insertTournamentRanking(r);
+      if (isTournamentComplete(matches) && pairs.length > 0) {
+        const category: TournamentCategory = tournament.category ?? 'master_1000';
+        const rankings = calculateTournamentRankings(pairs, matches, category);
+        deleteTournamentRankings(tournament.id);
+        for (const r of rankings) {
+          insertTournamentRanking(r);
+        }
       }
-      applyTournamentResultToOverall(tournament.id);
-      recalculated++;
+
+      // Overall: si applica se esiste una classifica (con o senza match)
+      if (existingRankings.length > 0 || pairs.length > 0) {
+        applyTournamentResultToOverall(tournament.id);
+        recalculated++;
+      }
     }
 
     recalculateCumulativeRankings();

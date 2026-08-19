@@ -62,7 +62,7 @@ export function RicalcolaTab({ completedTournamentsCount }: RicalcolaTabProps) {
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         {success && (
           <p className="text-sm text-green-600 dark:text-green-400">
-            Ricalcolati <strong>{success.recalculated}</strong> tornei su {success.totalCompleted} completati. Classifiche aggiornate.
+            Ricalcolati <strong>{success.recalculated}</strong> tornei su {success.totalCompleted} completati. Classifiche e overall aggiornati.
           </p>
         )}
       </Card>

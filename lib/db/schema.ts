@@ -287,16 +287,13 @@ export function initSchema() {
   // Migrazione: aggiornamento testi overall con nuovi delta (+2 per vittoria, bonus posizioni 2°/3°/penultimo)
   try {
     const overallKeys: Array<[string, string]> = [
-      ['text_regolamento_overall_delta', "Torneo a 16 giocatori: partita vinta +2, partita persa -1. Bonus posizione: 1° +3, 2° +2, 3° +1, 7° -1, 8° -2."],
-      ['text_regolamento_overall_8', "Per i tornei a 8 giocatori (4 coppie): partita vinta +2, partita persa -1. Bonus posizione: 1° +2, 2° +1, 3° 0, 4° (ultimo) -1."],
-      ['text_regolamento_overall_12', "Torneo Saliscendi (12 giocatori, 6 coppie): partita vinta +2, partita persa -1. Bonus posizione: 1° +3, 2° +2, 3° +1, 5° -1, 6° (ultimo) -2."],
+      ['text_regolamento_overall_delta', "Torneo a 16 giocatori: il punteggio overall dipende solo dalla posizione finale. 1° +3, 2° +2, 3° +1, 4°–6° nessuna variazione, 7° -1, 8° -2."],
+      ['text_regolamento_overall_8', "Per i tornei a 8 giocatori (4 coppie): il punteggio overall dipende solo dalla posizione finale. 1° +2, 2° +1, 3° nessuna variazione, 4° (ultimo) -1."],
+      ['text_regolamento_overall_12', "Torneo Saliscendi (12 giocatori, 6 coppie): il punteggio overall dipende solo dalla posizione finale. 1° +3, 2° +2, 3° +1, 4° nessuna variazione, 5° -1, 6° (ultimo) -2."],
     ];
     for (const [key, newValue] of overallKeys) {
-      const row = db.prepare('SELECT value FROM site_config WHERE key = ?').get(key) as { value: string } | undefined;
-      // Update if still contains old "+1" win delta wording
-      if (row?.value?.includes('partita vinta +1') || row?.value?.includes('vinta +1') || row?.value?.includes('+3, ultimo') || row?.value?.includes('+1, partita persa -1')) {
-        db.prepare('UPDATE site_config SET value = ? WHERE key = ?').run(newValue, key);
-      }
+      // Always update these three keys to ensure they reflect the current formula
+      db.prepare('UPDATE site_config SET value = ? WHERE key = ?').run(newValue, key);
     }
   } catch {
     // ignore
@@ -814,10 +811,12 @@ export function initSchema() {
   // così il prossimo "Ricalcola" in impostazioni ricalcola con i nuovi delta (+2 vittoria, bonus posizioni).
   // Viene eseguita una sola volta grazie al flag in site_config.
   try {
-    const migrated = db.prepare("SELECT value FROM site_config WHERE key = 'overall_delta_v2_applied'").get() as { value: string } | undefined;
-    if (!migrated) {
+    // v3: formula cambiata a solo posizione finale (no match). Forza ricalcolo.
+    const migratedV3 = db.prepare("SELECT value FROM site_config WHERE key = 'overall_delta_v3_applied'").get() as { value: string } | undefined;
+    if (!migratedV3) {
       db.prepare("UPDATE tournaments SET overall_applied_at = NULL WHERE status = 'completed'").run();
-      db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES ('overall_delta_v2_applied', '1')").run();
+      db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES ('overall_delta_v2_applied', '1')").run();
+      db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES ('overall_delta_v3_applied', '1')").run();
     }
   } catch {
     // ignore
