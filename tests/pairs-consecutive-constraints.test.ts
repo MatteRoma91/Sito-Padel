@@ -18,16 +18,16 @@ function mapFromPairs(pairs: [string, string][]): Map<string, Set<string>> {
 }
 
 describe('assignStrongWeakWithPartnerConstraints', () => {
-  it('ritorna un matching valido senza vincoli', () => {
+  it('senza vincoli accoppia 1°+ultimo, 2°+penultimo (coppie equilibrate)', () => {
     const strong = ['a', 'b', 'c', 'd'];
     const weak = ['w0', 'w1', 'w2', 'w3'];
     const out = assignStrongWeakWithPartnerConstraints(strong, weak, new Map(), new Map());
-    expect(out).toHaveLength(4);
-    const ws = new Set(out.map((p) => p.weak));
-    expect(ws.size).toBe(4);
-    for (let i = 0; i < 4; i++) {
-      expect(out[i].strong).toBe(strong[i]);
-    }
+    expect(out).toEqual([
+      { strong: 'a', weak: 'w3' },
+      { strong: 'b', weak: 'w2' },
+      { strong: 'c', weak: 'w1' },
+      { strong: 'd', weak: 'w0' },
+    ]);
   });
 
   it('evita il vincolo rigido quando esiste un alternativa', () => {
@@ -70,7 +70,33 @@ describe('extractPairsFor8Players con constraints', () => {
     ids.map((id, i) => [id, 100 - i]) // p0 più forte ... p7 più debole
   );
 
-  it('integrazione: vincolo rigido su coppia forte-debole evitabile', () => {
+  it('senza vincoli: 1° overall con l\'ultimo, non 1° con il 5°', () => {
+    const pairs = extractPairsFor8Players(ids, rankings, skills, overall);
+    expect(pairs).toEqual([
+      { player1_id: 'p0', player2_id: 'p7', seed: 1 },
+      { player1_id: 'p1', player2_id: 'p6', seed: 2 },
+      { player1_id: 'p2', player2_id: 'p5', seed: 3 },
+      { player1_id: 'p3', player2_id: 'p4', seed: 4 },
+    ]);
+  });
+
+  it('ordina per overall prima dei punti ATP', () => {
+    const atp = new Map([
+      ['p0', 10],
+      ['p1', 999],
+      ['p2', 10],
+      ['p3', 10],
+      ['p4', 10],
+      ['p5', 10],
+      ['p6', 10],
+      ['p7', 10],
+    ]);
+    const pairs = extractPairsFor8Players(ids, atp, skills, overall);
+    expect(pairs[0]).toMatchObject({ player1_id: 'p0', player2_id: 'p7' });
+    expect(pairs.find((x) => x.player1_id === 'p1')?.player2_id).toBe('p6');
+  });
+
+  it('integrazione: vincolo rigido sulla coppia naturale 1°+ultimo, sceglie la più vicina', () => {
     const hard = mapFromPairs([['p0', 'p7']]);
     const pairs = extractPairsFor8Players(ids, rankings, skills, overall, {
       hardPrevious: hard,
@@ -78,5 +104,6 @@ describe('extractPairsFor8Players con constraints', () => {
     });
     const p0 = pairs.find((x) => x.player1_id === 'p0');
     expect(p0?.player2_id).not.toBe('p7');
+    expect(p0?.player2_id).toBe('p6');
   });
 });

@@ -27,9 +27,9 @@ La route di consolidamento usa una **transazione SQLite `BEGIN IMMEDIATE`** per 
 
 - Modifiche a coppie / estrazione con torneo **completato** o con **overall già applicato** sono bloccate (`409`) finché il torneo non viene riaperto.
 - **Estrazione coppie** con `overall_applied_at`: `revertTournamentResultFromOverall` prima del wipe, poi `recalculateCumulativeRankings()`.
-- **Estrazione automatica** (`POST /api/tournaments/[id]/pairs/extract`): algoritmo **forte+debole** (stesso ordinamento per overall/skill e punti cumulativi) con **matching completo** sui giocatori “forti” vs “deboli”.
+- **Estrazione automatica** (`POST /api/tournaments/[id]/pairs/extract`): algoritmo **forte+debole**. I giocatori si ordinano per **overall** (criterio primario; default 50 se assente) e **punti ATP cumulativi** (spareggio), poi si spezzano in metà forte e metà debole. L’accoppiamento naturale è **1° con ultimo, 2° con penultimo, …** (es. 16 giocatori: 1°+16°, 2°+15°, … 8°+9°) così le coppie restano equilibrate. I vincoli partner possono scostarsi da questo schema il minimo necessario.
   - **Vincolo rigido**: non si può ripetere la stessa coppia (stessi due `user_id` in `pairs`) del **torneo passato immediatamente precedente** rispetto alla data del torneo in estrazione (`ORDER BY date DESC, id DESC` tra i tornei con `date` strettamente minore). Se nessuna permutazione lo rispetta, l’API risponde **400** con messaggio esplicito (nessuna coppia scritta a DB).
-  - **Preferenza soft**: tra le soluzioni valide si minimizzano le coppie già viste insieme nei tornei in posizione cronologica **2ª–5ª** (sempre tra i passati rispetto alla data corrente). Implementazione: `lib/pairs.ts`, dati: `getImmediatePreviousTournamentPartnerPairs`, `getOlderRecentPartnerPairs` in `lib/db/queries.ts`.
+  - **Preferenza soft**: tra le soluzioni valide si minimizzano le coppie già viste insieme nei tornei in posizione cronologica **2ª–5ª**; a parità di violazioni soft si resta il più vicino possibile all’accoppiamento 1°+ultimo. Implementazione: `lib/pairs.ts`, dati: `getImmediatePreviousTournamentPartnerPairs`, `getOlderRecentPartnerPairs` in `lib/db/queries.ts`.
 
 ## Partecipanti
 

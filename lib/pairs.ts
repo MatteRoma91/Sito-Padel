@@ -64,8 +64,40 @@ function softViolation(s: string, w: string, soft: Map<string, Set<string>>): nu
 }
 
 /**
- * Biiezione strong[i] ↔ weak[perm[i]] con vincoli rigidi su coppie vietate;
- * minimizza le violazioni soft (partner nei tornei 2–5 precedenti).
+ * Accoppiamento naturale forte+debole: 1° del gruppo strong con l'ultimo del gruppo weak
+ * (es. 1° overall con 16°, 2° con 15°, …).
+ */
+function complementaryWeakIndex(strongIdx: number, n: number): number {
+  return n - 1 - strongIdx;
+}
+
+function complementaryDisplacement(matchWeakIndex: number[]): number {
+  const n = matchWeakIndex.length;
+  let d = 0;
+  for (let i = 0; i < n; i++) {
+    d += Math.abs(matchWeakIndex[i] - complementaryWeakIndex(i, n));
+  }
+  return d;
+}
+
+function weakIndicesClosestToComplementary(strongIdx: number, n: number): number[] {
+  const pref = complementaryWeakIndex(strongIdx, n);
+  return Array.from({ length: n }, (_, j) => j).sort((a, b) => {
+    const da = Math.abs(a - pref);
+    const db = Math.abs(b - pref);
+    if (da !== db) return da - db;
+    return a - b;
+  });
+}
+
+/**
+ * Biiezione strong[i] ↔ weak[perm[i]] con vincoli rigidi su coppie vietate.
+ * Ordine obiettivi:
+ * 1. matching valido (no vincoli rigidi)
+ * 2. minimizza violazioni soft (partner nei tornei 2–5 precedenti)
+ * 3. resta il più vicino possibile a 1°+ultimo, 2°+penultimo, … (coppie equilibrate)
+ *
+ * `strong` e `weak` devono essere già ordinati dal più forte al più debole nel proprio gruppo.
  */
 export function assignStrongWeakWithPartnerConstraints(
   strong: string[],
@@ -82,24 +114,31 @@ export function assignStrongWeakWithPartnerConstraints(
   }
 
   let bestViolations = Infinity;
+  let bestDisplacement = Infinity;
   let bestMatchWeakIndex: number[] | null = null;
 
   const usedWeak = new Array(n).fill(false);
   const weakIndexForStrong = new Array(n).fill(-1);
+  const tryOrder = Array.from({ length: n }, (_, i) => weakIndicesClosestToComplementary(i, n));
 
   function dfs(strongIdx: number, softTotal: number): void {
-    if (softTotal >= bestViolations) {
+    if (softTotal > bestViolations) {
       return;
     }
     if (strongIdx === n) {
-      if (softTotal < bestViolations) {
+      const disp = complementaryDisplacement(weakIndexForStrong);
+      if (
+        softTotal < bestViolations ||
+        (softTotal === bestViolations && disp < bestDisplacement)
+      ) {
         bestViolations = softTotal;
+        bestDisplacement = disp;
         bestMatchWeakIndex = weakIndexForStrong.slice();
       }
       return;
     }
 
-    for (let j = 0; j < n; j++) {
+    for (const j of tryOrder[strongIdx]) {
       if (usedWeak[j]) continue;
       const w = weak[j];
       if (isHardBlocked(strong[strongIdx], w, hardPrevious)) continue;
@@ -117,7 +156,8 @@ export function assignStrongWeakWithPartnerConstraints(
     throw new PairingConstraintError();
   }
 
-  return strong.map((s, i) => ({ strong: s, weak: weak[bestMatchWeakIndex[i]] }));
+  const matched = bestMatchWeakIndex;
+  return strong.map((s, i) => ({ strong: s, weak: weak[matched[i]] }));
 }
 
 /**
