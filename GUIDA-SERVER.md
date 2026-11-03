@@ -331,7 +331,7 @@ Dettagli: [docs/REPORT-COMPARATIVO.md](docs/REPORT-COMPARATIVO.md).
 - Roma-Buche: build forzata con `--webpack` perché leaflet-defaulticon-compatibility usa la sintassi CSS `~` (webpack-only).
 - ESLint: `.eslintrc.json` sostituito da `eslint.config.mjs` con FlatCompat in tutte e 3 le app.
 - Tailwind: `tailwind.config.ts` eliminato; tema traslato in `@theme inline` dentro `globals.css`; `autoprefixer` rimosso (Gestione-Veicoli).
-- Fix build: in ambiente con `NODE_ENV=production` le devDependencies non vengono installate → usare `NODE_ENV=development npm install --include=dev`. La build di Sito-Padel richiedeva `unset DATABASE_PATH` per evitare che il processo leggesse il DB di scoutbet-pro dall'environment del server.
+- Fix build: in ambiente con `NODE_ENV=production` le devDependencies non vengono installate → usare `NODE_ENV=development npm install --include=dev`. La build di Sito-Padel richiede `unset DATABASE_PATH` se in shell è impostato un path DB di un’altra app sul server.
 
 ---
 
